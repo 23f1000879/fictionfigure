@@ -14,11 +14,12 @@ import { ArrowRight } from "lucide-react";
 export const revalidate = 0;
 
 interface ProductPageProps {
-  params: Promise<{ slug: string }>;
+  params: { slug: string } | Promise<{ slug: string }>;
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { slug } = await params;
+  const resolvedParams = (await params) as { slug: string };
+  const slug = resolvedParams?.slug;
   const data = await getProductBySlug(slug);
 
   if (!data || !data.product) {

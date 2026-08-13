@@ -13,24 +13,11 @@ import { ArrowLeft, ArrowRight, ArrowUpDown } from "lucide-react";
 export const revalidate = 0; // Dynamic rendering
 
 interface ShopPageProps {
-  searchParams: Promise<{
-    query?: string;
-    category?: string;
-    brand?: string;
-    franchise?: string;
-    material?: string;
-    scale?: string;
-    minPrice?: string;
-    maxPrice?: string;
-    inStockOnly?: string;
-    featuredOnly?: string;
-    sortBy?: string;
-    page?: string;
-  }>;
+  searchParams?: any;
 }
 
 export default async function ShopPage({ searchParams }: ShopPageProps) {
-  const resolvedParams = await searchParams;
+  const resolvedParams = ((await searchParams) || {}) as Record<string, string | undefined>;
 
   const filters = {
     query: resolvedParams.query,
