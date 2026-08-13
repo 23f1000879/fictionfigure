@@ -88,7 +88,19 @@ router.post("/uploads/product-image", (req, res) => {
         });
       } catch (cloudErr: any) {
         console.error("Cloudinary upload error:", cloudErr);
+        if (req.file) fs.unlink(req.file.path, () => {});
+
+        if (process.env.NODE_ENV === "production") {
+          return res.status(500).json({
+            error: cloudErr.message || "Failed to upload image to Cloudinary storage.",
+          });
+        }
       }
+    } else if (process.env.NODE_ENV === "production") {
+      if (req.file) fs.unlink(req.file.path, () => {});
+      return res.status(500).json({
+        error: "Cloudinary storage is not configured.",
+      });
     }
 
     // Local development fallback storage
@@ -406,6 +418,31 @@ router.post("/products", async (req, res) => {
     res.status(201).json({ success: true, product });
   } catch (err: any) {
     console.error("POST /api/admin/products error:", err);
+    if (err.code === "P2002") {
+      const targetStr = Array.isArray(err.meta?.target)
+        ? err.meta.target.join(", ")
+        : String(err.meta?.target || "");
+
+      if (targetStr.includes("slug")) {
+        return res.status(409).json({
+          error: "A product with this URL slug already exists.",
+          field: "slug",
+        });
+      }
+
+      if (targetStr.includes("sku")) {
+        return res.status(409).json({
+          error: "A product with this SKU code already exists.",
+          field: "sku",
+        });
+      }
+
+      return res.status(409).json({
+        error: "A product with this URL slug already exists.",
+        field: "slug",
+      });
+    }
+
     res.status(500).json({ error: err.message || "Failed to create product" });
   }
 });

@@ -14,6 +14,8 @@ export default function AdminNewProductPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState("");
+  const [slugError, setSlugError] = useState("");
+  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -48,15 +50,25 @@ export default function AdminNewProductPage() {
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    const generatedSlug = val.toLowerCase().replace(/[^\w ]+/g, "").replace(/ +/g, "-");
     const autoSku = val ? `FF-${val.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}` : "";
 
-    setForm((prev) => ({
-      ...prev,
-      name: val,
-      slug: generatedSlug,
-      sku: autoSku,
-    }));
+    setForm((prev) => {
+      const generatedSlug = !isSlugManuallyEdited
+        ? val.toLowerCase().replace(/[^\w ]+/g, "").replace(/ +/g, "-")
+        : prev.slug;
+      return {
+        ...prev,
+        name: val,
+        slug: generatedSlug,
+        sku: autoSku,
+      };
+    });
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsSlugManuallyEdited(true);
+    setSlugError("");
+    setForm((prev) => ({ ...prev, slug: e.target.value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +82,7 @@ export default function AdminNewProductPage() {
 
     setIsSubmitting(true);
     setError("");
+    setSlugError("");
 
     try {
       const validImages = form.images.filter(Boolean);
@@ -87,7 +100,13 @@ export default function AdminNewProductPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create product");
+      if (!res.ok) {
+        if (res.status === 409 && (data.field === "slug" || data.error?.toLowerCase().includes("slug"))) {
+          setSlugError("This URL slug is already in use. Please choose a different slug.");
+          throw new Error("A product with this URL slug already exists.");
+        }
+        throw new Error(data.error || "Failed to create product");
+      }
 
       router.push("/admin/products");
     } catch (err: any) {
@@ -162,10 +181,17 @@ export default function AdminNewProductPage() {
                 type="text"
                 required
                 value={form.slug}
-                onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                onChange={handleSlugChange}
                 placeholder="shadow-monarch-1-6-scale-statue"
-                className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none"
+                className={`w-full p-3 bg-[#F7F7F5] border ${
+                  slugError ? "border-[#A83232]" : "border-[#E5E5E2]"
+                } font-mono focus:border-[#111111] focus:outline-none`}
               />
+              {slugError && (
+                <p className="text-[11px] font-semibold text-[#A83232] mt-1 flex items-center">
+                  <AlertCircle className="w-3 h-3 mr-1 flex-shrink-0" /> {slugError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
