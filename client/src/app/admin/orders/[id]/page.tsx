@@ -129,9 +129,9 @@ export default function AdminOrderDetailPage() {
                 Payment Verification & Security Console
               </h3>
               <span className="text-[11px] text-[#6B6B6B]">
-                Method: <strong className="text-[#111111]">{order.payments?.[0]?.paymentMethod || "UPI"}</strong> | Status:{" "}
-                <strong className={order.payments?.[0]?.status === "PAID" ? "text-[#2E6B44]" : "text-[#B86E00]"}>
-                  {order.payments?.[0]?.status || "PENDING"}
+                Method: <strong className="text-[#111111]">{order.payments?.[0]?.paymentMethod === "COD" ? "Cash on Delivery (COD)" : "UPI Payment"}</strong> | Status:{" "}
+                <strong className={order.payments?.[0]?.status === "PAID" ? "text-[#2E6B44]" : order.payments?.[0]?.paymentMethod === "COD" ? "text-[#111111]" : "text-[#B86E00]"}>
+                  {order.payments?.[0]?.paymentMethod === "COD" && order.payments?.[0]?.status !== "PAID" ? "PAYMENT DUE ON DELIVERY" : (order.payments?.[0]?.status || "PENDING")}
                 </strong>
               </span>
             </div>

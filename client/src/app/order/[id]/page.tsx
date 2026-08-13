@@ -80,7 +80,7 @@ export default function OrderDetailPage() {
     if (order.status === "DELIVERED") {
       return {
         title: "ORDER DELIVERED",
-        subtitle: "Your collectible package has been successfully delivered.",
+        subtitle: "Your order has been delivered.",
         bg: "bg-[#2E6B44]/10 border-[#2E6B44] text-[#2E6B44]",
         icon: <CheckCircle2 className="w-5 h-5 shrink-0" />,
       };
@@ -89,31 +89,32 @@ export default function OrderDetailPage() {
     if (order.status === "SHIPPED") {
       return {
         title: "ORDER SHIPPED & ON THE WAY",
-        subtitle: "Your package has been handed to our express carrier and is in transit.",
+        subtitle: "Your order is on the way.",
         bg: "bg-[#2E6B44]/10 border-[#2E6B44] text-[#2E6B44]",
         icon: <Truck className="w-5 h-5 shrink-0" />,
       };
     }
 
-    if (order.status === "PROCESSING" || isPaymentPaid) {
+    if (order.status === "PROCESSING" || (isUpi && isPaymentPaid)) {
       return {
         title: "ORDER VERIFIED & BEING PREPARED",
-        subtitle: "Payment verified. Your collectible piece is currently being packed with reinforced transit padding.",
+        subtitle: "Your payment has been verified and your order is being processed.",
         bg: "bg-[#2E6B44]/10 border-[#2E6B44] text-[#2E6B44]",
         icon: <Package className="w-5 h-5 shrink-0" />,
       };
     }
 
-    // Default PENDING status for UPI or COD
+    // Default PENDING status for UPI vs COD
     if (isUpi) {
       return {
         title: "ORDER PLACED — PAYMENT VERIFICATION PENDING",
-        subtitle: `Your payment details (UTR: ${primaryPayment?.utr || "N/A"}) have been submitted. We'll verify your payment before processing your order.`,
+        subtitle: "Your payment details have been submitted and are awaiting verification.",
         bg: "bg-[#B86E00]/10 border-[#B86E00] text-[#B86E00]",
         icon: <Clock className="w-5 h-5 shrink-0" />,
       };
     }
 
+    // Cash on Delivery (COD)
     return {
       title: "ORDER PLACED — CASH ON DELIVERY",
       subtitle: "Your order has been received. Please keep cash ready when your shipment arrives at your doorstep.",
@@ -179,11 +180,11 @@ export default function OrderDetailPage() {
           <div className="space-y-1">
             <span className="text-[#6B6B6B] text-[11px] uppercase block">Payment Method:</span>
             <span className="font-semibold text-[#111111] block">
-              {isUpi ? "UPI QR (Scan & Pay)" : isCod ? "Cash on Delivery (COD)" : primaryPayment?.paymentMethod || "UPI"}
+              {isCod ? "Cash on Delivery (COD)" : "UPI Payment"}
             </span>
           </div>
 
-          {primaryPayment?.utr && (
+          {isUpi && primaryPayment?.utr && (
             <div className="space-y-1">
               <span className="text-[#6B6B6B] text-[11px] uppercase block">Submitted UTR Reference:</span>
               <span className="font-mono font-bold text-[#111111] bg-[#F0F0ED] px-2 py-0.5 border border-[#E5E5E2] inline-block">
@@ -194,17 +195,21 @@ export default function OrderDetailPage() {
 
           <div className="space-y-1">
             <span className="text-[#6B6B6B] text-[11px] uppercase block">Payment Status:</span>
-            {isPaymentPaid ? (
+            {isCod ? (
+              <span className="inline-block px-2.5 py-1 bg-[#111111] text-white text-[10px] uppercase font-bold tracking-wider">
+                PAYMENT DUE ON DELIVERY
+              </span>
+            ) : isPaymentPaid ? (
               <span className="inline-block px-2.5 py-1 bg-[#2E6B44] text-white text-[10px] uppercase font-bold tracking-wider">
-                PAYMENT VERIFIED & PAID
+                PAID
               </span>
             ) : isPaymentFailed ? (
               <span className="inline-block px-2.5 py-1 bg-[#A83232] text-white text-[10px] uppercase font-bold tracking-wider">
-                PAYMENT FAILED / REJECTED
+                PAYMENT FAILED
               </span>
             ) : (
               <span className="inline-block px-2.5 py-1 bg-[#B86E00] text-white text-[10px] uppercase font-bold tracking-wider">
-                VERIFICATION PENDING
+                PAYMENT VERIFICATION PENDING
               </span>
             )}
           </div>
