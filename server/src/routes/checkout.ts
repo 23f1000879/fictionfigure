@@ -133,8 +133,16 @@ router.post("/auth/identify", async (req, res) => {
     }
 
     const existingUser = await prisma.user.findFirst({
-      where: { phone: normalizedPhone, role: "CUSTOMER" },
+      where: { phone: normalizedPhone },
     });
+
+    if (existingUser && existingUser.isBlocked) {
+      return res.status(403).json({
+        success: false,
+        error: "ACCOUNT_BLOCKED",
+        message: "Your account has been blocked. Please contact support.",
+      });
+    }
 
     // CASE A: Existing Verified Customer -> Skip OTP & Restore Session
     if (existingUser && existingUser.phoneVerified) {
@@ -353,6 +361,10 @@ router.post("/submit-upi-payment", async (req, res) => {
       return res.status(403).json({ error: "Mobile phone verification is required before placing an order." });
     }
 
+    if (verifiedUser.isBlocked) {
+      return res.status(403).json({ error: "Your account has been blocked. Please contact support." });
+    }
+
     // 2. Validate UTR Reference Number
     if (!utr || typeof utr !== "string" || utr.trim().length < 6) {
       return res.status(400).json({ error: "Please enter a valid Transaction / UTR reference number (minimum 6 characters)." });
@@ -466,6 +478,10 @@ router.post("/submit-cod", async (req, res) => {
 
     if (!verifiedUser || !verifiedUser.phoneVerified) {
       return res.status(403).json({ error: "Mobile phone verification is required before placing an order." });
+    }
+
+    if (verifiedUser.isBlocked) {
+      return res.status(403).json({ error: "Your account has been blocked. Please contact support." });
     }
 
     // 2. Validate Address Fields & PIN Code Format

@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatPrice, formatDate } from "@/lib/utils";
-import { Users, Loader2, Ban, ArrowUpRight, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
+import { formatPrice } from "@/lib/utils";
+import { Users, Loader2, ArrowUpRight, CheckCircle2, AlertTriangle, ShieldCheck, Trash2, Ban } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 export default function AdminCustomersPage() {
@@ -11,15 +11,29 @@ export default function AdminCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const getAdminHeaders = () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") : "";
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+  };
 
   const fetchCustomers = async () => {
     setLoading(true);
+    setErrorMessage("");
     try {
-      const res = await fetch(`${API_BASE}/admin/customers`);
+      const res = await fetch(`${API_BASE}/admin/customers`, {
+        headers: getAdminHeaders(),
+      });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load customers directory.");
       setCustomers(data.customers || []);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setErrorMessage(e.message || "Failed to load customers directory.");
       setCustomers([]);
     } finally {
       setLoading(false);
@@ -30,23 +44,68 @@ export default function AdminCustomersPage() {
     fetchCustomers();
   }, []);
 
-  const handleToggleBlock = async (userId: string, currentBlocked: boolean) => {
-    setActionId(userId);
+  // Block / Unblock Customer Handler
+  const handleToggleBlock = async (customer: any) => {
+    const isCurrentlyBlocked = Boolean(customer.isBlocked);
+    const actionName = isCurrentlyBlocked ? "UNBLOCK" : "BLOCK";
+
+    const confirmMsg = isCurrentlyBlocked
+      ? `Unblock customer ${customer.name || customer.phone}? They will be able to log in and place orders.`
+      : `Block customer ${customer.name || customer.phone}? Blocked customers cannot sign in or place orders.`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setActionId(customer.id);
     setMessage("");
+    setErrorMessage("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/users/block`, {
+      const res = await fetch(`${API_BASE}/admin/users/${customer.id}/block`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, isBlocked: !currentBlocked }),
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ blocked: !isCurrentlyBlocked }),
       });
 
-      if (res.ok) {
-        setMessage(`User account status updated to ${!currentBlocked ? "BLOCKED" : "ACTIVE"}`);
-        fetchCustomers();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Failed to ${actionName.toLowerCase()} customer.`);
+
+      setMessage(data.message || `Customer status updated to ${!isCurrentlyBlocked ? "BLOCKED" : "VERIFIED"}.`);
+      fetchCustomers();
+    } catch (e: any) {
+      setErrorMessage(e.message || `Failed to ${actionName.toLowerCase()} customer.`);
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  // Delete Customer Account Handler
+  const handleDeleteCustomer = async (customer: any) => {
+    if (customer.orderCount > 0) {
+      alert(`This customer has ${customer.orderCount} existing order(s) and cannot be permanently deleted. You can block the account instead to disable access while keeping historical order records intact.`);
+      return;
+    }
+
+    if (!window.confirm(`Delete customer ${customer.name || customer.phone}? This action is permanent and cannot be undone.`)) return;
+
+    setActionId(customer.id);
+    setMessage("");
+    setErrorMessage("");
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${customer.id}`, {
+        method: "DELETE",
+        headers: getAdminHeaders(),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete customer account.");
       }
-    } catch (e) {
-      console.error(e);
+
+      setMessage(data.message || "Customer account deleted successfully.");
+      fetchCustomers();
+    } catch (e: any) {
+      setErrorMessage(e.message || "Failed to delete customer account.");
     } finally {
       setActionId(null);
     }
@@ -64,9 +123,20 @@ export default function AdminCustomersPage() {
       </div>
 
       {message && (
-        <div className="p-3 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold flex items-center">
-          <CheckCircle2 className="w-4 h-4 mr-2" />
-          <span>{message}</span>
+        <div className="p-4 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold flex items-center justify-between">
+          <div className="flex items-center">
+            <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span>{message}</span>
+          </div>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center justify-between">
+          <div className="flex items-center">
+            <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
         </div>
       )}
 
@@ -130,15 +200,29 @@ export default function AdminCustomersPage() {
                       Profile <ArrowUpRight className="w-3 h-3 ml-1" />
                     </Link>
                     <button
-                      onClick={() => handleToggleBlock(c.id, c.isBlocked || false)}
+                      onClick={() => handleToggleBlock(c)}
                       disabled={actionId === c.id}
                       className={`px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider border transition-colors ${
                         c.isBlocked
-                          ? "bg-[#2E6B44] text-white border-[#2E6B44]"
+                          ? "bg-[#2E6B44] text-white border-[#2E6B44] hover:bg-[#235434]"
                           : "bg-[#A83232]/10 border-[#A83232] text-[#A83232] hover:bg-[#A83232] hover:text-white"
                       }`}
                     >
-                      {c.isBlocked ? "Unblock" : "Block"}
+                      {actionId === c.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin mx-auto" />
+                      ) : c.isBlocked ? (
+                        "UNBLOCK"
+                      ) : (
+                        "BLOCK"
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCustomer(c)}
+                      disabled={actionId === c.id}
+                      className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider border border-[#E5E5E2] text-[#6B6B6B] hover:border-[#A83232] hover:text-[#A83232] transition-colors"
+                      title={c.orderCount > 0 ? "Customer has order history and cannot be deleted" : "Delete customer"}
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>

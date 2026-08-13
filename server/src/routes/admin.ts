@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { v2 as cloudinary } from "cloudinary";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -1456,6 +1457,206 @@ router.put("/settings/homepage-hero", async (req, res) => {
     res.json({ success: true, message: "Homepage hero updated successfully." });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to update homepage hero settings." });
+  }
+});
+
+// ==========================================
+// ADMIN CUSTOMER MANAGEMENT ENDPOINTS
+// ==========================================
+
+// 1. Get All Customers Directory (GET /api/admin/customers)
+router.get("/customers", requireAdmin, async (_req: any, res: any) => {
+  try {
+    const customers = await prisma.user.findMany({
+      where: { role: "CUSTOMER" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        orders: {
+          select: {
+            totalAmount: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    const mappedCustomers = customers.map((c: any) => {
+      const validOrders = (c.orders || []).filter((o: any) => o.status !== "CANCELLED");
+      const totalSpent = validOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+      return {
+        id: c.id,
+        name: `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Anonymous Collector",
+        firstName: c.firstName,
+        lastName: c.lastName,
+        email: c.email,
+        phone: c.phone,
+        phoneVerified: c.phoneVerified,
+        isVerified: c.isVerified,
+        isBlocked: c.isBlocked,
+        createdAt: c.createdAt,
+        orderCount: c.orders?.length || 0,
+        totalSpent,
+      };
+    });
+
+    res.json({ success: true, customers: mappedCustomers });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch customer directory." });
+  }
+});
+
+// 2. Get Single Customer Profile (GET /api/admin/customers/:id)
+router.get("/customers/:id", requireAdmin, async (req: any, res: any) => {
+  try {
+    const customer = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      include: {
+        addresses: true,
+        orders: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            payments: {
+              take: 1,
+              select: {
+                paymentMethod: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!customer) {
+      return res.status(404).json({ error: "Customer profile not found." });
+    }
+
+    const validOrders = (customer.orders || []).filter((o: any) => o.status !== "CANCELLED");
+    const totalSpent = validOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+
+    const formattedOrders = (customer.orders || []).map((o: any) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      totalAmount: o.totalAmount,
+      status: o.status,
+      paymentMethod: o.payments?.[0]?.paymentMethod || "N/A",
+      paymentStatus: o.payments?.[0]?.status || "PENDING",
+      createdAt: o.createdAt,
+    }));
+
+    res.json({
+      success: true,
+      customer: {
+        id: customer.id,
+        name: `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || "Anonymous Collector",
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone,
+        phoneVerified: customer.phoneVerified,
+        isVerified: customer.isVerified,
+        isBlocked: customer.isBlocked,
+        role: customer.role,
+        createdAt: customer.createdAt,
+        addresses: customer.addresses,
+        orders: formattedOrders,
+        orderCount: customer.orders.length,
+        totalSpent,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch customer profile details." });
+  }
+});
+
+// 3. Block / Unblock Customer Endpoint (PATCH /api/admin/users/:id/block and alias PATCH /api/admin/users/block)
+const handleBlockCustomer = async (req: any, res: any) => {
+  try {
+    const targetId = req.params.id || req.body.userId;
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: "Customer ID is required." });
+    }
+
+    const shouldBlock =
+      typeof req.body.blocked === "boolean"
+        ? req.body.blocked
+        : typeof req.body.isBlocked === "boolean"
+        ? req.body.isBlocked
+        : true;
+
+    const targetUser = await prisma.user.findUnique({ where: { id: targetId } });
+    if (!targetUser) {
+      return res.status(404).json({ success: false, error: "User account not found." });
+    }
+
+    // Prevent self-blocking by admin
+    if (targetUser.id === req.user?.id) {
+      return res.status(400).json({ success: false, error: "Cannot block your own admin account." });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: targetId },
+      data: { isBlocked: shouldBlock },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        isBlocked: true,
+        role: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Customer account status updated to ${updatedUser.isBlocked ? "BLOCKED" : "ACTIVE"}.`,
+      user: updatedUser,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Failed to update block status." });
+  }
+};
+
+router.patch("/users/:id/block", requireAdmin, handleBlockCustomer);
+router.patch("/users/block", requireAdmin, handleBlockCustomer);
+
+// 4. Delete Customer Account Endpoint (DELETE /api/admin/users/:id)
+router.delete("/users/:id", requireAdmin, async (req: any, res: any) => {
+  try {
+    const targetId = req.params.id;
+    const targetUser = await prisma.user.findUnique({ where: { id: targetId } });
+
+    if (!targetUser) {
+      return res.status(404).json({ success: false, error: "User account not found." });
+    }
+
+    if (targetUser.id === req.user?.id) {
+      return res.status(400).json({ success: false, error: "Cannot delete your own admin account." });
+    }
+
+    // Inspect historical orders
+    const orderCount = await prisma.order.count({ where: { userId: targetId } });
+
+    if (orderCount > 0) {
+      return res.status(400).json({
+        success: false,
+        error: "This customer has existing orders and cannot be permanently deleted. You can block the account instead to disable access while keeping historical order history intact.",
+      });
+    }
+
+    // Safe deletion of related records without orders
+    await prisma.address.deleteMany({ where: { userId: targetId } });
+    await prisma.wishlist.deleteMany({ where: { userId: targetId } });
+    await prisma.cart.deleteMany({ where: { userId: targetId } });
+    await prisma.user.delete({ where: { id: targetId } });
+
+    res.json({
+      success: true,
+      message: "Customer account deleted successfully.",
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Failed to delete customer account." });
   }
 });
 
