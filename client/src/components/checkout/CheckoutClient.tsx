@@ -244,7 +244,9 @@ export function CheckoutClient() {
     }
   };
 
-  // Step 1: Customer Phone Identification & Send OTP
+  const [maskedPhone, setMaskedPhone] = useState("");
+
+  // Step 1: Customer Phone Identification & Send OTP via MSG91
   const handleIdentifyCustomer = async () => {
     if (!formData.phone || formData.phone.trim().length < 10) {
       setErrorMessage("Please enter a valid 10-digit Indian mobile number.");
@@ -262,7 +264,7 @@ export function CheckoutClient() {
       });
 
       const identifyData = await identifyRes.json();
-      if (!identifyRes.ok) throw new Error(identifyData.error || "Failed to verify mobile number.");
+      if (!identifyRes.ok) throw new Error(identifyData.error || "Unable to send verification OTP. Please try again.");
 
       // Case A: Existing Verified Customer -> Skip OTP
       if (identifyData.exists && identifyData.phoneVerified) {
@@ -283,19 +285,15 @@ export function CheckoutClient() {
         return;
       }
 
-      // Case B: Require OTP -> Trigger Send OTP
-      const sendOtpRes = await fetch(`${API_BASE}/checkout/auth/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone }),
-      });
-
-      const sendOtpData = await sendOtpRes.json();
-      if (!sendOtpRes.ok) throw new Error(sendOtpData.error || "Failed to send OTP code.");
-
-      setIsOtpSent(true);
-      setResendTimer(30);
-      setCanResend(false);
+      // Case B: Require OTP & OTP Sent successfully by MSG91
+      if (identifyData.otpSent) {
+        setMaskedPhone(identifyData.maskedPhone || formData.phone);
+        setIsOtpSent(true);
+        setResendTimer(identifyData.cooldownSeconds || 30);
+        setCanResend(false);
+      } else {
+        throw new Error(identifyData.error || "Unable to send verification OTP. Please try again.");
+      }
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to process mobile verification.");
     } finally {
@@ -351,13 +349,13 @@ export function CheckoutClient() {
     }
   };
 
-  // Step 1: Resend OTP
+  // Step 1: Resend OTP via MSG91
   const handleResendOtp = async () => {
     if (!canResend) return;
 
     setErrorMessage("");
     try {
-      const res = await fetch(`${API_BASE}/checkout/auth/send-otp`, {
+      const res = await fetch(`${API_BASE}/checkout/auth/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: formData.phone }),
@@ -366,7 +364,8 @@ export function CheckoutClient() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to resend OTP.");
 
-      setResendTimer(30);
+      if (data.maskedPhone) setMaskedPhone(data.maskedPhone);
+      setResendTimer(data.cooldownSeconds || 30);
       setCanResend(false);
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to resend OTP.");
@@ -642,7 +641,7 @@ export function CheckoutClient() {
                         Verify your mobile number
                       </h4>
                       <p className="text-xs text-[#6B6B6B] mt-1">
-                        We've sent a 6-digit OTP code to <strong className="text-[#111111] font-mono">{formData.phone}</strong>.
+                        We've sent a 6-digit OTP code to <strong className="text-[#111111] font-mono">{maskedPhone || formData.phone}</strong>.
                       </p>
                     </div>
 
