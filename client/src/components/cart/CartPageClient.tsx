@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Trash2, Plus, Minus, ArrowRight, ArrowLeft, Tag, ShoppingBag, Check } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 export function CartPageClient() {
   const { cart, removeItem, updateQuantity, cartSubtotal } = useCart();
@@ -26,20 +27,20 @@ export function CartPageClient() {
     setCouponError("");
 
     try {
-      const res = await fetch("/api/coupons", {
+      const res = await fetch(`${API_BASE}/coupons/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponCode, subtotal: cartSubtotal }),
+        body: JSON.stringify({ code: couponCode, cartSubtotal }),
       });
 
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || !data.valid) {
         setCouponError(data.error || "Invalid coupon code");
       } else {
         setAppliedCoupon({
-          code: data.code,
+          code: data.coupon?.code || couponCode,
           discountAmount: data.discountAmount,
-          discountType: data.discountType,
+          discountType: data.coupon?.discountType || "FIXED",
         });
         setCouponCode("");
       }

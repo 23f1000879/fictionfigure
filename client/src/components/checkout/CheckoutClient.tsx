@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
 import { Check, ShieldCheck, Lock, CreditCard, Smartphone, ArrowRight, Loader2 } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export function CheckoutClient() {
   const router = useRouter();
@@ -37,10 +38,10 @@ export function CheckoutClient() {
   // Validate coupon on mount if present in searchParams
   useEffect(() => {
     if (formData.couponCode && cartSubtotal > 0) {
-      fetch("/api/coupons", {
+      fetch(`${API_BASE}/coupons/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: formData.couponCode, subtotal: cartSubtotal }),
+        body: JSON.stringify({ code: formData.couponCode, cartSubtotal }),
       })
         .then((res) => res.json())
         .then((data) => {

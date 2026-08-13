@@ -157,7 +157,7 @@ export default function AdminDashboardPage() {
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-[#E5E5E2]">
               <span className="text-[#6B6B6B]">Database Engine</span>
-              <span className="text-[#2E6B44] font-semibold font-mono">Prisma SQLite OK</span>
+              <span className="text-[#2E6B44] font-semibold font-mono">Neon PostgreSQL OK</span>
             </div>
           </div>
         </div>

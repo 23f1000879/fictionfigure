@@ -5,6 +5,7 @@ import { MessageSquare, X, Send, Bot, User, Sparkles, ArrowRight, Loader2 } from
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 interface ChatMsg {
   id: string;
@@ -54,20 +55,18 @@ export function AIChatWidget() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: query }),
-      });
-
+      const res = await fetch(`${API_BASE}/products?query=${encodeURIComponent(query)}&limit=3`);
       const data = await res.json();
+      const products = data.products || [];
 
       const botMsg: ChatMsg = {
         id: `bot-${Date.now()}`,
         sender: "ASSISTANT",
-        content: data.reply || "I am currently unable to process your request.",
-        type: data.type,
-        products: data.products,
+        content: products.length > 0 
+          ? `Welcome to FictionFigure Sanctuary Concierge. Here are the finest curated collectibles matching "${query}":`
+          : `Greetings! I am the FictionFigure Editorial Concierge. You can explore our full catalog of authentic museum-grade scale statues and designer collectibles under the Shop section or contact support at support@fictionfigure.demo.`,
+        type: products.length > 0 ? "PRODUCT_RECOMMENDATIONS" : "TEXT",
+        products: products,
       };
 
       setMessages((prev) => [...prev, botMsg]);

@@ -6,6 +6,7 @@ import { Search, X, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 interface SearchProduct {
   id: string;
@@ -51,7 +52,7 @@ export function SearchModal() {
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/products?query=${encodeURIComponent(query)}&limit=6`);
+        const res = await fetch(`${API_BASE}/products?query=${encodeURIComponent(query)}&limit=6`);
         const data = await res.json();
         setResults(data.products || []);
       } catch (err) {
