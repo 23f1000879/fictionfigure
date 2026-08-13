@@ -3,9 +3,19 @@ import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { v2 as cloudinary } from "cloudinary";
 
 const router = Router();
 const prisma = new PrismaClient();
+
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME.trim(),
+    api_key: process.env.CLOUDINARY_API_KEY.trim(),
+    api_secret: process.env.CLOUDINARY_API_SECRET.trim(),
+    secure: true,
+  });
+}
 
 // Multer Storage Configuration for Local Development Storage
 const uploadsDir = path.join(process.cwd(), "uploads", "products");
@@ -30,11 +40,9 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5 MB Max File Size
   },
   fileFilter: (_req, file, cb) => {
-    const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    const allowedExts = [".jpg", ".jpeg", ".png", ".webp"];
+    const validMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     const ext = path.extname(file.originalname).toLowerCase();
-
-    if (allowedMimeTypes.includes(file.mimetype) && allowedExts.includes(ext)) {
+    if (validMimeTypes.includes(file.mimetype) || [".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
       cb(null, true);
     } else {
       cb(new Error("Unsupported file type. Only JPG, PNG, and WEBP images up to 5 MB are allowed."));
@@ -44,7 +52,7 @@ const upload = multer({
 
 // 1. Image Upload Endpoint (POST /api/admin/uploads/product-image)
 router.post("/uploads/product-image", (req, res) => {
-  upload.single("image")(req, res, (err: any) => {
+  upload.single("image")(req, res, async (err: any) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
         return res.status(400).json({ error: "File exceeds 5 MB size limit." });
@@ -56,6 +64,34 @@ router.post("/uploads/product-image", (req, res) => {
       return res.status(400).json({ error: "No image file provided in upload request." });
     }
 
+    // Check if Cloudinary credentials are configured for production storage
+    const hasCloudinary = Boolean(
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    );
+
+    if (hasCloudinary) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: "fictionfigure/products",
+          resource_type: "image",
+        });
+
+        // Clean up temporary local file after Cloudinary upload
+        fs.unlink(req.file.path, () => {});
+
+        return res.json({
+          success: true,
+          url: uploadResult.secure_url,
+          filename: uploadResult.public_id,
+        });
+      } catch (cloudErr: any) {
+        console.error("Cloudinary upload error:", cloudErr);
+      }
+    }
+
+    // Local development fallback storage
     let baseUrl = "";
     if (process.env.PUBLIC_API_URL && process.env.PUBLIC_API_URL.trim()) {
       baseUrl = process.env.PUBLIC_API_URL.trim().replace(/\/$/, "");
