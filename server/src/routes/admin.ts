@@ -344,6 +344,7 @@ router.post("/products", async (req, res) => {
       material,
       scale,
       franchise,
+      whatsIncluded,
       images,
       stockQuantity,
     } = req.body;
@@ -379,9 +380,10 @@ router.post("/products", async (req, res) => {
         categoryId: cat,
         status: status || "ACTIVE",
         featured: Boolean(featured),
-        material: material || "PVC & ABS",
-        scale: scale || "1/6 Scale",
-        franchise: franchise || "Original Series",
+        material: material || null,
+        scale: scale || null,
+        franchise: franchise || null,
+        whatsIncluded: whatsIncluded || null,
         images: {
           create: imgArray.map((url: string, idx: number) => ({
             url,
@@ -459,6 +461,10 @@ router.patch("/products/:id", async (req, res) => {
       compareAtPrice,
       shortDescription,
       description,
+      material,
+      scale,
+      franchise,
+      whatsIncluded,
       stockQuantity,
       images,
     } = req.body;
@@ -481,6 +487,10 @@ router.patch("/products/:id", async (req, res) => {
         ...(compareAtPrice !== undefined && { compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null }),
         ...(shortDescription !== undefined && { shortDescription }),
         ...(description !== undefined && { description }),
+        ...(material !== undefined && { material: material || null }),
+        ...(scale !== undefined && { scale: scale || null }),
+        ...(franchise !== undefined && { franchise: franchise || null }),
+        ...(whatsIncluded !== undefined && { whatsIncluded: whatsIncluded || null }),
       },
     });
 

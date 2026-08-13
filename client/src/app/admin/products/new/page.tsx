@@ -31,6 +31,7 @@ export default function AdminNewProductPage() {
     material: "",
     scale: "",
     franchise: "",
+    whatsIncluded: "",
     images: ["", ""],
   });
 
@@ -244,13 +245,48 @@ export default function AdminNewProductPage() {
             />
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <label className="font-semibold uppercase text-[#6B6B6B]">Material</label>
+              <input
+                type="text"
+                value={form.material}
+                onChange={(e) => setForm({ ...form, material: e.target.value })}
+                placeholder="e.g. Polystone Resin & PVC"
+                className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold uppercase text-[#6B6B6B]">Scale / Ratio</label>
+              <input
+                type="text"
+                value={form.scale}
+                onChange={(e) => setForm({ ...form, scale: e.target.value })}
+                placeholder="e.g. 1/6 Scale"
+                className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold uppercase text-[#6B6B6B]">Franchise / Series</label>
+              <input
+                type="text"
+                value={form.franchise}
+                onChange={(e) => setForm({ ...form, franchise: e.target.value })}
+                placeholder="e.g. Solo Leveling"
+                className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
+              />
+            </div>
+          </div>
+
           <div className="space-y-1">
-            <label className="font-semibold uppercase text-[#6B6B6B]">Full Detailed Description</label>
+            <label className="font-semibold uppercase text-[#6B6B6B]">What's Included (Box Contents)</label>
             <textarea
-              rows={4}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Provide complete sculpting details, materials, scale specifications..."
+              rows={3}
+              value={form.whatsIncluded}
+              onChange={(e) => setForm({ ...form, whatsIncluded: e.target.value })}
+              placeholder="List items separated by newlines or commas (e.g., 1x Main Statue Body&#10;1x Custom Base&#10;1x Certificate of Authenticity)"
               className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
             />
           </div>

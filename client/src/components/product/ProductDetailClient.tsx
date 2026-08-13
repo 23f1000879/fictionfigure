@@ -38,6 +38,7 @@ interface ProductDetailProps {
     material?: string | null;
     scale?: string | null;
     franchise?: string | null;
+    whatsIncluded?: string | null;
     category: { name: string; slug: string };
     images: { id: string; url: string; altText?: string | null }[];
     variants: {
@@ -389,19 +390,19 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 <tbody>
                   <tr className="border-b border-[#E5E5E2]">
                     <td className="py-2.5 font-semibold text-[#6B6B6B] uppercase text-[11px] w-1/3">Studio Brand</td>
-                    <td className="py-2.5 font-semibold text-[#111111]">{product.brand}</td>
+                    <td className="py-2.5 font-semibold text-[#111111]">{product.brand || "Not Specified"}</td>
                   </tr>
                   <tr className="border-b border-[#E5E5E2]">
                     <td className="py-2.5 font-semibold text-[#6B6B6B] uppercase text-[11px]">Material Composition</td>
-                    <td className="py-2.5">{product.material || "PVC / ABS & Polyresin"}</td>
+                    <td className="py-2.5">{product.material || "Not Specified"}</td>
                   </tr>
                   <tr className="border-b border-[#E5E5E2]">
                     <td className="py-2.5 font-semibold text-[#6B6B6B] uppercase text-[11px]">Scale / Ratio</td>
-                    <td className="py-2.5">{product.scale || "1/6 Scale"}</td>
+                    <td className="py-2.5">{product.scale || "Not Specified"}</td>
                   </tr>
                   <tr className="border-b border-[#E5E5E2]">
                     <td className="py-2.5 font-semibold text-[#6B6B6B] uppercase text-[11px]">Franchise</td>
-                    <td className="py-2.5">{product.franchise || "Original Concept"}</td>
+                    <td className="py-2.5">{product.franchise || "Not Specified"}</td>
                   </tr>
                   <tr className="border-b border-[#E5E5E2]">
                     <td className="py-2.5 font-semibold text-[#6B6B6B] uppercase text-[11px]">Master SKU</td>
@@ -418,11 +419,15 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 Collector Box Contents
               </h4>
               <ul className="space-y-2 text-[#6B6B6B] list-disc list-inside">
-                <li>1x Main Figure Body ({product.name})</li>
-                <li>1x Custom Illumination Pedestal / Display Stand</li>
-                <li>Interchangeable weapon accessories & hand sets</li>
-                <li>Serialized Certificate of Authenticity</li>
-                <li>Collector art card</li>
+                {product.whatsIncluded ? (
+                  product.whatsIncluded
+                    .split(/\r?\n|,/)
+                    .map((item) => item.trim())
+                    .filter(Boolean)
+                    .map((item, idx) => <li key={idx}>{item}</li>)
+                ) : (
+                  <li>1x Main Collectible Statue ({product.name})</li>
+                )}
               </ul>
             </div>
           )}
