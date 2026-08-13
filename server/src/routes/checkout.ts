@@ -631,4 +631,73 @@ router.get("/orders/:id", async (req, res) => {
   }
 });
 
+// 7. Authenticated Customer Complete Order History Endpoint
+router.get("/my-orders", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentication required." });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded: any = null;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: "Invalid or expired session token." });
+    }
+
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({ error: "Unauthorized session." });
+    }
+
+    // Strict ownership filter: Query orders belonging ONLY to verified JWT decoded.userId
+    const orders = await prisma.order.findMany({
+      where: { userId: decoded.userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: {
+          take: 1,
+          select: {
+            title: true,
+            price: true,
+            quantity: true,
+          },
+        },
+        payments: {
+          select: {
+            paymentMethod: true,
+            status: true,
+            transactionRef: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      orders: orders.map((o) => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        createdAt: o.createdAt,
+        totalAmount: o.totalAmount,
+        subtotal: o.subtotal,
+        shippingAmount: o.shippingAmount,
+        discountAmount: o.discountAmount,
+        firstItemTitle: o.items[0]?.title || "Collectible Figure",
+        paymentMethod: o.payments[0]?.paymentMethod || "UPI",
+        paymentStatus:
+          o.payments[0]?.paymentMethod === "COD" && o.payments[0]?.status !== "PAID"
+            ? "PAYMENT DUE ON DELIVERY"
+            : o.payments[0]?.status || "PENDING",
+        utr: o.payments[0]?.transactionRef || null,
+      })),
+    });
+  } catch (err: any) {
+    console.error("GET /my-orders error:", err);
+    res.status(500).json({ error: "Failed to fetch order history." });
+  }
+});
+
 export default router;
