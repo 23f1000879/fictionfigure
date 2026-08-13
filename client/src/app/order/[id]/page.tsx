@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { CheckCircle2, Package, Truck, ArrowLeft, Loader2 } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -13,7 +14,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/products?limit=1")
+    fetch(`${API_BASE}/products?limit=1`)
       .then(() => {
         setOrder({
           id: orderId || "ord-1",

@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Clock, Truck, PackageCheck, Loader2 } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminOrderDetailPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => {
     if (orderId) {
-      fetch(`http://localhost:5000/api/admin/orders/${orderId}`)
+      fetch(`${API_BASE}/admin/orders/${orderId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.order) {
@@ -39,7 +40,7 @@ export default function AdminOrderDetailPage() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/admin/orders", {
+      const res = await fetch(`${API_BASE}/admin/orders`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: order?.id || orderId, status: newStatus }),

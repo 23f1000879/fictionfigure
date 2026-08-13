@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Save, Loader2, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({
@@ -27,7 +28,7 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/admin/settings");
+      const res = await fetch(`${API_BASE}/admin/settings`);
       const data = await res.json();
       if (data.settings && Object.keys(data.settings).length > 0) {
         setSettings((prev) => ({ ...prev, ...data.settings }));
@@ -54,7 +55,7 @@ export default function AdminSettingsPage() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/admin/settings", {
+      const res = await fetch(`${API_BASE}/admin/settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section: sectionName, settings: sectionPayload }),

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Package, ArrowLeft, Loader2, ArrowUpRight } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 export default function AccountOrdersPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function AccountOrdersPage() {
       return;
     }
 
-    fetch("http://localhost:5000/api/auth/me", {
+    fetch(`${API_BASE}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())

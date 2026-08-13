@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { Plus, Loader2, ExternalLink, Edit, Copy, Trash2, CheckCircle2, AlertCircle, Package } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -18,8 +19,8 @@ export default function AdminProductsPage() {
   const fetchCatalog = () => {
     setLoading(true);
     Promise.all([
-      fetch("http://localhost:5000/api/admin/products").then((res) => res.json()),
-      fetch("http://localhost:5000/api/admin/categories").then((res) => res.json()),
+      fetch(`${API_BASE}/admin/products`).then((res) => res.json()),
+      fetch(`${API_BASE}/admin/categories`).then((res) => res.json()),
     ])
       .then(([prodData, catData]) => {
         setProducts(prodData.products || []);
@@ -40,7 +41,7 @@ export default function AdminProductsPage() {
     setErrorMsg("");
     setSuccessMsg("");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/products/${p.id}/duplicate`, {
+      const res = await fetch(`${API_BASE}/admin/products/${p.id}/duplicate`, {
         method: "POST",
       });
       const data = await res.json();
@@ -59,7 +60,7 @@ export default function AdminProductsPage() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/products/${deleteTarget.id}`, {
+      const res = await fetch(`${API_BASE}/admin/products/${deleteTarget.id}`, {
         method: "DELETE",
       });
       const data = await res.json();

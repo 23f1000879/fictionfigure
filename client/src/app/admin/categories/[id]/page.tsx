@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, Edit2, Loader2, Package, ArrowUpRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminCategoryDetailPage() {
   const params = useParams();
@@ -18,7 +19,7 @@ export default function AdminCategoryDetailPage() {
   const fetchCategoryDetail = () => {
     if (!categoryId) return;
     setLoading(true);
-    fetch(`http://localhost:5000/api/admin/categories/${categoryId}`)
+    fetch(`${API_BASE}/admin/categories/${categoryId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.category) setCategory(data.category);
@@ -37,7 +38,7 @@ export default function AdminCategoryDetailPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/admin/categories/${categoryId}/products/${productId}`,
+        `${API_BASE}/admin/categories/${categoryId}/products/${productId}`,
         { method: "DELETE" }
       );
       if (!res.ok) throw new Error("Failed to remove product from category");

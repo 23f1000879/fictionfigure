@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, ArrowLeft, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { normalizeIndianPhone, formatDisplayPhone } from "@/lib/phone";
 import { MSG91OTPWidget, MSG91VerificationPayload } from "@/components/auth/MSG91OTPWidget";
+import { API_BASE } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -58,7 +59,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/check-phone", {
+      const res = await fetch(`${API_BASE}/auth/check-phone`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: norm }),
@@ -93,7 +94,7 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register-customer", {
+      const res = await fetch(`${API_BASE}/auth/register-customer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

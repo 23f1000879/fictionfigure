@@ -4,13 +4,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { ArrowUpRight, Loader2, Package } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/admin/orders")
+    fetch(`${API_BASE}/admin/orders`)
       .then((res) => res.json())
       .then((data) => {
         setOrders(data.orders || []);

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { formatPrice } from "@/lib/utils";
 import { Loader2, TrendingUp, ShoppingBag, Users, AlertTriangle, Tag, Calendar, Package } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<any>(null);
@@ -11,7 +12,7 @@ export default function AdminAnalyticsPage() {
 
   const fetchAnalytics = (selectedPeriod: string) => {
     setLoading(true);
-    fetch(`http://localhost:5000/api/admin/analytics?period=${selectedPeriod}`)
+    fetch(`${API_BASE}/admin/analytics?period=${selectedPeriod}`)
       .then((res) => res.json())
       .then((resData) => setData(resData))
       .catch(() => setData(null))

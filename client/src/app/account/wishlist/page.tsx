@@ -4,13 +4,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart, ArrowLeft, Loader2 } from "lucide-react";
 import { ProductCard } from "@/components/product/ProductCard";
+import { API_BASE } from "@/lib/api";
 
 export default function AccountWishlistPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/products?limit=2")
+    fetch(`${API_BASE}/products?limit=2`)
       .then((res) => res.json())
       .then((data) => setProducts(data.products || []))
       .catch(() => setProducts([]))

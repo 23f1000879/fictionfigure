@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminNewProductPage() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function AdminNewProductPage() {
         throw new Error("Please upload or provide at least one Primary Product Image.");
       }
 
-      const res = await fetch("http://localhost:5000/api/admin/products", {
+      const res = await fetch(`${API_BASE}/admin/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

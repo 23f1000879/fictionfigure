@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { formatDisplayPhone } from "@/lib/phone";
 import { formatPrice, formatDate } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function AccountPage() {
     }
 
     // Fetch authenticated user session with real orders and counts
-    fetch("http://localhost:5000/api/auth/me", {
+    fetch(`${API_BASE}/auth/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -54,7 +55,7 @@ export default function AccountPage() {
       });
 
     // Fetch real wishlist items for Vault preview
-    fetch("http://localhost:5000/api/products?limit=2")
+    fetch(`${API_BASE}/products?limit=2`)
       .then((res) => res.json())
       .then((data) => setWishlistItems(data.products || []))
       .catch(() => setWishlistItems([]));

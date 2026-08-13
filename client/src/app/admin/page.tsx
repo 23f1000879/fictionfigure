@@ -4,13 +4,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { TrendingUp, ShoppingBag, Clock, Package, ArrowUpRight, ShieldCheck, Loader2 } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/admin/stats")
+    fetch(`${API_BASE}/admin/stats`)
       .then((res) => res.json())
       .then((data) => setStats(data))
       .catch(() => {

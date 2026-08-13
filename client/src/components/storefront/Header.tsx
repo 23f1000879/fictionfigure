@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search, User, Heart, ShoppingBag, Menu, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { API_BASE } from "@/lib/api";
 
 export function Header() {
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
@@ -12,7 +13,7 @@ export function Header() {
   const [announcement, setAnnouncement] = useState("⚡ COMPLIMENTARY EXPRESS SHIPPING ON ORDERS OVER ₹15,000 | AUTHENTIC IMPORTS DIRECT FROM TOKYO");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/settings")
+    fetch(`${API_BASE}/settings`)
       .then((res) => res.json())
       .then((data) => {
         if (data.settings?.hero_announcement) {

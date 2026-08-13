@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { formatPrice } from "@/lib/utils";
 import { Boxes, Plus, Minus, AlertTriangle, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminInventoryPage() {
   const [inventoryList, setInventoryList] = useState<any[]>([]);
@@ -16,7 +17,7 @@ export default function AdminInventoryPage() {
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/admin/inventory");
+      const res = await fetch(`${API_BASE}/admin/inventory`);
       const data = await res.json();
       setInventoryList(data.inventory || []);
     } catch (e) {
@@ -45,7 +46,7 @@ export default function AdminInventoryPage() {
     setMessage("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/admin/inventory", {
+      const res = await fetch(`${API_BASE}/admin/inventory`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

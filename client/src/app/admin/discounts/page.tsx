@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { formatPrice } from "@/lib/utils";
 import { Tag, Plus, Edit2, Trash2, Loader2, AlertCircle, CheckCircle2, Power } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminDiscountsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -27,7 +28,7 @@ export default function AdminDiscountsPage() {
 
   const fetchCoupons = () => {
     setLoading(true);
-    fetch("http://localhost:5000/api/admin/coupons")
+    fetch(`${API_BASE}/admin/coupons`)
       .then((res) => res.json())
       .then((data) => setCoupons(data.coupons || []))
       .catch(() => setCoupons([]))
@@ -78,8 +79,8 @@ export default function AdminDiscountsPage() {
 
     try {
       const url = editingCoupon
-        ? `http://localhost:5000/api/admin/coupons/${editingCoupon.id}`
-        : "http://localhost:5000/api/admin/coupons";
+        ? `${API_BASE}/admin/coupons/${editingCoupon.id}`
+        : `${API_BASE}/admin/coupons`;
       const method = editingCoupon ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -106,7 +107,7 @@ export default function AdminDiscountsPage() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/coupons/${c.id}`, {
+      const res = await fetch(`${API_BASE}/admin/coupons/${c.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !c.isActive }),
@@ -129,7 +130,7 @@ export default function AdminDiscountsPage() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/coupons/${c.id}`, {
+      const res = await fetch(`${API_BASE}/admin/coupons/${c.id}`, {
         method: "DELETE",
       });
 

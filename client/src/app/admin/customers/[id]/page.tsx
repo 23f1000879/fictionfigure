@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Users, ShoppingBag, ShieldCheck, Phone, Mail, MapPin } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminCustomerDetailPage() {
   const params = useParams();
@@ -16,7 +17,7 @@ export default function AdminCustomerDetailPage() {
 
   useEffect(() => {
     if (customerId) {
-      fetch(`http://localhost:5000/api/admin/customers/${customerId}`)
+      fetch(`${API_BASE}/admin/customers/${customerId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.customer) {

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { Users, Loader2, Ban, ArrowUpRight, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -14,7 +15,7 @@ export default function AdminCustomersPage() {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/admin/customers");
+      const res = await fetch(`${API_BASE}/admin/customers`);
       const data = await res.json();
       setCustomers(data.customers || []);
     } catch (e) {
@@ -34,7 +35,7 @@ export default function AdminCustomersPage() {
     setMessage("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/admin/users/block", {
+      const res = await fetch(`${API_BASE}/admin/users/block`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, isBlocked: !currentBlocked }),
