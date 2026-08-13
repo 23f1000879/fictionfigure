@@ -37,7 +37,7 @@ export function CheckoutClient() {
 
   const [utrNumber, setUtrNumber] = useState("");
 
-  // Form State (No Hardcoded Demo Strings)
+  // Form State
   const [formData, setFormData] = useState({
     email: "",
     phone: "",
@@ -55,6 +55,58 @@ export function CheckoutClient() {
 
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+
+  // Centralized Step Validation Helpers
+  const isAddressValid = () => {
+    return (
+      formData.fullName.trim().length > 0 &&
+      formData.streetAddress.trim().length > 0 &&
+      formData.city.trim().length > 0 &&
+      formData.state.trim().length > 0 &&
+      /^\d{6}$/.test(formData.postalCode.trim()) &&
+      formData.country.trim().length > 0
+    );
+  };
+
+  const isShippingValid = () => {
+    return (
+      formData.shippingMethod === "Standard Shipping" ||
+      formData.shippingMethod === "Express Courier"
+    );
+  };
+
+  const isPaymentValid = () => {
+    if (formData.paymentMethod === "COD") return true;
+    if (formData.paymentMethod === "UPI") return Boolean(utrNumber && utrNumber.trim().length >= 6);
+    return false;
+  };
+
+  const canEnterStep = (targetStep: 1 | 2 | 3 | 4 | 5): boolean => {
+    if (targetStep === 1) return true;
+    if (targetStep === 2) return isMobileVerified;
+    if (targetStep === 3) return isMobileVerified && isAddressValid();
+    if (targetStep === 4) return isMobileVerified && isAddressValid() && isShippingValid();
+    if (targetStep === 5) return isMobileVerified && isAddressValid() && isShippingValid() && isPaymentValid();
+    return false;
+  };
+
+  // Prevent URL parameter / direct step bypass
+  useEffect(() => {
+    const paramStep = Number(searchParams.get("step"));
+    if (paramStep && [1, 2, 3, 4, 5].includes(paramStep)) {
+      const target = paramStep as 1 | 2 | 3 | 4 | 5;
+      if (!canEnterStep(target)) {
+        let maxStep: 1 | 2 | 3 | 4 | 5 = 1;
+        if (isMobileVerified) maxStep = 2;
+        if (isMobileVerified && isAddressValid()) maxStep = 3;
+        if (isMobileVerified && isAddressValid() && isShippingValid()) maxStep = 4;
+        if (isMobileVerified && isAddressValid() && isShippingValid() && isPaymentValid()) maxStep = 5;
+        setStep(maxStep);
+      } else {
+        setStep(target);
+      }
+    }
+  }, [searchParams, isMobileVerified]);
 
   // Countdown timer for OTP Resend
   useEffect(() => {
@@ -96,7 +148,7 @@ export function CheckoutClient() {
       })
         .then((res) => res.json())
         .then((data) => {
-          if (data.authenticated && data.user) {
+          if (data.authenticated && data.user && data.user.phoneVerified) {
             setIsMobileVerified(true);
             setFormData((prev) => ({
               ...prev,
@@ -165,10 +217,37 @@ export function CheckoutClient() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleStepClick = (targetStep: 1 | 2 | 3 | 4 | 5) => {
+    if (step === targetStep) return;
+
+    if (targetStep < step) {
+      // Going backward to completed steps is allowed
+      setStep(targetStep);
+      setErrorMessage("");
+      return;
+    }
+
+    // Advancing to targetStep
+    if (canEnterStep(targetStep)) {
+      setStep(targetStep);
+      setErrorMessage("");
+    } else {
+      if (!isMobileVerified) {
+        setErrorMessage("Please complete mobile verification in Step 1 before continuing.");
+      } else if (!isAddressValid()) {
+        setErrorMessage("Please enter a complete shipping address with a valid 6-digit Indian PIN code in Step 2.");
+      } else if (!isShippingValid()) {
+        setErrorMessage("Please select a delivery option in Step 3.");
+      } else if (!isPaymentValid()) {
+        setErrorMessage("Please select a payment method and submit required payment details in Step 4.");
+      }
+    }
+  };
+
   // Step 1: Customer Phone Identification & Send OTP
   const handleIdentifyCustomer = async () => {
     if (!formData.phone || formData.phone.trim().length < 10) {
-      setErrorMessage("Please enter a valid 10-digit mobile number.");
+      setErrorMessage("Please enter a valid 10-digit Indian mobile number.");
       return;
     }
 
@@ -176,7 +255,6 @@ export function CheckoutClient() {
     setErrorMessage("");
 
     try {
-      // 1. Identify Customer
       const identifyRes = await fetch(`${API_BASE}/checkout/auth/identify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -265,7 +343,6 @@ export function CheckoutClient() {
         }));
       }
 
-      // Automatically advance to Step 2 — Address
       setStep(2);
     } catch (err: any) {
       setErrorMessage(err.message || "OTP verification failed. Please check the code and try again.");
@@ -296,8 +373,47 @@ export function CheckoutClient() {
     }
   };
 
+  // Step 2 Validation & Advancement
+  const handleAdvanceToStep3 = () => {
+    if (!isAddressValid()) {
+      if (!/^\d{6}$/.test(formData.postalCode.trim())) {
+        setErrorMessage("Please enter a valid 6-digit Indian PIN code (e.g. 400001).");
+      } else {
+        setErrorMessage("Please fill in all required address fields (Full Name, Street Address, City, State, PIN Code).");
+      }
+      return;
+    }
+    setErrorMessage("");
+    setStep(3);
+  };
+
+  // Step 3 Validation & Advancement
+  const handleAdvanceToStep4 = () => {
+    if (!isShippingValid()) {
+      setErrorMessage("Please select a valid delivery option.");
+      return;
+    }
+    setErrorMessage("");
+    setStep(4);
+  };
+
+  // Step 4 Validation & Advancement
+  const handleAdvanceToStep5 = () => {
+    if (formData.paymentMethod === "UPI" && (!utrNumber || utrNumber.trim().length < 6)) {
+      setErrorMessage("Please enter a valid 12-digit UTR / Transaction Reference Number.");
+      return;
+    }
+    setErrorMessage("");
+    setStep(5);
+  };
+
   // Submit Order (UPI QR with UTR or COD)
   const handlePlaceOrder = async () => {
+    if (!canEnterStep(5)) {
+      setErrorMessage("Please complete all preceding checkout steps before placing your order.");
+      return;
+    }
+
     if (formData.paymentMethod === "UPI" && (!utrNumber || utrNumber.trim().length < 6)) {
       setErrorMessage("Please enter a valid 12-digit UTR / Transaction Reference Number.");
       return;
@@ -392,7 +508,7 @@ export function CheckoutClient() {
         </div>
       </header>
 
-      {/* Stepper Bar */}
+      {/* Stepper Bar - Strictly Sequential State Machine Navigation */}
       <div className="bg-white border-b border-[#E5E5E2]">
         <div className="editorial-container py-3 flex justify-between items-center text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] overflow-x-auto px-4 sm:px-6 scrollbar-none">
           {[
@@ -401,32 +517,40 @@ export function CheckoutClient() {
             { num: 3, label: "Delivery" },
             { num: 4, label: "Payment" },
             { num: 5, label: "Review" },
-          ].map((s) => (
-            <button
-              key={s.num}
-              onClick={() => setStep(s.num as any)}
-              className={`flex items-center space-x-1.5 whitespace-nowrap px-2 py-1 min-h-[36px] ${
-                step === s.num
-                  ? "text-[#111111] font-bold border-b-2 border-[#111111]"
-                  : step > s.num
-                  ? "text-[#2E6B44]"
-                  : "text-[#6B6B6B]"
-              }`}
-            >
-              <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                  step === s.num
-                    ? "bg-[#111111] text-white"
-                    : step > s.num
-                    ? "bg-[#2E6B44] text-white"
-                    : "bg-[#E5E5E2] text-[#6B6B6B]"
+          ].map((s) => {
+            const isCurrent = step === s.num;
+            const isCompleted = s.num < step && canEnterStep(s.num as any);
+            const isLocked = !isCurrent && !isCompleted;
+
+            return (
+              <button
+                key={s.num}
+                onClick={() => handleStepClick(s.num as any)}
+                type="button"
+                className={`flex items-center space-x-1.5 whitespace-nowrap px-2 py-1 min-h-[36px] transition-all ${
+                  isCurrent
+                    ? "text-[#111111] font-bold border-b-2 border-[#111111] cursor-default"
+                    : isCompleted
+                    ? "text-[#2E6B44] hover:underline cursor-pointer font-semibold"
+                    : "text-[#A3A3A3] opacity-60 cursor-not-allowed"
                 }`}
+                title={isLocked ? "Complete previous checkout steps to unlock" : ""}
               >
-                {step > s.num ? <Check className="w-3 h-3" /> : s.num}
-              </span>
-              <span className="text-[11px]">{s.label}</span>
-            </button>
-          ))}
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                    isCurrent
+                      ? "bg-[#111111] text-white"
+                      : isCompleted
+                      ? "bg-[#2E6B44] text-white"
+                      : "bg-[#E5E5E2] text-[#A3A3A3]"
+                  }`}
+                >
+                  {isCompleted ? <Check className="w-3 h-3" /> : s.num}
+                </span>
+                <span className="text-[11px]">{s.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -668,10 +792,11 @@ export function CheckoutClient() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="font-semibold uppercase text-[#6B6B6B]">PIN Code *</label>
+                      <label className="font-semibold uppercase text-[#6B6B6B]">PIN Code (6 Digits) *</label>
                       <input
                         type="text"
                         name="postalCode"
+                        maxLength={6}
                         value={formData.postalCode}
                         onChange={handleInputChange}
                         placeholder="400001"
@@ -696,7 +821,7 @@ export function CheckoutClient() {
                     ← Back
                   </button>
                   <button
-                    onClick={() => setStep(3)}
+                    onClick={handleAdvanceToStep3}
                     className="min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
                   >
                     Continue to Delivery <ArrowRight className="w-4 h-4 inline ml-2" />
@@ -761,7 +886,7 @@ export function CheckoutClient() {
                     ← Back
                   </button>
                   <button
-                    onClick={() => setStep(4)}
+                    onClick={handleAdvanceToStep4}
                     className="min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
                   >
                     Continue to Payment <ArrowRight className="w-4 h-4 inline ml-2" />
@@ -863,7 +988,7 @@ export function CheckoutClient() {
                     ← Back
                   </button>
                   <button
-                    onClick={() => setStep(5)}
+                    onClick={handleAdvanceToStep5}
                     className="min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
                   >
                     Review Final Order <ArrowRight className="w-4 h-4 inline ml-2" />

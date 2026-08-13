@@ -397,31 +397,68 @@ router.post("/calculate", async (req, res) => {
 });
 
 // 4. Submit Manual UPI QR Order with 12-Digit UTR
+// 4. Submit Manual UPI QR Order with 12-Digit UTR
 router.post("/submit-upi-payment", async (req, res) => {
   try {
     const { cartItems, couponCode, shippingAddress, shippingMethod, utr } = req.body;
     const authHeader = req.headers.authorization;
 
-    if (!utr || typeof utr !== "string" || utr.trim().length < 6) {
-      return res.status(400).json({ error: "Please enter a valid Transaction / UTR reference number." });
+    // 1. Enforce Authentication & Verified Customer Session
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentication required. Please verify your mobile number first." });
     }
-
-    const cleanUtr = utr.trim();
 
     let userId: string | null = null;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      try {
-        const decoded = jwt.verify(authHeader.split(" ")[1], JWT_SECRET) as any;
-        if (decoded.userId) userId = decoded.userId;
-      } catch (e) {}
+    let verifiedUser = null;
+    try {
+      const decoded = jwt.verify(authHeader.split(" ")[1], JWT_SECRET) as any;
+      if (decoded.userId) {
+        userId = decoded.userId;
+        verifiedUser = await prisma.user.findUnique({ where: { id: decoded.userId } });
+      }
+    } catch (e) {
+      return res.status(401).json({ error: "Session expired or invalid session token. Please re-verify your mobile number." });
     }
 
-    if (!shippingAddress || !shippingAddress.fullName || !shippingAddress.streetAddress || !shippingAddress.city || !shippingAddress.postalCode) {
-      return res.status(400).json({ error: "Complete shipping address is required." });
+    if (!verifiedUser || !verifiedUser.phoneVerified) {
+      return res.status(403).json({ error: "Mobile phone verification is required before placing an order." });
     }
 
-    // Authoritative calculation
-    const totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined);
+    // 2. Validate UTR Reference Number
+    if (!utr || typeof utr !== "string" || utr.trim().length < 6) {
+      return res.status(400).json({ error: "Please enter a valid Transaction / UTR reference number (minimum 6 characters)." });
+    }
+
+    // 3. Validate Address Fields & PIN Code Format
+    if (
+      !shippingAddress ||
+      !shippingAddress.fullName ||
+      !shippingAddress.streetAddress ||
+      !shippingAddress.city ||
+      !shippingAddress.state ||
+      !shippingAddress.postalCode
+    ) {
+      return res.status(400).json({ error: "Complete shipping address (Full Name, Street, City, State, PIN Code) is required." });
+    }
+
+    const cleanPin = String(shippingAddress.postalCode).trim();
+    if (!/^\d{6}$/.test(cleanPin)) {
+      return res.status(400).json({ error: "Please enter a valid 6-digit Indian PIN code." });
+    }
+
+    // 4. Validate Shipping Method
+    const validShippingMethod = shippingMethod === "Express Courier" ? "Express Courier" : "Standard Shipping";
+
+    // 5. Authoritative Server-Side Calculation & Inventory Check
+    let totals;
+    try {
+      totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined);
+    } catch (calcErr: any) {
+      if (calcErr.message && calcErr.message.includes("Insufficient stock")) {
+        return res.status(409).json({ error: calcErr.message });
+      }
+      return res.status(400).json({ error: calcErr.message || "Invalid cart items or quantities." });
+    }
 
     const orderNumber = `FF-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
@@ -434,8 +471,12 @@ router.post("/submit-upi-payment", async (req, res) => {
         discountAmount: totals.discountAmount,
         shippingAmount: totals.shippingAmount,
         totalAmount: totals.totalAmount,
-        shippingAddressJson: JSON.stringify(shippingAddress),
-        shippingMethod: shippingMethod || "Standard Shipping",
+        shippingAddressJson: JSON.stringify({
+          ...shippingAddress,
+          postalCode: cleanPin,
+          phone: verifiedUser.phone || shippingAddress.phone,
+        }),
+        shippingMethod: validShippingMethod,
         couponId: totals.appliedCoupon ? totals.appliedCoupon.id : null,
         items: {
           create: totals.verifiedItems.map((item) => ({
@@ -453,7 +494,7 @@ router.post("/submit-upi-payment", async (req, res) => {
             paymentMethod: "UPI",
             status: "PENDING",
             amount: totals.totalAmount,
-            transactionRef: cleanUtr,
+            transactionRef: utr.trim(),
           },
         },
       },
@@ -467,7 +508,7 @@ router.post("/submit-upi-payment", async (req, res) => {
     });
   } catch (err: any) {
     console.error("submit-upi-payment error:", err);
-    res.status(400).json({ error: err.message || "Failed to submit UPI payment order." });
+    res.status(500).json({ error: err.message || "Failed to submit UPI payment order." });
   }
 });
 
@@ -477,19 +518,57 @@ router.post("/submit-cod", async (req, res) => {
     const { cartItems, couponCode, shippingAddress, shippingMethod } = req.body;
     const authHeader = req.headers.authorization;
 
+    // 1. Enforce Authentication & Verified Customer Session
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentication required. Please verify your mobile number first." });
+    }
+
     let userId: string | null = null;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      try {
-        const decoded = jwt.verify(authHeader.split(" ")[1], JWT_SECRET) as any;
-        if (decoded.userId) userId = decoded.userId;
-      } catch (e) {}
+    let verifiedUser = null;
+    try {
+      const decoded = jwt.verify(authHeader.split(" ")[1], JWT_SECRET) as any;
+      if (decoded.userId) {
+        userId = decoded.userId;
+        verifiedUser = await prisma.user.findUnique({ where: { id: decoded.userId } });
+      }
+    } catch (e) {
+      return res.status(401).json({ error: "Session expired or invalid session token. Please re-verify your mobile number." });
     }
 
-    if (!shippingAddress || !shippingAddress.fullName || !shippingAddress.streetAddress || !shippingAddress.city || !shippingAddress.postalCode) {
-      return res.status(400).json({ error: "Complete shipping address is required." });
+    if (!verifiedUser || !verifiedUser.phoneVerified) {
+      return res.status(403).json({ error: "Mobile phone verification is required before placing an order." });
     }
 
-    const totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined);
+    // 2. Validate Address Fields & PIN Code Format
+    if (
+      !shippingAddress ||
+      !shippingAddress.fullName ||
+      !shippingAddress.streetAddress ||
+      !shippingAddress.city ||
+      !shippingAddress.state ||
+      !shippingAddress.postalCode
+    ) {
+      return res.status(400).json({ error: "Complete shipping address (Full Name, Street, City, State, PIN Code) is required." });
+    }
+
+    const cleanPin = String(shippingAddress.postalCode).trim();
+    if (!/^\d{6}$/.test(cleanPin)) {
+      return res.status(400).json({ error: "Please enter a valid 6-digit Indian PIN code." });
+    }
+
+    // 3. Validate Shipping Method
+    const validShippingMethod = shippingMethod === "Express Courier" ? "Express Courier" : "Standard Shipping";
+
+    // 4. Authoritative Server-Side Calculation & Inventory Check
+    let totals;
+    try {
+      totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined);
+    } catch (calcErr: any) {
+      if (calcErr.message && calcErr.message.includes("Insufficient stock")) {
+        return res.status(409).json({ error: calcErr.message });
+      }
+      return res.status(400).json({ error: calcErr.message || "Invalid cart items or quantities." });
+    }
 
     const orderNumber = `FF-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
@@ -502,8 +581,12 @@ router.post("/submit-cod", async (req, res) => {
         discountAmount: totals.discountAmount,
         shippingAmount: totals.shippingAmount,
         totalAmount: totals.totalAmount,
-        shippingAddressJson: JSON.stringify(shippingAddress),
-        shippingMethod: shippingMethod || "Standard Shipping",
+        shippingAddressJson: JSON.stringify({
+          ...shippingAddress,
+          postalCode: cleanPin,
+          phone: verifiedUser.phone || shippingAddress.phone,
+        }),
+        shippingMethod: validShippingMethod,
         couponId: totals.appliedCoupon ? totals.appliedCoupon.id : null,
         items: {
           create: totals.verifiedItems.map((item) => ({
@@ -534,7 +617,7 @@ router.post("/submit-cod", async (req, res) => {
     });
   } catch (err: any) {
     console.error("submit-cod error:", err);
-    res.status(400).json({ error: err.message || "Failed to submit COD order." });
+    res.status(500).json({ error: err.message || "Failed to submit COD order." });
   }
 });
 
