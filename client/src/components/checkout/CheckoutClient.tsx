@@ -9,6 +9,8 @@ import { formatPrice } from "@/lib/utils";
 import { Check, Lock, QrCode, Banknote, ArrowRight, Loader2, Phone, AlertCircle, ShieldCheck, RefreshCw } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
+import { MSG91OTPWidget, MSG91VerificationPayload } from "@/components/auth/MSG91OTPWidget";
+
 export function CheckoutClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,9 +27,6 @@ export function CheckoutClient() {
 
   // OTP State
   const [isOtpSent, setIsOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [resendTimer, setResendTimer] = useState(30);
-  const [canResend, setCanResend] = useState(false);
 
   // Store Settings for UPI QR Code
   const [upiSettings, setUpiSettings] = useState({
@@ -107,21 +106,6 @@ export function CheckoutClient() {
       }
     }
   }, [searchParams, isMobileVerified]);
-
-  // Countdown timer for OTP Resend
-  useEffect(() => {
-    let interval: any = null;
-    if (isOtpSent && resendTimer > 0) {
-      interval = setInterval(() => {
-        setResendTimer((prev) => prev - 1);
-      }, 1000);
-    } else if (resendTimer === 0) {
-      setCanResend(true);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isOtpSent, resendTimer]);
 
   // Fetch UPI Store Settings on Mount
   useEffect(() => {
@@ -221,13 +205,11 @@ export function CheckoutClient() {
     if (step === targetStep) return;
 
     if (targetStep < step) {
-      // Going backward to completed steps is allowed
       setStep(targetStep);
       setErrorMessage("");
       return;
     }
 
-    // Advancing to targetStep
     if (canEnterStep(targetStep)) {
       setStep(targetStep);
       setErrorMessage("");
@@ -244,9 +226,7 @@ export function CheckoutClient() {
     }
   };
 
-  const [maskedPhone, setMaskedPhone] = useState("");
-
-  // Step 1: Customer Phone Identification & Send OTP via MSG91
+  // Step 1: Customer Phone Identification & Existing User Check
   const handleIdentifyCustomer = async () => {
     if (!formData.phone || formData.phone.trim().length < 10) {
       setErrorMessage("Please enter a valid 10-digit Indian mobile number.");
@@ -264,9 +244,9 @@ export function CheckoutClient() {
       });
 
       const identifyData = await identifyRes.json();
-      if (!identifyRes.ok) throw new Error(identifyData.error || "Unable to send verification OTP. Please try again.");
+      if (!identifyRes.ok) throw new Error(identifyData.error || "Failed to identify mobile number.");
 
-      // Case A: Existing Verified Customer -> Skip OTP
+      // CASE A: Existing Verified Customer -> Skip OTP completely!
       if (identifyData.exists && identifyData.phoneVerified) {
         setIsMobileVerified(true);
         setIsOtpSent(false);
@@ -285,15 +265,8 @@ export function CheckoutClient() {
         return;
       }
 
-      // Case B: Require OTP & OTP Sent successfully by MSG91
-      if (identifyData.otpSent) {
-        setMaskedPhone(identifyData.maskedPhone || formData.phone);
-        setIsOtpSent(true);
-        setResendTimer(identifyData.cooldownSeconds || 30);
-        setCanResend(false);
-      } else {
-        throw new Error(identifyData.error || "Unable to send verification OTP. Please try again.");
-      }
+      // CASE B: New Customer / Unverified -> Trigger Existing MSG91 OTP Widget
+      setIsOtpSent(true);
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to process mobile verification.");
     } finally {
@@ -301,29 +274,25 @@ export function CheckoutClient() {
     }
   };
 
-  // Step 1: Verify OTP Server-Side
-  const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.trim().length !== 6) {
-      setErrorMessage("Please enter the 6-digit OTP code sent to your phone.");
-      return;
-    }
-
+  // Step 1: MSG91 Widget OTP Success Handler
+  const handleWidgetSuccess = async (payload: MSG91VerificationPayload) => {
     setIsVerifyingOtp(true);
     setErrorMessage("");
 
     try {
-      const res = await fetch(`${API_BASE}/checkout/auth/verify-otp`, {
+      const res = await fetch(`${API_BASE}/checkout/auth/verify-widget-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phone: formData.phone,
-          otp: otpCode.trim(),
+          accessToken: payload.accessToken,
+          reqId: payload.reqId,
           email: formData.email,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "OTP verification failed.");
+      if (!res.ok) throw new Error(data.error || "MSG91 OTP verification failed.");
 
       setIsMobileVerified(true);
       setIsOtpSent(false);
@@ -343,32 +312,9 @@ export function CheckoutClient() {
 
       setStep(2);
     } catch (err: any) {
-      setErrorMessage(err.message || "OTP verification failed. Please check the code and try again.");
+      setErrorMessage(err.message || "OTP verification failed. Please try again.");
     } finally {
       setIsVerifyingOtp(false);
-    }
-  };
-
-  // Step 1: Resend OTP via MSG91
-  const handleResendOtp = async () => {
-    if (!canResend) return;
-
-    setErrorMessage("");
-    try {
-      const res = await fetch(`${API_BASE}/checkout/auth/resend-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to resend OTP.");
-
-      if (data.maskedPhone) setMaskedPhone(data.maskedPhone);
-      setResendTimer(data.cooldownSeconds || 30);
-      setCanResend(false);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to resend OTP.");
     }
   };
 
@@ -634,62 +580,31 @@ export function CheckoutClient() {
                     </div>
                   </div>
                 ) : (
-                  /* 6-Digit OTP Verification Form UI */
-                  <div className="p-6 bg-[#F7F7F5] border border-[#E5E5E2] space-y-6 text-xs">
-                    <div>
-                      <h4 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
-                        Verify your mobile number
-                      </h4>
-                      <p className="text-xs text-[#6B6B6B] mt-1">
-                        We've sent a 6-digit OTP code to <strong className="text-[#111111] font-mono">{maskedPhone || formData.phone}</strong>.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 max-w-xs">
-                      <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
-                        6-Digit OTP Code *
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        inputMode="numeric"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
-                        placeholder="123456"
-                        className="w-full p-3 min-h-[44px] bg-white border border-[#E5E5E2] text-center font-mono text-base tracking-widest text-[#111111] focus:border-[#111111] focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
-                      <button
-                        onClick={handleVerifyOtp}
-                        disabled={isVerifyingOtp || otpCode.trim().length !== 6}
-                        className="min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
-                      >
-                        {isVerifyingOtp ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                          <ShieldCheck className="w-4 h-4 mr-2" />
-                        )}
-                        <span>VERIFY OTP</span>
-                      </button>
-
-                      <div className="flex items-center text-xs text-[#6B6B6B]">
-                        <span>Didn't receive the code?</span>
-                        {canResend ? (
-                          <button
-                            onClick={handleResendOtp}
-                            className="ml-2 font-semibold text-[#111111] underline hover:text-black flex items-center"
-                          >
-                            <RefreshCw className="w-3 h-3 mr-1 inline" /> RESEND OTP
-                          </button>
-                        ) : (
-                          <span className="ml-2 font-mono font-semibold text-[#6B6B6B]">
-                            Resend in {resendTimer}s
-                          </span>
-                        )}
+                  /* MSG91 Web SDK OTP Widget Reused from Registration */
+                  <div className="p-6 bg-[#F7F7F5] border border-[#E5E5E2] space-y-4 text-xs">
+                    <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
+                          Verify your mobile number
+                        </h4>
+                        <p className="text-xs text-[#6B6B6B] mt-0.5 font-mono">
+                          Mobile: {formData.phone}
+                        </p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsOtpSent(false)}
+                        className="text-xs text-[#6B6B6B] hover:text-[#111111] underline uppercase tracking-wider text-[11px]"
+                      >
+                        Change Number
+                      </button>
                     </div>
+
+                    <MSG91OTPWidget
+                      phone={formData.phone}
+                      onSuccess={handleWidgetSuccess}
+                      onError={(err) => setErrorMessage(err)}
+                    />
                   </div>
                 )}
               </div>
