@@ -1279,8 +1279,22 @@ router.get("/stats", async (_req, res) => {
 });
 
 // ==========================================
-// 9. DATABASE-BACKED STORE SETTINGS
+// 9. DATABASE-BACKED STORE SETTINGS & HOMEPAGE HERO CMS
 // ==========================================
+
+const HERO_KEYS = [
+  "homepage_hero_enabled",
+  "homepage_hero_image_url",
+  "homepage_hero_eyebrow",
+  "homepage_hero_title",
+  "homepage_hero_title_accent",
+  "homepage_hero_description",
+  "homepage_hero_primary_label",
+  "homepage_hero_primary_url",
+  "homepage_hero_secondary_label",
+  "homepage_hero_secondary_url",
+  "homepage_hero_featured_product_id",
+];
 
 router.get("/settings", async (_req, res) => {
   try {
@@ -1289,7 +1303,21 @@ router.get("/settings", async (_req, res) => {
     for (const s of settingsList) {
       settingsMap[s.key] = s.value;
     }
-    res.json({ settings: settingsMap });
+
+    // Fetch product list for dropdown selectors
+    const products = await prisma.product.findMany({
+      where: { status: "ACTIVE" },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        price: true,
+        images: { select: { url: true }, take: 1 },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.json({ settings: settingsMap, products });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to fetch store settings" });
   }
@@ -1302,25 +1330,21 @@ router.post("/settings", async (req, res) => {
       return res.status(400).json({ error: "Settings object is required" });
     }
 
+    // Validate Featured Product ID if provided
+    if (settings.homepage_hero_featured_product_id) {
+      const prod = await prisma.product.findUnique({
+        where: { id: settings.homepage_hero_featured_product_id },
+      });
+      if (!prod) {
+        return res.status(400).json({ error: "Selected featured product does not exist." });
+      }
+    }
+
     // Validate Server-Side Ranges
     if (settings.gstTaxRate !== undefined) {
       const gst = Number(settings.gstTaxRate);
       if (isNaN(gst) || gst < 0 || gst > 100) {
         return res.status(400).json({ error: "GST Tax Rate must be a number between 0% and 100%." });
-      }
-    }
-
-    if (settings.freeShippingThreshold !== undefined) {
-      const freeShip = Number(settings.freeShippingThreshold);
-      if (isNaN(freeShip) || freeShip < 0) {
-        return res.status(400).json({ error: "Free Shipping Threshold must be greater than or equal to 0." });
-      }
-    }
-
-    if (settings.lowStockThreshold !== undefined) {
-      const lowStock = Number(settings.lowStockThreshold);
-      if (isNaN(lowStock) || lowStock < 0) {
-        return res.status(400).json({ error: "Low Stock Threshold must be greater than or equal to 0." });
       }
     }
 
@@ -1336,6 +1360,102 @@ router.post("/settings", async (req, res) => {
     res.json({ success: true, section, message: "Settings saved successfully." });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Unable to save settings." });
+  }
+});
+
+// Dedicated Homepage Hero GET & PUT Endpoints
+router.get("/settings/homepage-hero", async (_req, res) => {
+  try {
+    const settingsList = await prisma.storeSetting.findMany({
+      where: { key: { in: HERO_KEYS } },
+    });
+
+    const heroConfig: Record<string, string> = {};
+    for (const s of settingsList) {
+      heroConfig[s.key] = s.value;
+    }
+
+    let featuredProduct = null;
+    if (heroConfig.homepage_hero_featured_product_id) {
+      const prod = await prisma.product.findUnique({
+        where: { id: heroConfig.homepage_hero_featured_product_id },
+        include: { images: true },
+      });
+      if (prod) {
+        featuredProduct = {
+          id: prod.id,
+          name: prod.name,
+          slug: prod.slug,
+          sku: prod.sku,
+          imageUrl: prod.images[0]?.url || "",
+        };
+      }
+    }
+
+    res.json({ heroConfig, featuredProduct });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch homepage hero configuration" });
+  }
+});
+
+router.put("/settings/homepage-hero", async (req, res) => {
+  try {
+    const heroSettings = req.body;
+    if (!heroSettings || typeof heroSettings !== "object") {
+      return res.status(400).json({ error: "Homepage hero settings object required." });
+    }
+
+    const {
+      homepage_hero_enabled,
+      homepage_hero_image_url,
+      homepage_hero_eyebrow,
+      homepage_hero_title,
+      homepage_hero_title_accent,
+      homepage_hero_description,
+      homepage_hero_primary_label,
+      homepage_hero_primary_url,
+      homepage_hero_secondary_label,
+      homepage_hero_secondary_url,
+      homepage_hero_featured_product_id,
+    } = heroSettings;
+
+    // Validate Hero Image URL
+    if (homepage_hero_image_url && !/^https?:\/\/.+/i.test(homepage_hero_image_url)) {
+      return res.status(400).json({ error: "Hero Image URL must be a valid HTTP/HTTPS URL." });
+    }
+
+    // Validate Featured Product ID if specified
+    if (homepage_hero_featured_product_id) {
+      const existingProd = await prisma.product.findUnique({
+        where: { id: homepage_hero_featured_product_id },
+      });
+      if (!existingProd) {
+        return res.status(400).json({ error: "Selected featured product does not exist in database." });
+      }
+    }
+
+    // Validate URLs
+    if (homepage_hero_primary_url && typeof homepage_hero_primary_url !== "string") {
+      return res.status(400).json({ error: "Primary Button URL must be a valid string." });
+    }
+    if (homepage_hero_secondary_url && typeof homepage_hero_secondary_url !== "string") {
+      return res.status(400).json({ error: "Secondary Button URL must be a valid string." });
+    }
+
+    // Save all hero keys to database
+    for (const [key, value] of Object.entries(heroSettings)) {
+      if (HERO_KEYS.includes(key)) {
+        await prisma.storeSetting.upsert({
+          where: { key },
+          update: { value: String(value ?? "") },
+          create: { key, value: String(value ?? "") },
+        });
+      }
+    }
+
+    res.json({ success: true, message: "Homepage hero updated successfully." });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update homepage hero settings." });
   }
 });
 
