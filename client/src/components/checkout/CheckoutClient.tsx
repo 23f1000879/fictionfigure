@@ -11,6 +11,8 @@ import { API_BASE } from "@/lib/api";
 
 import { MSG91OTPWidget, MSG91VerificationPayload } from "@/components/auth/MSG91OTPWidget";
 
+import { normalizeIndianPhone } from "@/lib/phone";
+
 export function CheckoutClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -228,7 +230,8 @@ export function CheckoutClient() {
 
   // Step 1: Customer Phone Identification & Existing User Check
   const handleIdentifyCustomer = async () => {
-    if (!formData.phone || formData.phone.trim().length < 10) {
+    const norm = normalizeIndianPhone(formData.phone);
+    if (!norm) {
       setErrorMessage("Please enter a valid 10-digit Indian mobile number.");
       return;
     }
@@ -240,11 +243,13 @@ export function CheckoutClient() {
       const identifyRes = await fetch(`${API_BASE}/checkout/auth/identify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone }),
+        body: JSON.stringify({ phone: norm }),
       });
 
       const identifyData = await identifyRes.json();
       if (!identifyRes.ok) throw new Error(identifyData.error || "Failed to identify mobile number.");
+
+      setFormData((prev) => ({ ...prev, phone: norm }));
 
       // CASE A: Existing Verified Customer -> Skip OTP completely!
       if (identifyData.exists && identifyData.phoneVerified) {

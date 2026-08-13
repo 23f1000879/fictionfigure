@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Loader2, ShieldCheck, RefreshCw, ArrowRight, AlertCircle } from "lucide-react";
+import { normalizeMsg91WidgetIdentifier } from "@/lib/phone";
 
 export interface MSG91VerificationPayload {
   accessToken: string;
@@ -9,7 +10,7 @@ export interface MSG91VerificationPayload {
 }
 
 interface MSG91OTPWidgetProps {
-  phone: string; // E.164 formatted phone (+91XXXXXXXXXX)
+  phone: string; // Phone number (any Indian format e.g. +91XXXXXXXXXX, 91XXXXXXXXXX, XXXXXXXXXX)
   onSuccess: (payload: MSG91VerificationPayload) => void;
   onError: (errorMsg: string) => void;
 }
@@ -60,7 +61,11 @@ export function MSG91OTPWidget({ phone, onSuccess, onError }: MSG91OTPWidgetProp
     if (sdkInitializedRef.current) return;
     sdkInitializedRef.current = true;
 
-    const cleanPhone = phone.replace("+", "");
+    // MANDATORY MSG91 WIDGET FORMAT: 12 digits starting with country code 91 (e.g. 917849834639)
+    const cleanPhone = normalizeMsg91WidgetIdentifier(phone) || phone.replace(/\D/g, "");
+    const maskedIdentifier = cleanPhone.length >= 10 ? `91******${cleanPhone.slice(-4)}` : "INVALID";
+
+    console.log(`[MSG91 WIDGET] Identifier: ${maskedIdentifier}, Widget ID: ${widgetId}`);
 
     const configuration = {
       widgetId,
