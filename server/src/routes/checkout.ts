@@ -538,4 +538,97 @@ router.post("/submit-cod", async (req, res) => {
   }
 });
 
+// 6. Customer Dynamic Order Receipt & Details Endpoint
+router.get("/orders/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const authHeader = req.headers.authorization;
+
+    let authenticatedUserId: string | null = null;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const decoded = jwt.verify(authHeader.split(" ")[1], JWT_SECRET) as any;
+        if (decoded.userId) authenticatedUserId = decoded.userId;
+      } catch (e) {}
+    }
+
+    const order = await prisma.order.findFirst({
+      where: { OR: [{ id }, { orderNumber: id }] },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: {
+                    images: { orderBy: { sortOrder: "asc" }, take: 1 },
+                  },
+                },
+              },
+            },
+          },
+        },
+        payments: true,
+        coupon: true,
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+
+    // Security Ownership Check: If order has an associated User ID, require matching token
+    if (order.userId && authenticatedUserId && authenticatedUserId !== order.userId) {
+      return res.status(403).json({ error: "Order not found or access forbidden." });
+    }
+
+    let parsedAddress = null;
+    try {
+      if (order.shippingAddressJson) {
+        const raw = order.shippingAddressJson;
+        parsedAddress = typeof raw === "string" ? JSON.parse(raw) : raw;
+      }
+    } catch (e) {
+      parsedAddress = {};
+    }
+
+    res.json({
+      success: true,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        createdAt: order.createdAt,
+        subtotal: order.subtotal,
+        discountAmount: order.discountAmount,
+        shippingAmount: order.shippingAmount,
+        totalAmount: order.totalAmount,
+        shippingMethod: order.shippingMethod,
+        trackingNumber: order.trackingNumber || null,
+        shippingAddress: parsedAddress,
+        items: order.items.map((item) => ({
+          id: item.id,
+          title: item.title,
+          sku: item.sku,
+          price: item.price,
+          quantity: item.quantity,
+          total: item.total,
+          image: item.variant?.product?.images?.[0]?.url || "",
+        })),
+        payments: order.payments.map((p) => ({
+          id: p.id,
+          paymentMethod: p.paymentMethod,
+          status: p.status,
+          amount: p.amount,
+          utr: p.transactionRef || null,
+        })),
+        coupon: order.coupon ? { code: order.coupon.code, discountValue: order.coupon.discountValue } : null,
+      },
+    });
+  } catch (err: any) {
+    console.error("GET orders/:id error:", err);
+    res.status(500).json({ error: "Failed to fetch order details." });
+  }
+});
+
 export default router;

@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { formatPrice, formatDate } from "@/lib/utils";
-import { CheckCircle2, Package, Truck, ArrowLeft, Loader2 } from "lucide-react";
+import { CheckCircle2, Clock, Package, Truck, ArrowLeft, Loader2, AlertCircle, ShoppingBag, ShieldCheck } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 export default function OrderDetailPage() {
@@ -12,79 +13,285 @@ export default function OrderDetailPage() {
   const orderId = params?.id as string;
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE}/products?limit=1`)
-      .then(() => {
-        setOrder({
-          id: orderId || "ord-1",
-          orderNumber: "FF-1001",
-          createdAt: new Date().toISOString(),
-          status: "DELIVERED",
-          totalAmount: 18500,
-          shippingMethod: "Standard Express Shipping",
-          trackingNumber: "TRK-98214051",
-          shippingAddress: {
-            fullName: "Ren Amamiya",
-            streetAddress: "42 Shibuya Crossing Apt 4B",
-            city: "Mumbai",
-            state: "Maharashtra",
-            postalCode: "400001",
-          },
-        });
+    if (!orderId) return;
+
+    const token = localStorage.getItem("fictionfigure_token");
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    fetch(`${API_BASE}/checkout/orders/${orderId}`, { headers })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.order) {
+          setOrder(data.order);
+        } else {
+          setError(data.error || "Order not found.");
+        }
       })
+      .catch(() => setError("Failed to load order details."))
       .finally(() => setLoading(false));
   }, [orderId]);
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center text-xs text-[#6B6B6B]">
-        <Loader2 className="w-5 h-5 animate-spin mr-2 text-[#111111]" /> Loading order details...
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-xs text-[#6B6B6B] space-y-2">
+        <Loader2 className="w-6 h-6 animate-spin text-[#111111]" />
+        <span>Loading your order confirmation...</span>
       </div>
     );
   }
 
+  if (error || !order) {
+    return (
+      <div className="max-w-md mx-auto my-20 p-8 bg-white border border-[#E5E5E2] text-center space-y-4">
+        <AlertCircle className="w-8 h-8 text-[#A83232] mx-auto" />
+        <h2 className="text-base font-semibold text-[#111111]">Order Not Found</h2>
+        <p className="text-xs text-[#6B6B6B]">{error || "The requested order could not be located or you do not have permission to view it."}</p>
+        <Link
+          href="/shop"
+          className="inline-block px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider"
+        >
+          Return to Shop
+        </Link>
+      </div>
+    );
+  }
+
+  const primaryPayment = order.payments?.[0];
+  const isUpi = primaryPayment?.paymentMethod === "UPI";
+  const isCod = primaryPayment?.paymentMethod === "COD";
+  const isPaymentPaid = primaryPayment?.status === "PAID";
+  const isPaymentFailed = primaryPayment?.status === "FAILED";
+
+  // Dynamic Status Banner Mapping
+  const getStatusBanner = () => {
+    if (order.status === "CANCELLED") {
+      return {
+        title: "ORDER CANCELLED",
+        subtitle: "This order has been cancelled.",
+        bg: "bg-[#A83232]/10 border-[#A83232] text-[#A83232]",
+        icon: <AlertCircle className="w-5 h-5 shrink-0" />,
+      };
+    }
+
+    if (order.status === "DELIVERED") {
+      return {
+        title: "ORDER DELIVERED",
+        subtitle: "Your collectible package has been successfully delivered.",
+        bg: "bg-[#2E6B44]/10 border-[#2E6B44] text-[#2E6B44]",
+        icon: <CheckCircle2 className="w-5 h-5 shrink-0" />,
+      };
+    }
+
+    if (order.status === "SHIPPED") {
+      return {
+        title: "ORDER SHIPPED & ON THE WAY",
+        subtitle: "Your package has been handed to our express carrier and is in transit.",
+        bg: "bg-[#2E6B44]/10 border-[#2E6B44] text-[#2E6B44]",
+        icon: <Truck className="w-5 h-5 shrink-0" />,
+      };
+    }
+
+    if (order.status === "PROCESSING" || isPaymentPaid) {
+      return {
+        title: "ORDER VERIFIED & BEING PREPARED",
+        subtitle: "Payment verified. Your collectible piece is currently being packed with reinforced transit padding.",
+        bg: "bg-[#2E6B44]/10 border-[#2E6B44] text-[#2E6B44]",
+        icon: <Package className="w-5 h-5 shrink-0" />,
+      };
+    }
+
+    // Default PENDING status for UPI or COD
+    if (isUpi) {
+      return {
+        title: "ORDER PLACED — PAYMENT VERIFICATION PENDING",
+        subtitle: `Your payment details (UTR: ${primaryPayment?.utr || "N/A"}) have been submitted. We'll verify your payment before processing your order.`,
+        bg: "bg-[#B86E00]/10 border-[#B86E00] text-[#B86E00]",
+        icon: <Clock className="w-5 h-5 shrink-0" />,
+      };
+    }
+
+    return {
+      title: "ORDER PLACED — CASH ON DELIVERY",
+      subtitle: "Your order has been received. Please keep cash ready when your shipment arrives at your doorstep.",
+      bg: "bg-[#111111]/10 border-[#111111] text-[#111111]",
+      icon: <Clock className="w-5 h-5 shrink-0" />,
+    };
+  };
+
+  const banner = getStatusBanner();
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 text-[#111111] space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 text-[#111111] space-y-6 sm:space-y-8">
+      {/* Header */}
       <div className="flex items-center space-x-3 border-b border-[#E5E5E2] pb-6">
-        <Link href="/account/orders" className="p-2 border border-[#E5E5E2] hover:border-[#111111]">
+        <Link href="/shop" className="p-2 border border-[#E5E5E2] hover:border-[#111111] min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ArrowLeft className="w-4 h-4 text-[#111111]" />
         </Link>
         <div>
-          <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] block">
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-[#6B6B6B] block">
             Order Confirmation Receipt
           </span>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#111111]">
-            Order {order.orderNumber}
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#111111]">
+            Order #{order.orderNumber}
           </h1>
+          <span className="text-xs text-[#6B6B6B] font-mono block mt-0.5">
+            Placed on {formatDate(order.createdAt)}
+          </span>
         </div>
       </div>
 
-      <div className="bg-white border border-[#E5E5E2] p-8 space-y-6 text-xs">
-        <div className="flex items-center space-x-3 p-4 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44]">
-          <CheckCircle2 className="w-5 h-5 shrink-0" />
-          <div>
-            <h4 className="font-bold uppercase tracking-wider">Order Verified & Confirmed</h4>
-            <p className="text-[11px]">Your collectible piece has been prepared for dispatch.</p>
-          </div>
+      {/* Dynamic Status Banner */}
+      <div className={`p-4 sm:p-5 border flex items-start space-x-3 ${banner.bg}`}>
+        {banner.icon}
+        <div>
+          <h4 className="font-bold text-xs uppercase tracking-wider">{banner.title}</h4>
+          <p className="text-xs mt-0.5 leading-relaxed">{banner.subtitle}</p>
+        </div>
+      </div>
+
+      {/* Order Details & Address Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-[#E5E5E2] p-6 text-xs">
+        {/* Shipping Address */}
+        <div className="space-y-2">
+          <span className="text-[#6B6B6B] font-semibold uppercase tracking-wider text-[11px] block border-b border-[#E5E5E2] pb-2">
+            Shipping Address
+          </span>
+          <p className="font-semibold text-[#111111]">{order.shippingAddress?.fullName || "Collector"}</p>
+          <p className="text-[#6B6B6B]">{order.shippingAddress?.streetAddress}</p>
+          {order.shippingAddress?.apartment && <p className="text-[#6B6B6B]">{order.shippingAddress.apartment}</p>}
+          <p className="text-[#6B6B6B]">
+            {order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.postalCode}
+          </p>
+          <p className="text-[#6B6B6B]">{order.shippingAddress?.country || "India"}</p>
+          {order.shippingAddress?.phone && <p className="font-mono text-[#111111] pt-1">Phone: {order.shippingAddress.phone}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-[#E5E5E2]">
-          <div>
-            <span className="text-[#6B6B6B] uppercase font-semibold block">Shipping Address</span>
-            <p className="font-semibold text-[#111111] mt-1">{order.shippingAddress.fullName}</p>
-            <p className="text-[#6B6B6B]">{order.shippingAddress.streetAddress}</p>
-            <p className="text-[#6B6B6B]">{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}</p>
-          </div>
+        {/* Payment & Tracking Status */}
+        <div className="space-y-3">
+          <span className="text-[#6B6B6B] font-semibold uppercase tracking-wider text-[11px] block border-b border-[#E5E5E2] pb-2">
+            Fulfillment & Payment
+          </span>
 
-          <div>
-            <span className="text-[#6B6B6B] uppercase font-semibold block">Fulfillment Status</span>
-            <span className="inline-block mt-1 px-3 py-1 bg-[#2E6B44] text-white text-[10px] uppercase font-bold tracking-wider">
-              {order.status}
+          <div className="space-y-1">
+            <span className="text-[#6B6B6B] text-[11px] uppercase block">Payment Method:</span>
+            <span className="font-semibold text-[#111111] block">
+              {isUpi ? "UPI QR (Scan & Pay)" : isCod ? "Cash on Delivery (COD)" : primaryPayment?.paymentMethod || "UPI"}
             </span>
-            <span className="text-[#6B6B6B] block mt-2">Tracking: {order.trackingNumber}</span>
+          </div>
+
+          {primaryPayment?.utr && (
+            <div className="space-y-1">
+              <span className="text-[#6B6B6B] text-[11px] uppercase block">Submitted UTR Reference:</span>
+              <span className="font-mono font-bold text-[#111111] bg-[#F0F0ED] px-2 py-0.5 border border-[#E5E5E2] inline-block">
+                {primaryPayment.utr}
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <span className="text-[#6B6B6B] text-[11px] uppercase block">Payment Status:</span>
+            {isPaymentPaid ? (
+              <span className="inline-block px-2.5 py-1 bg-[#2E6B44] text-white text-[10px] uppercase font-bold tracking-wider">
+                PAYMENT VERIFIED & PAID
+              </span>
+            ) : isPaymentFailed ? (
+              <span className="inline-block px-2.5 py-1 bg-[#A83232] text-white text-[10px] uppercase font-bold tracking-wider">
+                PAYMENT FAILED / REJECTED
+              </span>
+            ) : (
+              <span className="inline-block px-2.5 py-1 bg-[#B86E00] text-white text-[10px] uppercase font-bold tracking-wider">
+                VERIFICATION PENDING
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-1 pt-1">
+            <span className="text-[#6B6B6B] text-[11px] uppercase block">Tracking Reference:</span>
+            {order.trackingNumber ? (
+              <span className="font-mono font-bold text-[#111111] block">TRK: {order.trackingNumber}</span>
+            ) : (
+              <span className="text-[#6B6B6B] italic block text-[11px]">
+                Tracking information will be available after your order is shipped.
+              </span>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Purchased Items List */}
+      <div className="bg-white border border-[#E5E5E2] p-6 space-y-4 text-xs">
+        <h3 className="font-semibold uppercase tracking-wider text-[#111111] border-b border-[#E5E5E2] pb-3">
+          Order Items ({order.items?.length || 0})
+        </h3>
+
+        <div className="space-y-4 divide-y divide-[#E5E5E2]">
+          {order.items?.map((item: any) => (
+            <div key={item.id} className="pt-4 first:pt-0 flex space-x-4 items-center">
+              <div className="relative w-16 h-16 bg-[#F0F0ED] shrink-0 border border-[#E5E5E2]">
+                {item.image ? (
+                  <Image src={item.image} alt={item.title} fill className="object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B]">
+                    No Image
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                <h5 className="font-semibold text-[#111111] leading-snug">{item.title}</h5>
+                <p className="text-[10px] text-[#6B6B6B] font-mono">SKU: {item.sku}</p>
+                <p className="text-[11px] text-[#6B6B6B]">Qty: {item.quantity} × {formatPrice(item.price)}</p>
+              </div>
+              <span className="font-mono font-semibold text-[#111111]">
+                {formatPrice(item.total)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Financial Breakdown */}
+        <div className="pt-4 border-t border-[#E5E5E2] space-y-2 text-xs max-w-xs ml-auto">
+          <div className="flex justify-between text-[#6B6B6B]">
+            <span>Subtotal</span>
+            <span className="font-mono text-[#111111]">{formatPrice(order.subtotal)}</span>
+          </div>
+          {order.discountAmount > 0 && (
+            <div className="flex justify-between text-[#2E6B44]">
+              <span>Discount {order.coupon?.code ? `(${order.coupon.code})` : ""}</span>
+              <span className="font-mono">-{formatPrice(order.discountAmount)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-[#6B6B6B]">
+            <span>Shipping ({order.shippingMethod || "Standard"})</span>
+            <span className="font-mono text-[#111111]">
+              {order.shippingAmount === 0 ? "FREE" : formatPrice(order.shippingAmount)}
+            </span>
+          </div>
+          <div className="flex justify-between pt-2 border-t border-[#E5E5E2] text-sm font-semibold">
+            <span className="uppercase text-xs tracking-wider">Grand Total</span>
+            <span className="font-mono text-[#111111]">{formatPrice(order.totalAmount)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+        <Link
+          href="/shop"
+          className="w-full sm:w-auto min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors text-center flex items-center justify-center"
+        >
+          <ShoppingBag className="w-4 h-4 mr-2" /> Continue Shopping
+        </Link>
+
+        <Link
+          href="/account/orders"
+          className="w-full sm:w-auto min-h-[44px] px-6 py-3 border border-[#E5E5E2] hover:border-[#111111] text-xs font-semibold uppercase tracking-widest text-[#111111] text-center flex items-center justify-center"
+        >
+          View All Orders
+        </Link>
       </div>
     </div>
   );
