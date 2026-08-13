@@ -240,7 +240,7 @@ model Payment {
   id             String   @id @default(uuid())
   orderId        String
   order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  paymentMethod  String   @default("CREDIT_CARD") // CREDIT_CARD, UPI, RAZORPAY
+  paymentMethod  String   @default("UPI") // UPI, COD, CREDIT_CARD
   transactionRef String?
   status         String   @default("PENDING") // PENDING, PAID, FAILED
   amount         Float

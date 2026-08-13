@@ -13,6 +13,8 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   free_shipping_min: "15000",
   tax_rate_percentage: "18",
   return_policy_days: "14",
+  upi_id: process.env.UPI_ID || "fictionfigure@upi",
+  upi_qr_url: process.env.UPI_QR_URL || "https://res.cloudinary.com/demo/image/upload/v1/upi-qr-sample.png",
 };
 
 // 1. Fetch All Dynamic Store Settings

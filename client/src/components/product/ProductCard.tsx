@@ -89,11 +89,11 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
             e.preventDefault();
             setIsWishlisted(!isWishlisted);
           }}
-          className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-xs border border-[#E5E5E2] hover:bg-white text-[#111111] transition-all z-10"
+          className="absolute top-2 right-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/90 backdrop-blur-xs border border-[#E5E5E2] hover:bg-white text-[#111111] transition-all z-10"
           aria-label="Save to Wishlist"
         >
           <Heart
-            className={`w-3.5 h-3.5 ${
+            className={`w-4 h-4 ${
               isWishlisted ? "fill-[#111111] text-[#111111]" : "text-[#111111]"
             }`}
           />
@@ -116,12 +116,12 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
       </div>
 
       {/* Product Content Details */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
         <div>
           <div className="flex justify-between items-center text-[10px] uppercase tracking-wider text-[#6B6B6B] font-semibold mb-1">
-            <span>{product.brand || "FictionFigure"}</span>
+            <span className="truncate max-w-[100px] sm:max-w-none">{product.brand || "FictionFigure"}</span>
             {hasRealRating && (
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 shrink-0">
                 <Star className="w-3 h-3 fill-[#111111] text-[#111111]" />
                 <span className="text-[#111111] font-mono">{product.rating?.toFixed(1)}</span>
               </div>
@@ -136,12 +136,12 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-[#F0F0ED]">
-          <div className="flex items-baseline space-x-2">
-            <span className="text-sm font-semibold font-mono text-[#111111]">
+          <div className="flex flex-col sm:flex-row sm:items-baseline space-y-0.5 sm:space-y-0 sm:space-x-2">
+            <span className="text-xs sm:text-sm font-semibold font-mono text-[#111111]">
               {formatPrice(product.price)}
             </span>
             {isOnSale && product.compareAtPrice && (
-              <span className="text-xs text-[#6B6B6B] line-through font-mono">
+              <span className="text-[10px] sm:text-xs text-[#6B6B6B] line-through font-mono">
                 {formatPrice(product.compareAtPrice)}
               </span>
             )}
@@ -150,18 +150,18 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
           {inStock ? (
             <button
               onClick={handleQuickAdd}
-              className="p-1.5 border border-[#E5E5E2] hover:border-[#111111] hover:bg-[#111111] hover:text-white transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center border border-[#E5E5E2] hover:border-[#111111] hover:bg-[#111111] hover:text-white transition-colors"
               title="Add to Cart"
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
+              <ShoppingBag className="w-4 h-4" />
             </button>
           ) : (
             <button
               disabled
-              className="p-1.5 border border-[#E5E5E2] opacity-40 cursor-not-allowed text-[#6B6B6B]"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center border border-[#E5E5E2] opacity-40 cursor-not-allowed text-[#6B6B6B]"
               title="Out of Stock"
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
+              <ShoppingBag className="w-4 h-4" />
             </button>
           )}
         </div>

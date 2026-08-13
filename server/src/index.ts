@@ -10,6 +10,8 @@ import authRouter from "./routes/auth.js";
 import settingsRouter from "./routes/settings.js";
 import adminRouter from "./routes/admin.js";
 import couponsRouter from "./routes/coupons.js";
+import checkoutRouter from "./routes/checkout.js";
+import paymentsRouter from "./routes/payments.js";
 
 const app = express();
 app.set("trust proxy", true);
@@ -35,6 +37,9 @@ app.use(
     credentials: true,
   })
 );
+
+// RAW BODY PARSER FOR RAZORPAY WEBHOOK SIGNATURE VERIFICATION (MUST COME BEFORE express.json())
+app.use("/api/payments/razorpay/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
 // Serve uploads directory statically
@@ -49,6 +54,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/coupons", couponsRouter);
+app.use("/api/checkout", checkoutRouter);
+app.use("/api/payments", paymentsRouter);
 
 // Health Check Endpoint
 app.get("/api/health", (req, res) => {

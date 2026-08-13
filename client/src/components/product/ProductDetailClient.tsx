@@ -280,7 +280,8 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
               <div className="flex items-center border border-[#E5E5E2] bg-white">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="p-2 text-[#6B6B6B] hover:text-[#111111]"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[#6B6B6B] hover:text-[#111111]"
+                  aria-label="Decrease quantity"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
@@ -289,7 +290,8 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 </span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="p-2 text-[#6B6B6B] hover:text-[#111111]"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[#6B6B6B] hover:text-[#111111]"
+                  aria-label="Increase quantity"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -297,20 +299,22 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
               <button
                 onClick={() => setIsWishlisted(!isWishlisted)}
-                className={`p-2.5 border transition-colors ${
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center border transition-colors ${
                   isWishlisted
                     ? "border-[#111111] bg-[#111111] text-white"
                     : "border-[#E5E5E2] bg-white text-[#111111] hover:border-[#111111]"
                 }`}
                 title="Save to Wishlist"
+                aria-label="Save to Wishlist"
               >
                 <Heart className={`w-4 h-4 ${isWishlisted ? "fill-white" : ""}`} />
               </button>
 
               <button
                 onClick={handleShare}
-                className="p-2.5 border border-[#E5E5E2] bg-white text-[#111111] hover:border-[#111111]"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center border border-[#E5E5E2] bg-white text-[#111111] hover:border-[#111111]"
                 title="Share figure"
+                aria-label="Share figure"
               >
                 {copiedLink ? <Check className="w-4 h-4 text-[#2E6B44]" /> : <Share2 className="w-4 h-4" />}
               </button>
@@ -320,7 +324,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
               <button
                 onClick={handleAddToCart}
                 disabled={!inStock}
-                className="w-full py-3.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
+                className="w-full min-h-[48px] px-6 py-3.5 bg-white border-2 border-[#111111] text-[#111111] text-xs font-bold uppercase tracking-widest hover:bg-[#111111] hover:text-white transition-colors flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ShoppingBag className="w-4 h-4 mr-2" /> Add to Cart
               </button>
@@ -328,9 +332,9 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
               <button
                 onClick={handleBuyNow}
                 disabled={!inStock}
-                className="w-full py-3.5 bg-transparent border border-[#111111] text-[#111111] text-xs font-semibold uppercase tracking-widest hover:bg-[#111111] hover:text-white disabled:opacity-50 transition-colors"
+                className="w-full min-h-[48px] px-6 py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Buy Now
+                Buy Now <ChevronRight className="w-4 h-4 ml-1" />
               </button>
             </div>
           </div>

@@ -23,6 +23,18 @@ export function Header() {
       .catch(() => {});
   }, []);
 
+  // Prevent background scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <header className="sticky top-0 z-40 bg-[#F7F7F5]/90 backdrop-blur-md border-b border-[#E5E5E2] transition-colors">
       {/* Top Banner Announcement */}
@@ -30,11 +42,11 @@ export function Header() {
         <span>{announcement}</span>
       </div>
 
-      <div className="editorial-container flex items-center justify-between h-16 sm:h-20">
+      <div className="editorial-container flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6">
         {/* Mobile Menu Toggle */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-[#111111] hover:text-[#6B6B6B]"
+          className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-[#111111] hover:text-[#6B6B6B]"
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -78,30 +90,31 @@ export function Header() {
           </Link>
         </nav>
 
-        {/* Header Action Icons */}
-        <div className="flex items-center space-x-4 sm:space-x-5 text-[#111111]">
+        {/* Header Action Icons: [☰] [LOGO] [Search] [Account] [Wishlist] [Cart] */}
+        <div className="flex items-center space-x-1 sm:space-x-4 text-[#111111]">
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="p-1.5 hover:text-[#6B6B6B] transition-colors flex items-center gap-1.5 text-xs font-medium"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:text-[#6B6B6B] transition-colors text-xs font-medium"
             aria-label="Search catalog"
           >
             <Search className="w-4 h-4" />
-            <span className="hidden sm:inline text-[11px] uppercase tracking-wider text-[#6B6B6B]">
+            <span className="hidden sm:inline text-[11px] uppercase tracking-wider text-[#6B6B6B] ml-1.5">
               Search
             </span>
           </button>
 
           <Link
             href="/account"
-            className="p-1.5 hover:text-[#6B6B6B] transition-colors hidden sm:block"
+            className="min-w-[44px] min-h-[44px] hidden sm:flex items-center justify-center hover:text-[#6B6B6B] transition-colors"
             aria-label="Customer Account"
           >
             <User className="w-4 h-4" />
           </Link>
 
+          {/* Wishlist Icon (Visible on Mobile & Desktop) */}
           <Link
             href="/account/wishlist"
-            className="p-1.5 hover:text-[#6B6B6B] transition-colors hidden sm:block"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:text-[#6B6B6B] transition-colors"
             aria-label="Saved Wishlist"
           >
             <Heart className="w-4 h-4" />
@@ -110,12 +123,12 @@ export function Header() {
           {/* Cart Icon */}
           <button
             onClick={() => setIsCartOpen(true)}
-            className="p-1.5 hover:text-[#6B6B6B] transition-colors relative flex items-center"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:text-[#6B6B6B] transition-colors relative"
             aria-label="Shopping Cart"
           >
             <ShoppingBag className="w-4 h-4" />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-2 bg-[#111111] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono">
+              <span className="absolute top-2 right-1.5 bg-[#111111] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono">
                 {cartCount}
               </span>
             )}

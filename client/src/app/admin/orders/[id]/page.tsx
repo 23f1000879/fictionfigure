@@ -120,6 +120,89 @@ export default function AdminOrderDetailPage() {
         </div>
       </div>
 
+      {/* Manual Payment Verification Actions (UPI / UTR / COD) */}
+      {order && (
+        <div className="bg-white border border-[#E5E5E2] p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#E5E5E2] gap-2">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-[#111111]">
+                Payment Verification & Security Console
+              </h3>
+              <span className="text-[11px] text-[#6B6B6B]">
+                Method: <strong className="text-[#111111]">{order.payments?.[0]?.paymentMethod || "UPI"}</strong> | Status:{" "}
+                <strong className={order.payments?.[0]?.status === "PAID" ? "text-[#2E6B44]" : "text-[#B86E00]"}>
+                  {order.payments?.[0]?.status || "PENDING"}
+                </strong>
+              </span>
+            </div>
+
+            {order.payments?.[0]?.transactionRef && (
+              <div className="bg-[#F7F7F5] border border-[#E5E5E2] px-3 py-1.5 font-mono text-xs text-[#111111]">
+                UTR: <strong>{order.payments[0].transactionRef}</strong>
+              </div>
+            )}
+          </div>
+
+          {order.payments?.[0]?.status !== "PAID" && (
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                onClick={async () => {
+                  if (confirm(`Confirm receipt of ${formatPrice(order.totalAmount)} for UTR: ${order.payments?.[0]?.transactionRef || "N/A"}?`)) {
+                    setIsUpdating(true);
+                    try {
+                      const res = await fetch(`${API_BASE}/admin/orders/${order.id}/verify-payment`, { method: "PATCH" });
+                      const data = await res.json();
+                      if (res.ok) {
+                        setOrder(data.order);
+                        setStatus("PROCESSING");
+                        setMessage("Payment verified successfully. Stock decremented & order processing started.");
+                      } else {
+                        setError(data.error || "Failed to verify payment.");
+                      }
+                    } catch (e: any) {
+                      setError(e.message || "Failed to verify payment.");
+                    } finally {
+                      setIsUpdating(false);
+                    }
+                  }
+                }}
+                disabled={isUpdating}
+                className="px-6 py-3 bg-[#2E6B44] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#235434] transition-colors"
+              >
+                Verify Payment
+              </button>
+
+              <button
+                onClick={async () => {
+                  if (confirm("Reject payment and cancel order?")) {
+                    setIsUpdating(true);
+                    try {
+                      const res = await fetch(`${API_BASE}/admin/orders/${order.id}/reject-payment`, { method: "PATCH" });
+                      const data = await res.json();
+                      if (res.ok) {
+                        setOrder(data.order);
+                        setStatus("CANCELLED");
+                        setMessage("Payment rejected and order cancelled.");
+                      } else {
+                        setError(data.error || "Failed to reject payment.");
+                      }
+                    } catch (e: any) {
+                      setError(e.message || "Failed to reject payment.");
+                    } finally {
+                      setIsUpdating(false);
+                    }
+                  }
+                }}
+                disabled={isUpdating}
+                className="px-6 py-3 bg-[#A83232] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#852727] transition-colors"
+              >
+                Reject Payment
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Order Details Overview */}
       {order && (
         <div className="bg-white border border-[#E5E5E2] p-6 space-y-4 text-xs">

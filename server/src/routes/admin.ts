@@ -937,7 +937,6 @@ router.get("/orders/:id", async (req, res) => {
     const order = await prisma.order.findFirst({
       where: { OR: [{ id }, { orderNumber: id }] },
       include: {
-        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         items: true,
         payments: true,
       },
@@ -945,9 +944,18 @@ router.get("/orders/:id", async (req, res) => {
 
     if (!order) return res.status(404).json({ error: "Order not found" });
 
-    res.json({ order });
+    let userDetails = null;
+    if (order.userId) {
+      userDetails = await prisma.user.findUnique({
+        where: { id: order.userId },
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+      });
+    }
+
+    res.json({ order: { ...order, user: userDetails } });
   } catch (err: any) {
-    res.status(500).json({ error: "Failed to fetch order details" });
+    console.error("GET orders/:id error:", err);
+    res.status(500).json({ error: err.message || "Failed to fetch order details" });
   }
 });
 
@@ -985,6 +993,124 @@ router.patch("/orders", async (req, res) => {
     res.json({ success: true, order: updated });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to update order status" });
+  }
+});
+
+// Admin Manual Payment Verification (UTR / COD)
+router.patch("/orders/:id/verify-payment", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findFirst({
+      where: { OR: [{ id }, { orderNumber: id }] },
+      include: { payments: true, items: true, coupon: true },
+    });
+
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    const payment = order.payments[0];
+
+    // Idempotency check: If payment is already marked PAID, return success cleanly
+    if (payment && payment.status === "PAID" && order.status === "PROCESSING") {
+      return res.json({ success: true, message: "Payment already verified", order });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Update Payment Status to PAID
+      if (payment) {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { status: "PAID" },
+        });
+      }
+
+      // 2. Update Order Status to PROCESSING
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status: "PROCESSING" },
+      });
+
+      // 3. Decrement Inventory Atomic Update
+      for (const item of order.items) {
+        const inventory = await tx.inventory.findUnique({
+          where: { variantId: item.variantId },
+        });
+
+        if (inventory) {
+          const prevQty = inventory.quantity;
+          const newQty = Math.max(0, prevQty - item.quantity);
+
+          await tx.inventory.update({
+            where: { id: inventory.id },
+            data: { quantity: newQty },
+          });
+
+          await tx.inventoryTransaction.create({
+            data: {
+              inventoryId: inventory.id,
+              type: "ORDER_DEDUCTION",
+              changeQuantity: -item.quantity,
+              previousQuantity: prevQty,
+              newQuantity: newQty,
+              reason: `Admin Verified Order ${order.orderNumber}`,
+            },
+          });
+        }
+
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { inventoryCount: { decrement: item.quantity } },
+        });
+      }
+
+      // 4. Increment Coupon usage if applicable
+      if (order.couponId) {
+        await tx.coupon.update({
+          where: { id: order.couponId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+    });
+
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { payments: true, items: true },
+    });
+
+    res.json({ success: true, message: "Payment verified successfully.", order: updatedOrder });
+  } catch (err: any) {
+    console.error("verify-payment error:", err);
+    res.status(500).json({ error: err.message || "Failed to verify payment" });
+  }
+});
+
+// Admin Manual Payment Rejection
+router.patch("/orders/:id/reject-payment", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findFirst({
+      where: { OR: [{ id }, { orderNumber: id }] },
+      include: { payments: true },
+    });
+
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    const payment = order.payments[0];
+
+    if (payment) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: "FAILED" },
+      });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: order.id },
+      data: { status: "CANCELLED" },
+    });
+
+    res.json({ success: true, message: "Payment rejected and order cancelled.", order: updatedOrder });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to reject payment" });
   }
 });
 

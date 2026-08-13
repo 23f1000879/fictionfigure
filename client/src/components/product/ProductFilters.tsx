@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, SlidersHorizontal, X } from "lucide-react";
 
 interface ProductFiltersProps {
   categories: { id: string; name: string; slug: string; _count: { products: number } }[];
@@ -13,6 +13,7 @@ interface ProductFiltersProps {
 export function ProductFilters({ categories, brands, franchises }: ProductFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isOpen, setIsOpen] = useState(false);
 
   const currentCategory = searchParams.get("category") || "";
   const currentBrand = searchParams.get("brand") || "";
@@ -36,15 +37,15 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
     router.push("/shop");
   };
 
-  return (
-    <div className="space-y-8 text-xs">
+  const filterContent = (
+    <div className="space-y-6 text-xs">
       {/* Reset Action */}
       {(currentCategory || currentBrand || currentFranchise || inStockOnly || minPrice || maxPrice) && (
         <button
           onClick={handleReset}
-          className="flex items-center text-[#6B6B6B] hover:text-[#111111] font-medium tracking-wide uppercase text-[10px]"
+          className="flex items-center text-[#6B6B6B] hover:text-[#111111] font-medium tracking-wide uppercase text-[10px] min-h-[44px]"
         >
-          <RotateCcw className="w-3 h-3 mr-1.5" /> Reset Filters
+          <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Reset All Filters
         </button>
       )}
 
@@ -53,10 +54,10 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
         <h4 className="font-semibold uppercase tracking-widest text-[#111111] text-[11px] border-b border-[#E5E5E2] pb-2">
           Category
         </h4>
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <button
             onClick={() => updateParam("category", null)}
-            className={`block text-left w-full hover:text-[#111111] ${
+            className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 ${
               !currentCategory ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
             }`}
           >
@@ -66,7 +67,7 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
             <button
               key={cat.id}
               onClick={() => updateParam("category", cat.slug)}
-              className={`flex justify-between items-center w-full text-left hover:text-[#111111] ${
+              className={`flex justify-between items-center w-full text-left hover:text-[#111111] min-h-[36px] py-1 ${
                 currentCategory === cat.slug ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
               }`}
             >
@@ -83,10 +84,10 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
           <h4 className="font-semibold uppercase tracking-widest text-[#111111] text-[11px] border-b border-[#E5E5E2] pb-2">
             Manufacturer / Brand
           </h4>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-2">
+          <div className="space-y-1 max-h-48 overflow-y-auto pr-2">
             <button
               onClick={() => updateParam("brand", null)}
-              className={`block text-left w-full hover:text-[#111111] ${
+              className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 ${
                 !currentBrand ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
               }`}
             >
@@ -96,7 +97,7 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
               <button
                 key={b}
                 onClick={() => updateParam("brand", b)}
-                className={`block text-left w-full hover:text-[#111111] truncate ${
+                className={`block text-left w-full hover:text-[#111111] truncate min-h-[36px] py-1 ${
                   currentBrand === b ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
                 }`}
               >
@@ -113,10 +114,10 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
           <h4 className="font-semibold uppercase tracking-widest text-[#111111] text-[11px] border-b border-[#E5E5E2] pb-2">
             Franchise / Universe
           </h4>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-2">
+          <div className="space-y-1 max-h-48 overflow-y-auto pr-2">
             <button
               onClick={() => updateParam("franchise", null)}
-              className={`block text-left w-full hover:text-[#111111] ${
+              className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 ${
                 !currentFranchise ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
               }`}
             >
@@ -126,7 +127,7 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
               <button
                 key={f}
                 onClick={() => updateParam("franchise", f)}
-                className={`block text-left w-full hover:text-[#111111] truncate ${
+                className={`block text-left w-full hover:text-[#111111] truncate min-h-[36px] py-1 ${
                   currentFranchise === f ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
                 }`}
               >
@@ -142,12 +143,12 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
         <h4 className="font-semibold uppercase tracking-widest text-[#111111] text-[11px] border-b border-[#E5E5E2] pb-2">
           Availability
         </h4>
-        <label className="flex items-center space-x-2 text-[#111111] cursor-pointer">
+        <label className="flex items-center space-x-2 text-[#111111] cursor-pointer min-h-[44px]">
           <input
             type="checkbox"
             checked={inStockOnly}
             onChange={(e) => updateParam("inStockOnly", e.target.checked ? "true" : null)}
-            className="accent-[#111111]"
+            className="w-4 h-4 accent-[#111111]"
           />
           <span>In Stock Only</span>
         </label>
@@ -164,17 +165,66 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
             placeholder="Min"
             value={minPrice}
             onChange={(e) => updateParam("minPrice", e.target.value || null)}
-            className="w-full p-2 bg-white border border-[#E5E5E2] text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none font-mono text-xs"
+            className="w-full p-2.5 min-h-[44px] bg-white border border-[#E5E5E2] text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none font-mono text-xs"
           />
           <input
             type="number"
             placeholder="Max"
             value={maxPrice}
             onChange={(e) => updateParam("maxPrice", e.target.value || null)}
-            className="w-full p-2 bg-white border border-[#E5E5E2] text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none font-mono text-xs"
+            className="w-full p-2.5 min-h-[44px] bg-white border border-[#E5E5E2] text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none font-mono text-xs"
           />
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Mobile Filter Drawer Button (< lg) */}
+      <div className="lg:hidden mb-4">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="w-full min-h-[44px] px-4 py-3 bg-white border border-[#E5E5E2] text-[#111111] text-xs font-semibold uppercase tracking-wider flex items-center justify-center space-x-2"
+        >
+          <SlidersHorizontal className="w-4 h-4 text-[#111111]" />
+          <span>Filter & Refine Collectibles</span>
+        </button>
+
+        {/* Mobile Slide-Over Drawer Modal */}
+        {isOpen && (
+          <div className="fixed inset-0 z-50 flex bg-black/50 backdrop-blur-xs">
+            <div className="relative w-full max-w-xs bg-white h-full p-6 overflow-y-auto space-y-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-4 mb-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
+                    Refine Collectibles
+                  </h3>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#111111]"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                {filterContent}
+              </div>
+
+              <div className="pt-4 border-t border-[#E5E5E2]">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-full min-h-[44px] bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest py-3"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Filter Sidebar (>= lg) */}
+      <div className="hidden lg:block">{filterContent}</div>
+    </>
   );
 }
