@@ -33,3 +33,4 @@ yarn-debug.log*
 Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
+scratch/

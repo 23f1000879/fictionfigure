@@ -56,9 +56,15 @@ router.post("/uploads/product-image", (req, res) => {
       return res.status(400).json({ error: "No image file provided in upload request." });
     }
 
-    const host = req.get("host") || "localhost:5000";
-    const protocol = req.protocol || "http";
-    const imageUrl = `${protocol}://${host}/uploads/products/${req.file.filename}`;
+    let baseUrl = "";
+    if (process.env.PUBLIC_API_URL && process.env.PUBLIC_API_URL.trim()) {
+      baseUrl = process.env.PUBLIC_API_URL.trim().replace(/\/$/, "");
+    } else {
+      const host = req.get("host") || "localhost:5000";
+      const protocol = (req.headers["x-forwarded-proto"] as string) || req.protocol || "http";
+      baseUrl = `${protocol}://${host}`;
+    }
+    const imageUrl = `${baseUrl}/uploads/products/${req.file.filename}`;
 
     res.json({
       success: true,

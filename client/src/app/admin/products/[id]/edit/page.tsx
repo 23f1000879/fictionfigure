@@ -17,9 +17,11 @@ export default function AdminEditProductPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
+  const [categories, setCategories] = useState<any[]>([]);
   const [form, setForm] = useState({
     name: "",
     brand: "",
+    categoryId: "",
     price: 15000,
     compareAtPrice: 18000,
     shortDescription: "",
@@ -27,6 +29,13 @@ export default function AdminEditProductPage() {
     stockQuantity: 10,
     images: ["", ""],
   });
+
+  useEffect(() => {
+    fetch(`${API_BASE}/admin/categories`)
+      .then((res) => res.json())
+      .then((data) => setCategories(data.categories || []))
+      .catch(() => setCategories([]));
+  }, []);
 
   useEffect(() => {
     if (productId) {
@@ -38,6 +47,7 @@ export default function AdminEditProductPage() {
             setForm({
               name: found.name || "",
               brand: found.brand || "",
+              categoryId: found.categoryId || found.category?.id || "",
               price: found.price || 0,
               compareAtPrice: found.compareAtPrice || 0,
               shortDescription: found.shortDescription || "",
@@ -109,7 +119,7 @@ export default function AdminEditProductPage() {
       {message && <div className="p-4 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold">{message}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white border border-[#E5E5E2] p-6 text-xs">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1">
             <label className="font-semibold uppercase text-[#6B6B6B]">Product Name *</label>
             <input
@@ -119,6 +129,28 @@ export default function AdminEditProductPage() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="font-semibold uppercase text-[#6B6B6B]">Product Category *</label>
+            {categories.length > 0 ? (
+              <select
+                value={form.categoryId}
+                onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-semibold text-[#111111] focus:border-[#111111] focus:outline-none"
+              >
+                <option value="">Select Category...</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name} ({cat.slug})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="p-3 bg-[#F7F7F5] border border-[#E5E5E2] text-[#6B6B6B]">
+                Unassigned / Default
+              </div>
+            )}
           </div>
 
           <div className="space-y-1">

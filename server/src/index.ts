@@ -12,6 +12,7 @@ import adminRouter from "./routes/admin.js";
 import couponsRouter from "./routes/coupons.js";
 
 const app = express();
+app.set("trust proxy", true);
 const PORT = process.env.PORT || 5000;
 
 // Ensure uploads/products directory exists for local development storage

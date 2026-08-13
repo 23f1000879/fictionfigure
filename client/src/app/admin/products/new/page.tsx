@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, PlusCircle } from "lucide-react";
 import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
 import { API_BASE } from "@/lib/api";
 
@@ -11,12 +11,15 @@ export default function AdminNewProductPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     name: "",
     slug: "",
     brand: "",
+    categoryId: "",
     shortDescription: "",
     description: "",
     price: 0,
@@ -28,6 +31,20 @@ export default function AdminNewProductPage() {
     franchise: "",
     images: ["", ""],
   });
+
+  useEffect(() => {
+    fetch(`${API_BASE}/admin/categories`)
+      .then((res) => res.json())
+      .then((data) => {
+        const catList = data.categories || [];
+        setCategories(catList);
+        if (catList.length > 0) {
+          setForm((prev) => ({ ...prev, categoryId: catList[0].id }));
+        }
+      })
+      .catch(() => setCategories([]))
+      .finally(() => setLoadingCategories(false));
+  }, []);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -45,6 +62,11 @@ export default function AdminNewProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isImageUploading) return;
+
+    if (!form.categoryId) {
+      setError("A category selection is required to publish a product. Please create a category first.");
+      return;
+    }
 
     setIsSubmitting(true);
     setError("");
@@ -91,6 +113,24 @@ export default function AdminNewProductPage() {
         </div>
       </div>
 
+      {!loadingCategories && categories.length === 0 && (
+        <div className="p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>
+              A Category is required to publish products, but no categories exist in your database yet.
+            </span>
+          </div>
+          <Link
+            href="/admin/categories"
+            className="px-3 py-1.5 bg-[#A83232] text-white hover:bg-[#852727] text-[11px] font-semibold uppercase tracking-wider flex items-center space-x-1"
+          >
+            <PlusCircle className="w-3.5 h-3.5 mr-1" />
+            <span>Create Category First</span>
+          </Link>
+        </div>
+      )}
+
       {error && (
         <div className="p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold">
           {error}
@@ -115,7 +155,7 @@ export default function AdminNewProductPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
               <label className="font-semibold uppercase text-[#6B6B6B]">URL Slug *</label>
               <input
@@ -126,6 +166,32 @@ export default function AdminNewProductPage() {
                 placeholder="shadow-monarch-1-6-scale-statue"
                 className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none"
               />
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold uppercase text-[#6B6B6B]">Product Category *</label>
+              {loadingCategories ? (
+                <div className="p-3 bg-[#F7F7F5] border border-[#E5E5E2] text-[#6B6B6B]">
+                  Loading categories...
+                </div>
+              ) : categories.length > 0 ? (
+                <select
+                  required
+                  value={form.categoryId}
+                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                  className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none font-semibold text-[#111111]"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} ({cat.slug})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="p-3 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] font-semibold">
+                  No category available. Please create one at /admin/categories.
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
