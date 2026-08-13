@@ -10,7 +10,9 @@ import { API_BASE } from "@/lib/api";
 export function Header() {
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [announcement, setAnnouncement] = useState("⚡ COMPLIMENTARY EXPRESS SHIPPING ON ORDERS OVER ₹15,000 | AUTHENTIC IMPORTS DIRECT FROM TOKYO");
+  const [announcement, setAnnouncement] = useState(
+    "⚡ COMPLIMENTARY EXPRESS SHIPPING ON ORDERS OVER ₹15,000 | AUTHENTIC IMPORTS DIRECT FROM TOKYO"
+  );
 
   useEffect(() => {
     fetch(`${API_BASE}/settings`)
@@ -36,43 +38,39 @@ export function Header() {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 bg-[#F7F7F5]/90 backdrop-blur-md border-b border-[#E5E5E2] transition-colors">
+    <header className="sticky top-0 z-40 bg-[#F7F7F5]/90 backdrop-blur-md border-b border-[#E5E5E2] transition-colors w-full max-w-full overflow-hidden box-border">
       {/* Top Banner Announcement */}
-      <div className="bg-[#111111] text-white text-[11px] font-medium tracking-widest text-center py-1.5 uppercase px-4 truncate">
-        <span>{announcement}</span>
+      <div className="bg-[#111111] text-white text-[10px] sm:text-[11px] font-medium tracking-widest text-center py-1.5 uppercase px-3 sm:px-4 w-full overflow-hidden whitespace-nowrap box-border">
+        <p className="truncate w-full max-w-full block font-sans">
+          {announcement}
+        </p>
       </div>
 
-      <div className="editorial-container flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6">
-        {/* Mobile Menu Toggle */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-[#111111] hover:text-[#6B6B6B]"
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+      {/* Main Header Container: [☰] [LOGO] <space> [SEARCH] [♡] [CART] */}
+      <div className="w-full max-w-[1340px] mx-auto flex items-center justify-between h-16 sm:h-20 px-3 sm:px-6 box-border">
+        {/* Left Section: Hamburger + Brand Logo */}
+        <div className="flex items-center space-x-2 sm:space-x-4 shrink-0 min-w-0">
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 text-[#111111] hover:text-[#6B6B6B] focus:outline-none shrink-0"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
 
-        {/* Brand Logo Link */}
-        <Link href="/" className="flex items-center hover:opacity-85 transition-opacity">
-          {/* Desktop Full Horizontal Logo */}
-          <Image
-            src="/fictionfigure-logo.svg"
-            alt="FictionFigure"
-            width={200}
-            height={44}
-            priority
-            className="hidden sm:block h-10 w-auto object-contain"
-          />
-          {/* Mobile Compact Emblem Icon */}
-          <Image
-            src="/fictionfigure-icon.svg"
-            alt="FictionFigure"
-            width={34}
-            height={34}
-            priority
-            className="sm:hidden h-8.5 w-auto object-contain"
-          />
-        </Link>
+          {/* Brand Logo Link */}
+          <Link href="/" className="flex items-center hover:opacity-85 transition-opacity shrink-0">
+            <Image
+              src="/fictionfigure-logo.svg"
+              alt="FictionFigure"
+              width={200}
+              height={44}
+              priority
+              className="h-7 sm:h-10 w-auto object-contain max-w-[110px] sm:max-w-[200px]"
+            />
+          </Link>
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center space-x-8 text-xs font-semibold uppercase tracking-widest text-[#111111]">
@@ -90,11 +88,11 @@ export function Header() {
           </Link>
         </nav>
 
-        {/* Header Action Icons: [☰] [LOGO] [Search] [Account] [Wishlist] [Cart] */}
-        <div className="flex items-center space-x-1 sm:space-x-4 text-[#111111]">
+        {/* Right Header Action Icons */}
+        <div className="flex items-center space-x-1 sm:space-x-3 text-[#111111] shrink-0">
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:text-[#6B6B6B] transition-colors text-xs font-medium"
+            className="p-2 hover:text-[#6B6B6B] transition-colors text-xs font-medium flex items-center justify-center min-w-[36px] min-h-[36px]"
             aria-label="Search catalog"
           >
             <Search className="w-4 h-4" />
@@ -105,30 +103,30 @@ export function Header() {
 
           <Link
             href="/account"
-            className="min-w-[44px] min-h-[44px] hidden sm:flex items-center justify-center hover:text-[#6B6B6B] transition-colors"
+            className="p-2 hidden sm:flex items-center justify-center hover:text-[#6B6B6B] transition-colors min-w-[36px] min-h-[36px]"
             aria-label="Customer Account"
           >
             <User className="w-4 h-4" />
           </Link>
 
-          {/* Wishlist Icon (Visible on Mobile & Desktop) */}
+          {/* Wishlist Icon */}
           <Link
             href="/account/wishlist"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:text-[#6B6B6B] transition-colors"
+            className="p-2 flex items-center justify-center hover:text-[#6B6B6B] transition-colors min-w-[36px] min-h-[36px]"
             aria-label="Saved Wishlist"
           >
             <Heart className="w-4 h-4" />
           </Link>
 
-          {/* Cart Icon */}
+          {/* Cart Icon with Badge */}
           <button
             onClick={() => setIsCartOpen(true)}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:text-[#6B6B6B] transition-colors relative"
+            className="p-2 flex items-center justify-center hover:text-[#6B6B6B] transition-colors relative min-w-[36px] min-h-[36px]"
             aria-label="Shopping Cart"
           >
             <ShoppingBag className="w-4 h-4" />
             {cartCount > 0 && (
-              <span className="absolute top-2 right-1.5 bg-[#111111] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono">
+              <span className="absolute top-1 right-0.5 bg-[#111111] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono">
                 {cartCount}
               </span>
             )}
