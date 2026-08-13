@@ -119,7 +119,10 @@ export async function calculateAuthoritativeTotals(
   };
 }
 
-// 1. Identify Customer Phone (Existing vs New)
+// In-memory OTP rate limiter & store fallback
+const otpStore = new Map<string, { otp: string; expiresAt: number; attempts: number; lastSentAt: number }>();
+
+// 1. Identify & Send OTP Endpoint
 router.post("/auth/identify", async (req, res) => {
   try {
     const { phone } = req.body;
@@ -136,6 +139,7 @@ router.post("/auth/identify", async (req, res) => {
       where: { phone: normalizedPhone, role: "CUSTOMER" },
     });
 
+    // CASE 1: Existing Verified Customer -> Skip OTP
     if (existingUser && existingUser.phoneVerified) {
       const token = jwt.sign(
         { userId: existingUser.id, phone: existingUser.phone, role: "CUSTOMER" },
@@ -146,6 +150,7 @@ router.post("/auth/identify", async (req, res) => {
       return res.json({
         exists: true,
         phoneVerified: true,
+        requiresOtp: false,
         token,
         user: {
           id: existingUser.id,
@@ -157,13 +162,205 @@ router.post("/auth/identify", async (req, res) => {
       });
     }
 
+    // CASE 2: New Customer or Unverified Customer -> Require OTP
     res.json({
-      exists: false,
+      exists: Boolean(existingUser),
+      phoneVerified: false,
       requiresOtp: true,
       normalizedPhone,
     });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to identify customer mobile number." });
+  }
+});
+
+// 2. Send MSG91 OTP Endpoint
+router.post("/auth/send-otp", async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ error: "Mobile number is required" });
+    }
+
+    const normalizedPhone = normalizeIndianPhone(phone);
+    if (!normalizedPhone) {
+      return res.status(400).json({ error: "Please enter a valid 10-digit Indian mobile number." });
+    }
+
+    // Rate Limiting Cooldown Check (30 seconds)
+    const existingOtpData = otpStore.get(normalizedPhone);
+    const now = Date.now();
+    if (existingOtpData && now - existingOtpData.lastSentAt < 30000) {
+      const remainingSeconds = Math.ceil((30000 - (now - existingOtpData.lastSentAt)) / 1000);
+      return res.status(429).json({
+        error: `Please wait ${remainingSeconds} seconds before requesting another OTP.`,
+      });
+    }
+
+    // Generate Secure 6-Digit OTP
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = now + 5 * 60 * 1000; // 5 minute expiry
+
+    otpStore.set(normalizedPhone, {
+      otp: generatedOtp,
+      expiresAt,
+      attempts: 0,
+      lastSentAt: now,
+    });
+
+    const MSG91_AUTH_KEY = process.env.MSG91_AUTH_KEY || "";
+    const cleanDigits = normalizedPhone.replace(/\D/g, "");
+
+    // Call MSG91 Official OTP Send API if auth key configured
+    if (MSG91_AUTH_KEY) {
+      try {
+        const templateId = process.env.MSG91_OTP_TEMPLATE_ID || "";
+        let msg91Url = `https://control.msg91.com/api/v5/otp?mobile=${cleanDigits}&authkey=${MSG91_AUTH_KEY}`;
+        if (templateId) msg91Url += `&template_id=${templateId}`;
+
+        await fetch(msg91Url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ otp: generatedOtp }),
+        });
+      } catch (e) {
+        console.error("MSG91 API dispatch warning");
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `OTP sent successfully to ${normalizedPhone}`,
+      normalizedPhone,
+      cooldownSeconds: 30,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to send OTP code." });
+  }
+});
+
+// 3. Verify OTP Endpoint (Server-Side Validation)
+router.post("/auth/verify-otp", async (req, res) => {
+  try {
+    const { phone, otp, firstName, lastName, email } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({ error: "Mobile number and OTP code are required." });
+    }
+
+    const normalizedPhone = normalizeIndianPhone(phone);
+    if (!normalizedPhone) {
+      return res.status(400).json({ error: "Please enter a valid 10-digit Indian mobile number." });
+    }
+
+    const cleanOtp = otp.toString().trim();
+    if (cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({ error: "Please enter a valid 6-digit numerical OTP code." });
+    }
+
+    const otpData = otpStore.get(normalizedPhone);
+    const now = Date.now();
+
+    if (!otpData) {
+      return res.status(400).json({ error: "OTP expired or not requested. Please request a new OTP code." });
+    }
+
+    if (now > otpData.expiresAt) {
+      otpStore.delete(normalizedPhone);
+      return res.status(400).json({ error: "OTP code has expired. Please request a new code." });
+    }
+
+    if (otpData.attempts >= 5) {
+      otpStore.delete(normalizedPhone);
+      return res.status(429).json({ error: "Too many failed attempts. Please request a new OTP code." });
+    }
+
+    let isValid = false;
+
+    // Call MSG91 Official OTP Verify API if auth key configured
+    const MSG91_AUTH_KEY = process.env.MSG91_AUTH_KEY || "";
+    const cleanDigits = normalizedPhone.replace(/\D/g, "");
+
+    if (MSG91_AUTH_KEY) {
+      try {
+        const msg91Res = await fetch(
+          `https://control.msg91.com/api/v5/otp/verify?otp=${cleanOtp}&mobile=${cleanDigits}&authkey=${MSG91_AUTH_KEY}`
+        );
+        const msg91Data: any = await msg91Res.json();
+        if (msg91Res.ok && (msg91Data.type === "success" || msg91Data.message?.toLowerCase().includes("success"))) {
+          isValid = true;
+        }
+      } catch (e) {}
+    }
+
+    // Fallback to server-side stored OTP
+    if (!isValid && otpData.otp === cleanOtp) {
+      isValid = true;
+    }
+
+    if (!isValid) {
+      otpData.attempts += 1;
+      return res.status(400).json({
+        error: `Invalid OTP code. ${5 - otpData.attempts} attempts remaining.`,
+      });
+    }
+
+    // Clear used OTP record
+    otpStore.delete(normalizedPhone);
+
+    // Upsert Verified CUSTOMER User Record
+    let user = await prisma.user.findFirst({
+      where: { phone: normalizedPhone },
+    });
+
+    if (user) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          phoneVerified: true,
+          isVerified: true,
+          firstName: firstName ? firstName.trim() : user.firstName,
+          lastName: lastName ? lastName.trim() : user.lastName,
+          email: email ? email.trim().toLowerCase() : user.email,
+        },
+      });
+    } else {
+      user = await prisma.user.create({
+        data: {
+          phone: normalizedPhone,
+          firstName: firstName ? firstName.trim() : "Collector",
+          lastName: lastName ? lastName.trim() : "Customer",
+          email: email ? email.trim().toLowerCase() : null,
+          passwordHash: "$2a$10$dummyHashForMobileOnlyUserPasswordPlaceholder",
+          phoneVerified: true,
+          isVerified: true,
+          role: "CUSTOMER",
+        },
+      });
+    }
+
+    // Sign JWT Session Token
+    const token = jwt.sign(
+      { userId: user.id, phone: user.phone, role: "CUSTOMER" },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      success: true,
+      message: "Mobile number verified successfully.",
+      token,
+      user: {
+        id: user.id,
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phoneVerified: user.phoneVerified,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to verify OTP code." });
   }
 });
 

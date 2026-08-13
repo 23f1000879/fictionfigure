@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
-import { Check, Lock, QrCode, Banknote, ArrowRight, Loader2, Phone, AlertCircle } from "lucide-react";
+import { Check, Lock, QrCode, Banknote, ArrowRight, Loader2, Phone, AlertCircle, ShieldCheck, RefreshCw } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 export function CheckoutClient() {
@@ -17,10 +17,17 @@ export function CheckoutClient() {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIdentifying, setIsIdentifying] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const [sessionToken, setSessionToken] = useState<string>("");
   const [isMobileVerified, setIsMobileVerified] = useState(false);
+
+  // OTP State
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [resendTimer, setResendTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
 
   // Store Settings for UPI QR Code
   const [upiSettings, setUpiSettings] = useState({
@@ -48,6 +55,21 @@ export function CheckoutClient() {
 
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+
+  // Countdown timer for OTP Resend
+  useEffect(() => {
+    let interval: any = null;
+    if (isOtpSent && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (resendTimer === 0) {
+      setCanResend(true);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isOtpSent, resendTimer]);
 
   // Fetch UPI Store Settings on Mount
   useEffect(() => {
@@ -143,7 +165,7 @@ export function CheckoutClient() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Customer Mobile Identification
+  // Step 1: Customer Phone Identification & Send OTP
   const handleIdentifyCustomer = async () => {
     if (!formData.phone || formData.phone.trim().length < 10) {
       setErrorMessage("Please enter a valid 10-digit mobile number.");
@@ -154,37 +176,123 @@ export function CheckoutClient() {
     setErrorMessage("");
 
     try {
-      const res = await fetch(`${API_BASE}/checkout/auth/identify`, {
+      // 1. Identify Customer
+      const identifyRes = await fetch(`${API_BASE}/checkout/auth/identify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: formData.phone }),
+      });
+
+      const identifyData = await identifyRes.json();
+      if (!identifyRes.ok) throw new Error(identifyData.error || "Failed to verify mobile number.");
+
+      // Case A: Existing Verified Customer -> Skip OTP
+      if (identifyData.exists && identifyData.phoneVerified) {
+        setIsMobileVerified(true);
+        setIsOtpSent(false);
+        if (identifyData.token) {
+          localStorage.setItem("fictionfigure_token", identifyData.token);
+          setSessionToken(identifyData.token);
+        }
+        if (identifyData.user) {
+          setFormData((prev) => ({
+            ...prev,
+            fullName: `${identifyData.user.firstName || ""} ${identifyData.user.lastName || ""}`.trim() || prev.fullName,
+            email: identifyData.user.email || prev.email,
+          }));
+        }
+        setStep(2);
+        return;
+      }
+
+      // Case B: Require OTP -> Trigger Send OTP
+      const sendOtpRes = await fetch(`${API_BASE}/checkout/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: formData.phone }),
+      });
+
+      const sendOtpData = await sendOtpRes.json();
+      if (!sendOtpRes.ok) throw new Error(sendOtpData.error || "Failed to send OTP code.");
+
+      setIsOtpSent(true);
+      setResendTimer(30);
+      setCanResend(false);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to process mobile verification.");
+    } finally {
+      setIsIdentifying(false);
+    }
+  };
+
+  // Step 1: Verify OTP Server-Side
+  const handleVerifyOtp = async () => {
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setErrorMessage("Please enter the 6-digit OTP code sent to your phone.");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setErrorMessage("");
+
+    try {
+      const res = await fetch(`${API_BASE}/checkout/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: formData.phone,
+          otp: otpCode.trim(),
+          email: formData.email,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "OTP verification failed.");
+
+      setIsMobileVerified(true);
+      setIsOtpSent(false);
+
+      if (data.token) {
+        localStorage.setItem("fictionfigure_token", data.token);
+        setSessionToken(data.token);
+      }
+
+      if (data.user) {
+        setFormData((prev) => ({
+          ...prev,
+          fullName: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || prev.fullName,
+          email: data.user.email || prev.email,
+        }));
+      }
+
+      // Automatically advance to Step 2 — Address
+      setStep(2);
+    } catch (err: any) {
+      setErrorMessage(err.message || "OTP verification failed. Please check the code and try again.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  // Step 1: Resend OTP
+  const handleResendOtp = async () => {
+    if (!canResend) return;
+
+    setErrorMessage("");
+    try {
+      const res = await fetch(`${API_BASE}/checkout/auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: formData.phone }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to verify mobile number.");
+      if (!res.ok) throw new Error(data.error || "Failed to resend OTP.");
 
-      if (data.exists && data.phoneVerified) {
-        setIsMobileVerified(true);
-        if (data.token) {
-          localStorage.setItem("fictionfigure_token", data.token);
-          setSessionToken(data.token);
-        }
-        if (data.user) {
-          setFormData((prev) => ({
-            ...prev,
-            fullName: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || prev.fullName,
-            email: data.user.email || prev.email,
-          }));
-        }
-        setStep(2);
-      } else {
-        setIsMobileVerified(false);
-        setErrorMessage("Mobile number requires verification via SMS OTP.");
-      }
+      setResendTimer(30);
+      setCanResend(false);
     } catch (err: any) {
-      setErrorMessage(err.message || "Failed to identify mobile number.");
-    } finally {
-      setIsIdentifying(false);
+      setErrorMessage(err.message || "Failed to resend OTP.");
     }
   };
 
@@ -244,7 +352,6 @@ export function CheckoutClient() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to submit order.");
 
-      // Clear cart & navigate to order confirmation page
       clearCart();
       router.push(`/order/${data.orderNumber}`);
     } catch (err: any) {
@@ -285,7 +392,7 @@ export function CheckoutClient() {
         </div>
       </header>
 
-      {/* Mobile-Friendly Stepper Bar */}
+      {/* Stepper Bar */}
       <div className="bg-white border-b border-[#E5E5E2]">
         <div className="editorial-container py-3 flex justify-between items-center text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] overflow-x-auto px-4 sm:px-6 scrollbar-none">
           {[
@@ -334,70 +441,134 @@ export function CheckoutClient() {
               </div>
             )}
 
-            {/* Step 1: Contact */}
+            {/* Step 1: Contact & MSG91 OTP UI */}
             {step === 1 && (
               <div className="space-y-6">
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
                   Step 1 — Mobile Verification
                 </h3>
 
-                {isMobileVerified && (
-                  <div className="p-3 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold flex items-center space-x-2">
-                    <Check className="w-4 h-4" />
-                    <span>Verified Mobile Customer ({formData.phone})</span>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold uppercase text-[#6B6B6B]">
-                      Mobile Phone Number *
-                    </label>
-                    <input
-                      type="text"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="+91 98765 43210"
-                      className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold uppercase text-[#6B6B6B]">
-                      Email Address (Optional)
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="collector@domain.com"
-                      className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  {isMobileVerified ? (
+                {isMobileVerified ? (
+                  <div className="p-4 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <ShieldCheck className="w-5 h-5" />
+                      <span>Mobile Number Verified ✓ ({formData.phone})</span>
+                    </div>
                     <button
                       onClick={() => setStep(2)}
-                      className="w-full sm:w-auto min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
+                      className="px-4 py-2 bg-[#2E6B44] text-white text-[11px] font-bold uppercase tracking-wider hover:bg-[#235434] transition-colors"
                     >
-                      Continue to Shipping Address <ArrowRight className="w-4 h-4 inline ml-2" />
+                      Continue to Address →
                     </button>
-                  ) : (
-                    <button
-                      onClick={handleIdentifyCustomer}
-                      disabled={isIdentifying}
-                      className="w-full sm:w-auto min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
-                    >
-                      {isIdentifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Phone className="w-4 h-4 mr-2" />}
-                      <span>Verify Mobile Number</span>
-                    </button>
-                  )}
-                </div>
+                  </div>
+                ) : !isOtpSent ? (
+                  /* Initial Phone Form */
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold uppercase text-[#6B6B6B]">
+                          Mobile Phone Number *
+                        </label>
+                        <input
+                          type="text"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          required
+                          placeholder="+91 98765 43210"
+                          className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold uppercase text-[#6B6B6B]">
+                          Email Address (Optional)
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="collector@domain.com"
+                          className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        onClick={handleIdentifyCustomer}
+                        disabled={isIdentifying}
+                        className="w-full sm:w-auto min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
+                      >
+                        {isIdentifying ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <Phone className="w-4 h-4 mr-2" />
+                        )}
+                        <span>VERIFY MOBILE NUMBER</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* 6-Digit OTP Verification Form UI */
+                  <div className="p-6 bg-[#F7F7F5] border border-[#E5E5E2] space-y-6 text-xs">
+                    <div>
+                      <h4 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
+                        Verify your mobile number
+                      </h4>
+                      <p className="text-xs text-[#6B6B6B] mt-1">
+                        We've sent a 6-digit OTP code to <strong className="text-[#111111] font-mono">{formData.phone}</strong>.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 max-w-xs">
+                      <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                        6-Digit OTP Code *
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        inputMode="numeric"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        placeholder="123456"
+                        className="w-full p-3 min-h-[44px] bg-white border border-[#E5E5E2] text-center font-mono text-base tracking-widest text-[#111111] focus:border-[#111111] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
+                      <button
+                        onClick={handleVerifyOtp}
+                        disabled={isVerifyingOtp || otpCode.trim().length !== 6}
+                        className="min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
+                      >
+                        {isVerifyingOtp ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <ShieldCheck className="w-4 h-4 mr-2" />
+                        )}
+                        <span>VERIFY OTP</span>
+                      </button>
+
+                      <div className="flex items-center text-xs text-[#6B6B6B]">
+                        <span>Didn't receive the code?</span>
+                        {canResend ? (
+                          <button
+                            onClick={handleResendOtp}
+                            className="ml-2 font-semibold text-[#111111] underline hover:text-black flex items-center"
+                          >
+                            <RefreshCw className="w-3 h-3 mr-1 inline" /> RESEND OTP
+                          </button>
+                        ) : (
+                          <span className="ml-2 font-mono font-semibold text-[#6B6B6B]">
+                            Resend in {resendTimer}s
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -606,7 +777,6 @@ export function CheckoutClient() {
                   Step 4 — Payment Selection
                 </h3>
                 <div className="space-y-4">
-                  {/* Option 1: Instant UPI QR Code */}
                   <label
                     onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "UPI" }))}
                     className={`flex items-start space-x-3 p-4 border cursor-pointer ${
@@ -622,7 +792,6 @@ export function CheckoutClient() {
                     </div>
                   </label>
 
-                  {/* Option 2: Cash on Delivery */}
                   <label
                     onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "COD" }))}
                     className={`flex items-start space-x-3 p-4 border cursor-pointer ${
@@ -639,14 +808,12 @@ export function CheckoutClient() {
                   </label>
                 </div>
 
-                {/* UPI QR & UTR Section when UPI is selected */}
                 {formData.paymentMethod === "UPI" && (
                   <div className="p-6 bg-white border border-[#E5E5E2] space-y-6 text-center text-xs">
                     <h4 className="font-semibold uppercase tracking-wider text-[#111111]">
                       SCAN & PAY VIA UPI ({formatPrice(estimatedTotal)})
                     </h4>
 
-                    {/* Responsive Centered QR Code */}
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <div className="relative w-48 h-48 sm:w-56 sm:h-56 bg-white border-2 border-[#111111] p-2 flex items-center justify-center">
                         {upiSettings.upiQrUrl ? (
@@ -673,7 +840,6 @@ export function CheckoutClient() {
                       </div>
                     </div>
 
-                    {/* UTR Input Field */}
                     <div className="space-y-2 max-w-md mx-auto text-left pt-2">
                       <label className="font-semibold uppercase text-[#111111] text-[11px]">
                         12-Digit Transaction / UTR Number *
