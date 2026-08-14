@@ -211,7 +211,7 @@ export default function AdminSettingsPage() {
             <div className="space-y-3">
               <label className="font-semibold uppercase text-[#6B6B6B] block">Hero Image</label>
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="relative w-full sm:w-48 h-32 bg-[#F7F7F5] border border-[#E5E5E2] overflow-hidden shrink-0">
+                <div className="relative w-full sm:w-36 aspect-[3/4] border border-[#E5E5E2] overflow-hidden shrink-0">
                   {settings.homepage_hero_image_url ? (
                     <Image
                       src={settings.homepage_hero_image_url}

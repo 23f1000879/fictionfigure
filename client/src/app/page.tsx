@@ -92,13 +92,13 @@ export default async function HomePage() {
               </div>
 
               {/* Dynamic Hero Image Block */}
-              <div className="relative aspect-[4/3] lg:aspect-[5/4] w-full bg-white border border-[#E5E5E2] overflow-hidden shadow-sm">
+              <div className="relative aspect-[3/4] w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto lg:ml-auto lg:mr-0 border border-[#E5E5E2] overflow-hidden shadow-sm">
                 <Image
                   src={heroImageUrl}
                   alt={title}
                   fill
                   priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  sizes="(max-width: 1024px) 100vw, 45vw"
                   className="object-contain"
                 />
                 {featuredProduct && (
