@@ -6,11 +6,27 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
-import { Check, Lock, QrCode, Banknote, ArrowRight, Loader2, Phone, AlertCircle, ShieldCheck, RefreshCw } from "lucide-react";
+import {
+  Check,
+  Lock,
+  QrCode,
+  Banknote,
+  ArrowLeft,
+  Loader2,
+  Phone,
+  AlertCircle,
+  ShieldCheck,
+  Tag,
+  X,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Truck,
+  CreditCard,
+  UserCheck,
+} from "lucide-react";
 import { API_BASE } from "@/lib/api";
-
 import { MSG91OTPWidget, MSG91VerificationPayload } from "@/components/auth/MSG91OTPWidget";
-
 import { normalizeIndianPhone } from "@/lib/phone";
 
 export function CheckoutClient() {
@@ -18,25 +34,19 @@ export function CheckoutClient() {
   const searchParams = useSearchParams();
   const { cart, cartSubtotal, clearCart } = useCart();
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isIdentifying, setIsIdentifying] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
+  // State Management
   const [sessionToken, setSessionToken] = useState<string>("");
   const [isMobileVerified, setIsMobileVerified] = useState(false);
-
-  // OTP State
+  const [isIdentifying, setIsIdentifying] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
 
-  // Store Settings for UPI QR Code
-  const [upiSettings, setUpiSettings] = useState({
-    upiId: "fictionfigure@upi",
-    upiQrUrl: "",
-  });
-
-  const [utrNumber, setUtrNumber] = useState("");
+  // Address State
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | "new">("new");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -51,65 +61,28 @@ export function CheckoutClient() {
     country: "India",
     shippingMethod: "Standard Shipping" as "Standard Shipping" | "Express Courier",
     paymentMethod: "UPI" as "UPI" | "COD",
-    couponCode: searchParams.get("coupon") || "",
   });
 
-  const [couponDiscount, setCouponDiscount] = useState(0);
-  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  // Validation Errors State
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Centralized Step Validation Helpers
-  const isAddressValid = () => {
-    return (
-      formData.fullName.trim().length > 0 &&
-      formData.streetAddress.trim().length > 0 &&
-      formData.city.trim().length > 0 &&
-      formData.state.trim().length > 0 &&
-      /^\d{6}$/.test(formData.postalCode.trim()) &&
-      formData.country.trim().length > 0
-    );
-  };
+  // Coupon State
+  const [couponInput, setCouponInput] = useState(searchParams.get("coupon") || "");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountAmount: number;
+  } | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  const isShippingValid = () => {
-    return (
-      formData.shippingMethod === "Standard Shipping" ||
-      formData.shippingMethod === "Express Courier"
-    );
-  };
+  // Store Settings (UPI QR)
+  const [upiSettings, setUpiSettings] = useState({
+    upiId: "fictionfigure@upi",
+    upiQrUrl: "",
+  });
+  const [utrNumber, setUtrNumber] = useState("");
 
-  const isPaymentValid = () => {
-    if (formData.paymentMethod === "COD") return true;
-    if (formData.paymentMethod === "UPI") return Boolean(utrNumber && utrNumber.trim().length >= 6);
-    return false;
-  };
-
-  const canEnterStep = (targetStep: 1 | 2 | 3 | 4 | 5): boolean => {
-    if (targetStep === 1) return true;
-    if (targetStep === 2) return isMobileVerified;
-    if (targetStep === 3) return isMobileVerified && isAddressValid();
-    if (targetStep === 4) return isMobileVerified && isAddressValid() && isShippingValid();
-    if (targetStep === 5) return isMobileVerified && isAddressValid() && isShippingValid() && isPaymentValid();
-    return false;
-  };
-
-  // Prevent URL parameter / direct step bypass
-  useEffect(() => {
-    const paramStep = Number(searchParams.get("step"));
-    if (paramStep && [1, 2, 3, 4, 5].includes(paramStep)) {
-      const target = paramStep as 1 | 2 | 3 | 4 | 5;
-      if (!canEnterStep(target)) {
-        let maxStep: 1 | 2 | 3 | 4 | 5 = 1;
-        if (isMobileVerified) maxStep = 2;
-        if (isMobileVerified && isAddressValid()) maxStep = 3;
-        if (isMobileVerified && isAddressValid() && isShippingValid()) maxStep = 4;
-        if (isMobileVerified && isAddressValid() && isShippingValid() && isPaymentValid()) maxStep = 5;
-        setStep(maxStep);
-      } else {
-        setStep(target);
-      }
-    }
-  }, [searchParams, isMobileVerified]);
-
-  // Fetch UPI Store Settings on Mount
+  // 1. Fetch Store Settings for UPI QR on Mount
   useEffect(() => {
     fetch(`${API_BASE}/settings`)
       .then((res) => res.json())
@@ -124,7 +97,7 @@ export function CheckoutClient() {
       .catch(() => {});
   }, []);
 
-  // Fetch Authenticated User Session on Mount
+  // 2. Fetch Authenticated User Session & Saved Addresses on Mount
   useEffect(() => {
     const token = localStorage.getItem("fictionfigure_token");
     if (token) {
@@ -143,6 +116,7 @@ export function CheckoutClient() {
               fullName: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || prev.fullName,
             }));
 
+            // Fetch Saved Addresses
             fetch(`${API_BASE}/checkout/addresses`, {
               headers: { Authorization: `Bearer ${token}` },
             })
@@ -151,6 +125,7 @@ export function CheckoutClient() {
                 if (addrData.addresses && addrData.addresses.length > 0) {
                   setSavedAddresses(addrData.addresses);
                   const def = addrData.addresses.find((a: any) => a.isDefault) || addrData.addresses[0];
+                  setSelectedAddressId(def.id);
                   setFormData((prev) => ({
                     ...prev,
                     fullName: def.fullName || prev.fullName,
@@ -170,65 +145,96 @@ export function CheckoutClient() {
     }
   }, []);
 
-  // Validate Coupon Server-Side
-  useEffect(() => {
-    if (formData.couponCode && cartSubtotal > 0) {
-      fetch(`${API_BASE}/coupons/validate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: formData.couponCode, cartSubtotal }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.valid) setCouponDiscount(data.discountAmount);
-          else setCouponDiscount(0);
-        })
-        .catch(() => setCouponDiscount(0));
-    } else {
-      setCouponDiscount(0);
-    }
-  }, [formData.couponCode, cartSubtotal]);
-
-  const shippingFee =
-    formData.shippingMethod === "Express Courier"
-      ? 500
-      : cartSubtotal >= 15000 || cartSubtotal === 0
-      ? 0
-      : 350;
-
-  const estimatedTotal = Math.max(0, cartSubtotal - couponDiscount + shippingFee);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleStepClick = (targetStep: 1 | 2 | 3 | 4 | 5) => {
-    if (step === targetStep) return;
-
-    if (targetStep < step) {
-      setStep(targetStep);
-      setErrorMessage("");
+  // 3. Handle Coupon Validation
+  const handleApplyCoupon = async (codeToApply?: string) => {
+    const targetCode = codeToApply || couponInput;
+    if (!targetCode || !targetCode.trim()) {
+      setCouponError("Please enter a coupon code.");
       return;
     }
 
-    if (canEnterStep(targetStep)) {
-      setStep(targetStep);
-      setErrorMessage("");
-    } else {
-      if (!isMobileVerified) {
-        setErrorMessage("Please complete mobile verification in Step 1 before continuing.");
-      } else if (!isAddressValid()) {
-        setErrorMessage("Please enter a complete shipping address with a valid 6-digit Indian PIN code in Step 2.");
-      } else if (!isShippingValid()) {
-        setErrorMessage("Please select a delivery option in Step 3.");
-      } else if (!isPaymentValid()) {
-        setErrorMessage("Please select a payment method and submit required payment details in Step 4.");
+    setIsValidatingCoupon(true);
+    setCouponError("");
+
+    try {
+      const res = await fetch(`${API_BASE}/coupons/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: targetCode, cartSubtotal }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        setAppliedCoupon(null);
+        setCouponError(data.error || "Invalid coupon code.");
+      } else {
+        setAppliedCoupon({
+          code: data.coupon.code,
+          discountAmount: data.discountAmount,
+        });
+        setCouponError("");
       }
+    } catch (err: any) {
+      setCouponError("Failed to validate coupon code.");
+    } finally {
+      setIsValidatingCoupon(false);
     }
   };
 
-  // Step 1: Customer Phone Identification & Existing User Check
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError("");
+  };
+
+  // Re-validate coupon if cartSubtotal changes
+  useEffect(() => {
+    if (appliedCoupon && cartSubtotal > 0) {
+      handleApplyCoupon(appliedCoupon.code);
+    }
+  }, [cartSubtotal]);
+
+  // Price Calculation Breakdown
+  const couponDiscount = appliedCoupon ? appliedCoupon.discountAmount : 0;
+  const afterDiscount = Math.max(0, cartSubtotal - couponDiscount);
+  const shippingFee =
+    formData.shippingMethod === "Express Courier"
+      ? 500
+      : afterDiscount >= 15000 || cartSubtotal === 0
+      ? 0
+      : 350;
+
+  const codFee = formData.paymentMethod === "COD" ? 100 : 0;
+  const grandTotal = Math.max(0, afterDiscount + shippingFee + codFee);
+
+  // Form Input Change Handler
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  // Validate Address Fields
+  const validateAddressForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) errors.fullName = "Full name is required.";
+    if (!formData.streetAddress.trim()) errors.streetAddress = "Street address is required.";
+    if (!formData.city.trim()) errors.city = "City is required.";
+    if (!formData.state.trim()) errors.state = "State is required.";
+    if (!formData.postalCode.trim()) {
+      errors.postalCode = "6-digit PIN Code is required.";
+    } else if (!/^\d{6}$/.test(formData.postalCode.trim())) {
+      errors.postalCode = "Please enter a valid 6-digit Indian PIN Code (e.g. 334001).";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Mobile Authentication Identification Handler
   const handleIdentifyCustomer = async () => {
     const norm = normalizeIndianPhone(formData.phone);
     if (!norm) {
@@ -251,7 +257,7 @@ export function CheckoutClient() {
 
       setFormData((prev) => ({ ...prev, phone: norm }));
 
-      // CASE A: Existing Verified Customer -> Skip OTP completely!
+      // Existing Verified Customer -> Restore token & skip OTP
       if (identifyData.exists && identifyData.phoneVerified) {
         setIsMobileVerified(true);
         setIsOtpSent(false);
@@ -266,11 +272,10 @@ export function CheckoutClient() {
             email: identifyData.user.email || prev.email,
           }));
         }
-        setStep(2);
         return;
       }
 
-      // CASE B: New Customer / Unverified -> Trigger Existing MSG91 OTP Widget
+      // New / Unverified Customer -> Trigger MSG91 OTP Widget
       setIsOtpSent(true);
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to process mobile verification.");
@@ -279,7 +284,7 @@ export function CheckoutClient() {
     }
   };
 
-  // Step 1: MSG91 Widget OTP Success Handler
+  // OTP Success Callback from MSG91 OTP Widget
   const handleWidgetSuccess = async (payload: MSG91VerificationPayload) => {
     setIsVerifyingOtp(true);
     setErrorMessage("");
@@ -314,8 +319,6 @@ export function CheckoutClient() {
           email: data.user.email || prev.email,
         }));
       }
-
-      setStep(2);
     } catch (err: any) {
       setErrorMessage(err.message || "OTP verification failed. Please try again.");
     } finally {
@@ -323,49 +326,23 @@ export function CheckoutClient() {
     }
   };
 
-  // Step 2 Validation & Advancement
-  const handleAdvanceToStep3 = () => {
-    if (!isAddressValid()) {
-      if (!/^\d{6}$/.test(formData.postalCode.trim())) {
-        setErrorMessage("Please enter a valid 6-digit Indian PIN code (e.g. 400001).");
-      } else {
-        setErrorMessage("Please fill in all required address fields (Full Name, Street Address, City, State, PIN Code).");
-      }
-      return;
-    }
-    setErrorMessage("");
-    setStep(3);
-  };
-
-  // Step 3 Validation & Advancement
-  const handleAdvanceToStep4 = () => {
-    if (!isShippingValid()) {
-      setErrorMessage("Please select a valid delivery option.");
-      return;
-    }
-    setErrorMessage("");
-    setStep(4);
-  };
-
-  // Step 4 Validation & Advancement
-  const handleAdvanceToStep5 = () => {
-    if (formData.paymentMethod === "UPI" && (!utrNumber || utrNumber.trim().length < 6)) {
-      setErrorMessage("Please enter a valid 12-digit UTR / Transaction Reference Number.");
-      return;
-    }
-    setErrorMessage("");
-    setStep(5);
-  };
-
-  // Submit Order (UPI QR with UTR or COD)
+  // Final Order Submission Handler
   const handlePlaceOrder = async () => {
-    if (!canEnterStep(5)) {
-      setErrorMessage("Please complete all preceding checkout steps before placing your order.");
+    // 1. Mobile verification check
+    if (!isMobileVerified) {
+      setErrorMessage("Please complete mobile phone verification under Contact Information first.");
       return;
     }
 
+    // 2. Address validation
+    if (!validateAddressForm()) {
+      setErrorMessage("Please complete all required delivery address fields with a valid PIN code.");
+      return;
+    }
+
+    // 3. Payment method details check
     if (formData.paymentMethod === "UPI" && (!utrNumber || utrNumber.trim().length < 6)) {
-      setErrorMessage("Please enter a valid 12-digit UTR / Transaction Reference Number.");
+      setErrorMessage("Please enter a valid 12-digit UTR / Transaction Reference Number for your UPI payment.");
       return;
     }
 
@@ -390,7 +367,7 @@ export function CheckoutClient() {
 
       const bodyPayload: any = {
         cartItems: cartItemsPayload,
-        couponCode: formData.couponCode,
+        couponCode: appliedCoupon ? appliedCoupon.code : "",
         shippingAddress: {
           fullName: formData.fullName,
           streetAddress: formData.streetAddress,
@@ -416,7 +393,7 @@ export function CheckoutClient() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to submit order.");
+      if (!res.ok) throw new Error(data.error || "Failed to create order. Please try again.");
 
       clearCart();
       router.push(`/order/${data.orderNumber}`);
@@ -427,209 +404,289 @@ export function CheckoutClient() {
     }
   };
 
+  // Render Empty Cart Screen
   if (cart.length === 0) {
     return (
-      <div className="py-20 text-center space-y-4 max-w-md mx-auto px-4">
-        <h2 className="text-xl font-semibold text-[#111111]">No items in checkout</h2>
-        <p className="text-xs text-[#6B6B6B]">Your cart is empty. Please add collectibles to continue checkout.</p>
-        <Link
-          href="/shop"
-          className="inline-block min-h-[44px] px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider"
-        >
-          Return to Shop
-        </Link>
+      <div className="min-h-screen bg-[#F7F7F5] flex flex-col justify-center items-center p-6 text-[#111111]">
+        <div className="bg-white border border-[#E5E5E2] p-8 sm:p-12 text-center space-y-6 max-w-md w-full">
+          <h2 className="text-xl font-bold uppercase tracking-wider text-[#111111]">
+            Your Cart is Empty
+          </h2>
+          <p className="text-xs text-[#6B6B6B] leading-relaxed">
+            There are no collectibles in your checkout cart. Please browse our catalog to add items before checking out.
+          </p>
+          <Link
+            href="/shop"
+            className="inline-block w-full min-h-[44px] px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
+          >
+            Return to Shop
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-[#E5E5E2] py-4">
-        <div className="editorial-container flex justify-between items-center px-4 sm:px-6">
-          <Link href="/" className="text-lg font-bold tracking-tighter uppercase text-[#111111] font-mono">
+    <div className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col font-sans">
+      {/* 1. Header: Minimal Secure Checkout Navigation */}
+      <header className="bg-white border-b border-[#E5E5E2] sticky top-0 z-30">
+        <div className="editorial-container flex justify-between items-center py-4 px-4 sm:px-6">
+          <Link
+            href="/"
+            className="text-lg font-bold tracking-tighter uppercase text-[#111111] font-mono hover:opacity-80 transition-opacity"
+          >
             FICTIONFIGURE
           </Link>
-          <div className="flex items-center text-xs text-[#6B6B6B] space-x-1 font-mono">
-            <Lock className="w-3.5 h-3.5 mr-1 text-[#2E6B44]" />
-            <span className="hidden sm:inline">256-Bit Encrypted Secure Checkout</span>
-            <span className="sm:hidden">Secure Checkout</span>
+
+          <div className="flex items-center space-x-4 text-xs text-[#6B6B6B]">
+            <div className="hidden sm:flex items-center space-x-1.5 font-mono text-[11px] text-[#2E6B44] bg-[#2E6B44]/10 px-2.5 py-1 border border-[#2E6B44]/20">
+              <Lock className="w-3.5 h-3.5 shrink-0" />
+              <span>256-Bit Encrypted Secure Checkout</span>
+            </div>
+            <Link
+              href="/cart"
+              className="flex items-center space-x-1 text-[#6B6B6B] hover:text-[#111111] transition-colors font-medium"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="text-[11px] uppercase tracking-wider">Return to Cart</span>
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* Stepper Bar - Strictly Sequential State Machine Navigation */}
-      <div className="bg-white border-b border-[#E5E5E2]">
-        <div className="editorial-container py-3 flex justify-between items-center text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] overflow-x-auto px-4 sm:px-6 scrollbar-none">
-          {[
-            { num: 1, label: "Contact" },
-            { num: 2, label: "Address" },
-            { num: 3, label: "Delivery" },
-            { num: 4, label: "Payment" },
-            { num: 5, label: "Review" },
-          ].map((s) => {
-            const isCurrent = step === s.num;
-            const isCompleted = s.num < step && canEnterStep(s.num as any);
-            const isLocked = !isCurrent && !isCompleted;
+      {/* Mobile Collapsible Order Summary Accordion (< lg) */}
+      <div className="lg:hidden bg-white border-b border-[#E5E5E2]">
+        <button
+          onClick={() => setMobileSummaryOpen(!mobileSummaryOpen)}
+          className="w-full px-4 py-3 flex items-center justify-between text-xs font-medium text-[#111111]"
+        >
+          <div className="flex items-center space-x-2">
+            <span className="font-semibold uppercase tracking-wider">Order Summary</span>
+            <span className="text-[11px] text-[#6B6B6B] font-mono">({cart.length} items)</span>
+          </div>
+          <div className="flex items-center space-x-2 font-mono font-bold text-sm">
+            <span>{formatPrice(grandTotal)}</span>
+            {mobileSummaryOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </div>
+        </button>
 
-            return (
-              <button
-                key={s.num}
-                onClick={() => handleStepClick(s.num as any)}
-                type="button"
-                className={`flex items-center space-x-1.5 whitespace-nowrap px-2 py-1 min-h-[36px] transition-all ${
-                  isCurrent
-                    ? "text-[#111111] font-bold border-b-2 border-[#111111] cursor-default"
-                    : isCompleted
-                    ? "text-[#2E6B44] hover:underline cursor-pointer font-semibold"
-                    : "text-[#A3A3A3] opacity-60 cursor-not-allowed"
-                }`}
-                title={isLocked ? "Complete previous checkout steps to unlock" : ""}
-              >
-                <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                    isCurrent
-                      ? "bg-[#111111] text-white"
-                      : isCompleted
-                      ? "bg-[#2E6B44] text-white"
-                      : "bg-[#E5E5E2] text-[#A3A3A3]"
-                  }`}
-                >
-                  {isCompleted ? <Check className="w-3 h-3" /> : s.num}
-                </span>
-                <span className="text-[11px]">{s.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {mobileSummaryOpen && (
+          <div className="p-4 border-t border-[#E5E5E2] bg-[#F7F7F5] space-y-4 text-xs">
+            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+              {cart.map((item) => (
+                <div key={item.variantId} className="flex space-x-3 items-center">
+                  <div className="relative w-12 h-12 bg-white shrink-0 border border-[#E5E5E2]">
+                    {item.image && <Image src={item.image} alt={item.title} fill className="object-contain p-1" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="font-semibold text-[#111111] truncate">{item.title}</h5>
+                    <span className="text-[10px] text-[#6B6B6B]">Qty: {item.quantity}</span>
+                  </div>
+                  <span className="font-mono font-semibold text-[#111111]">
+                    {formatPrice(item.price * item.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile Coupon Box */}
+            <div className="pt-2 border-t border-[#E5E5E2] space-y-2">
+              {!appliedCoupon ? (
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Discount code"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    className="flex-1 p-2.5 bg-white border border-[#E5E5E2] font-mono text-xs uppercase focus:border-[#111111] focus:outline-none"
+                  />
+                  <button
+                    onClick={() => handleApplyCoupon()}
+                    disabled={isValidatingCoupon}
+                    className="px-4 py-2.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors"
+                  >
+                    {isValidatingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Apply"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-2.5 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] font-semibold">
+                  <div className="flex items-center space-x-1.5 font-mono">
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>{appliedCoupon.code} (-{formatPrice(appliedCoupon.discountAmount)})</span>
+                  </div>
+                  <button onClick={handleRemoveCoupon} className="text-[#2E6B44] hover:underline text-[10px] uppercase font-bold">
+                    Remove
+                  </button>
+                </div>
+              )}
+              {couponError && <p className="text-[11px] text-[#A83232]">{couponError}</p>}
+            </div>
+
+            {/* Mobile Price Summary */}
+            <div className="space-y-1.5 pt-2 border-t border-[#E5E5E2] text-xs">
+              <div className="flex justify-between text-[#6B6B6B]">
+                <span>Subtotal</span>
+                <span className="font-mono text-[#111111]">{formatPrice(cartSubtotal)}</span>
+              </div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-[#2E6B44]">
+                  <span>Discount ({appliedCoupon?.code})</span>
+                  <span className="font-mono">-{formatPrice(couponDiscount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-[#6B6B6B]">
+                <span>Shipping ({formData.shippingMethod})</span>
+                <span className="font-mono text-[#111111]">{shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}</span>
+              </div>
+              {codFee > 0 && (
+                <div className="flex justify-between text-[#6B6B6B]">
+                  <span>COD Handling Fee</span>
+                  <span className="font-mono text-[#111111]">{formatPrice(codFee)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Main Split Layout */}
+      {/* Main Checkout Grid Layout */}
       <main className="editorial-container py-8 sm:py-12 flex-1 px-4 sm:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-          <div className="lg:col-span-2 space-y-6 sm:space-y-8 bg-white border border-[#E5E5E2] p-5 sm:p-8">
-            {errorMessage && (
-              <div className="p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+        {/* Global Error Banner */}
+        {errorMessage && (
+          <div className="mb-6 p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
-            {/* Step 1: Contact & MSG91 OTP UI */}
-            {step === 1 && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
-                  Step 1 — Mobile Verification
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          {/* LEFT COLUMN (~60% / 7 cols): Checkout Flow Sections */}
+          <div className="lg:col-span-7 space-y-8 bg-white border border-[#E5E5E2] p-6 sm:p-8">
+            {/* SECTION 1: CONTACT INFORMATION */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-3">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] flex items-center">
+                  <UserCheck className="w-4 h-4 mr-2 text-[#111111]" /> 1. Contact Information
                 </h3>
-
-                {isMobileVerified ? (
-                  <div className="p-4 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <ShieldCheck className="w-5 h-5" />
-                      <span>Mobile Number Verified ✓ ({formData.phone})</span>
-                    </div>
-                    <button
-                      onClick={() => setStep(2)}
-                      className="px-4 py-2 bg-[#2E6B44] text-white text-[11px] font-bold uppercase tracking-wider hover:bg-[#235434] transition-colors"
-                    >
-                      Continue to Address →
-                    </button>
-                  </div>
-                ) : !isOtpSent ? (
-                  /* Initial Phone Form */
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase text-[#6B6B6B]">
-                          Mobile Phone Number *
-                        </label>
-                        <input
-                          type="text"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          required
-                          placeholder="+91 98765 43210"
-                          className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none font-mono"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase text-[#6B6B6B]">
-                          Email Address (Optional)
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          placeholder="collector@domain.com"
-                          className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <button
-                        onClick={handleIdentifyCustomer}
-                        disabled={isIdentifying}
-                        className="w-full sm:w-auto min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
-                      >
-                        {isIdentifying ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                          <Phone className="w-4 h-4 mr-2" />
-                        )}
-                        <span>VERIFY MOBILE NUMBER</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* MSG91 Web SDK OTP Widget Reused from Registration */
-                  <div className="p-6 bg-[#F7F7F5] border border-[#E5E5E2] space-y-4 text-xs">
-                    <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-3">
-                      <div>
-                        <h4 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
-                          Verify your mobile number
-                        </h4>
-                        <p className="text-xs text-[#6B6B6B] mt-0.5 font-mono">
-                          Mobile: {formData.phone}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsOtpSent(false)}
-                        className="text-xs text-[#6B6B6B] hover:text-[#111111] underline uppercase tracking-wider text-[11px]"
-                      >
-                        Change Number
-                      </button>
-                    </div>
-
-                    <MSG91OTPWidget
-                      phone={formData.phone}
-                      onSuccess={handleWidgetSuccess}
-                      onError={(err) => setErrorMessage(err)}
-                    />
-                  </div>
+                {isMobileVerified && (
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#2E6B44] bg-[#2E6B44]/10 px-2 py-0.5 border border-[#2E6B44]/20 flex items-center">
+                    <ShieldCheck className="w-3 h-3 mr-1" /> Verified
+                  </span>
                 )}
               </div>
-            )}
 
-            {/* Step 2: Shipping Address */}
-            {step === 2 && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
-                  Step 2 — Shipping Address
+              {isMobileVerified ? (
+                <div className="p-4 bg-[#F7F7F5] border border-[#E5E5E2] space-y-1 text-xs">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="font-semibold text-[#111111] block">
+                        {formData.fullName || "Customer"}
+                      </span>
+                      <span className="text-[#6B6B6B] font-mono block">{formData.phone}</span>
+                      {formData.email && <span className="text-[#6B6B6B] block text-[11px]">{formData.email}</span>}
+                    </div>
+                    <button
+                      onClick={() => setIsMobileVerified(false)}
+                      className="text-[11px] text-[#6B6B6B] hover:text-[#111111] underline uppercase tracking-wider font-medium"
+                    >
+                      Change Number
+                    </button>
+                  </div>
+                </div>
+              ) : !isOtpSent ? (
+                <div className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                        Mobile Phone Number *
+                      </label>
+                      <input
+                        type="text"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="+91 98765 43210"
+                        className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                        Email Address (Optional)
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="collector@domain.com"
+                        className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleIdentifyCustomer}
+                    disabled={isIdentifying}
+                    className="w-full min-h-[44px] px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
+                  >
+                    {isIdentifying ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Phone className="w-4 h-4 mr-2" />
+                    )}
+                    <span>VERIFY MOBILE VIA OTP</span>
+                  </button>
+                </div>
+              ) : (
+                /* MSG91 Web OTP Widget */
+                <div className="p-5 bg-[#F7F7F5] border border-[#E5E5E2] space-y-4 text-xs">
+                  <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-3">
+                    <div>
+                      <h4 className="font-semibold uppercase tracking-wider text-[#111111]">
+                        Verify OTP Sent to {formData.phone}
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsOtpSent(false)}
+                      className="text-[#6B6B6B] hover:text-[#111111] underline uppercase tracking-wider text-[10px]"
+                    >
+                      Change Phone
+                    </button>
+                  </div>
+
+                  <MSG91OTPWidget
+                    phone={formData.phone}
+                    onSuccess={handleWidgetSuccess}
+                    onError={(err) => setErrorMessage(err)}
+                  />
+                </div>
+              )}
+            </section>
+
+            {/* SECTION 2: DELIVERY ADDRESS */}
+            <section className="space-y-4 pt-4 border-t border-[#E5E5E2]">
+              <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-3">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] flex items-center">
+                  <MapPin className="w-4 h-4 mr-2 text-[#111111]" /> 2. Delivery Address
                 </h3>
+              </div>
 
-                {savedAddresses.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase text-[#6B6B6B]">Select Saved Address</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {savedAddresses.map((addr) => (
+              {/* Saved Address Cards */}
+              {savedAddresses.length > 0 && (
+                <div className="space-y-3">
+                  <label className="text-[11px] font-semibold uppercase text-[#6B6B6B] block">
+                    Saved Addresses
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {savedAddresses.map((addr) => {
+                      const isSelected = selectedAddressId === addr.id;
+                      return (
                         <div
                           key={addr.id}
                           onClick={() => {
+                            setSelectedAddressId(addr.id);
                             setFormData((prev) => ({
                               ...prev,
                               fullName: addr.fullName,
@@ -640,349 +697,367 @@ export function CheckoutClient() {
                               postalCode: addr.postalCode,
                               country: addr.country,
                             }));
+                            setFieldErrors({});
                           }}
-                          className="p-3 border border-[#E5E5E2] hover:border-[#111111] cursor-pointer text-xs space-y-1 bg-[#F7F7F5]"
+                          className={`p-3.5 border cursor-pointer text-xs space-y-1.5 transition-all ${
+                            isSelected
+                              ? "border-[#111111] bg-[#F7F7F5] shadow-2xs"
+                              : "border-[#E5E5E2] hover:border-[#111111]"
+                          }`}
                         >
-                          <span className="font-semibold text-[#111111] block">{addr.fullName}</span>
-                          <span className="text-[#6B6B6B] block truncate">{addr.streetAddress}, {addr.city}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-4 text-xs">
-                  <div className="space-y-1">
-                    <label className="font-semibold uppercase text-[#6B6B6B]">Full Name *</label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Ren Amamiya"
-                      className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="font-semibold uppercase text-[#6B6B6B]">Street Address *</label>
-                    <input
-                      type="text"
-                      name="streetAddress"
-                      value={formData.streetAddress}
-                      onChange={handleInputChange}
-                      placeholder="Flat / House No., Building Name, Street"
-                      className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="font-semibold uppercase text-[#6B6B6B]">Apartment / Landmark</label>
-                      <input
-                        type="text"
-                        name="apartment"
-                        value={formData.apartment}
-                        onChange={handleInputChange}
-                        placeholder="Suite / Landmark"
-                        className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="font-semibold uppercase text-[#6B6B6B]">City *</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        placeholder="Bikaner"
-                        className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                      <label className="font-semibold uppercase text-[#6B6B6B]">State *</label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        placeholder="Maharashtra"
-                        className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="font-semibold uppercase text-[#6B6B6B]">PIN Code (6 Digits) *</label>
-                      <input
-                        type="text"
-                        name="postalCode"
-                        maxLength={6}
-                        value={formData.postalCode}
-                        onChange={handleInputChange}
-                        placeholder="400001"
-                        className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-[#111111] focus:border-[#111111] focus:outline-none"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="font-semibold uppercase text-[#6B6B6B]">Country</label>
-                      <input
-                        type="text"
-                        name="country"
-                        value={formData.country}
-                        onChange={handleInputChange}
-                        className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between pt-4">
-                  <button onClick={() => setStep(1)} className="text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] min-h-[44px] px-2">
-                    ← Back
-                  </button>
-                  <button
-                    onClick={handleAdvanceToStep3}
-                    className="min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
-                  >
-                    Continue to Delivery <ArrowRight className="w-4 h-4 inline ml-2" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Delivery Options */}
-            {step === 3 && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
-                  Step 3 — Delivery Options
-                </h3>
-                <div className="space-y-3">
-                  <label
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, shippingMethod: "Standard Shipping" }))
-                    }
-                    className={`flex items-center justify-between p-4 border cursor-pointer min-h-[64px] transition-all ${
-                      formData.shippingMethod === "Standard Shipping"
-                        ? "border-[#111111] bg-[#F7F7F5]"
-                        : "border-[#E5E5E2]"
-                    }`}
-                  >
-                    <div>
-                      <span className="text-xs font-semibold text-[#111111] block">
-                        Insured Standard Shipping (3–5 Days)
-                      </span>
-                      <span className="text-[11px] text-[#6B6B6B]">
-                        Reinforced outer box padding with transit loss insurance.
-                      </span>
-                    </div>
-                    <span className="text-xs font-mono font-semibold text-[#111111] shrink-0 ml-2">
-                      {cartSubtotal >= 15000 ? "FREE" : "₹350"}
-                    </span>
-                  </label>
-
-                  <label
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, shippingMethod: "Express Courier" }))
-                    }
-                    className={`flex items-center justify-between p-4 border cursor-pointer min-h-[64px] transition-all ${
-                      formData.shippingMethod === "Express Courier"
-                        ? "border-[#111111] bg-[#F7F7F5]"
-                        : "border-[#E5E5E2]"
-                    }`}
-                  >
-                    <div>
-                      <span className="text-xs font-semibold text-[#111111] block">
-                        Priority Express Air Freight (24–48 Hours)
-                      </span>
-                      <span className="text-[11px] text-[#6B6B6B]">
-                        Priority dispatch with wooden corner reinforcement.
-                      </span>
-                    </div>
-                    <span className="text-xs font-mono font-semibold text-[#111111] shrink-0 ml-2">₹500</span>
-                  </label>
-                </div>
-                <div className="flex justify-between pt-4">
-                  <button onClick={() => setStep(2)} className="text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] min-h-[44px] px-2">
-                    ← Back
-                  </button>
-                  <button
-                    onClick={handleAdvanceToStep4}
-                    className="min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
-                  >
-                    Continue to Payment <ArrowRight className="w-4 h-4 inline ml-2" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Payment Selection */}
-            {step === 4 && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
-                  Step 4 — Payment Selection
-                </h3>
-                <div className="space-y-4">
-                  <label
-                    onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "UPI" }))}
-                    className={`flex items-start space-x-3 p-4 border cursor-pointer ${
-                      formData.paymentMethod === "UPI" ? "border-[#111111] bg-[#F7F7F5]" : "border-[#E5E5E2]"
-                    }`}
-                  >
-                    <QrCode className="w-5 h-5 text-[#111111] shrink-0 mt-0.5" />
-                    <div className="text-xs space-y-1">
-                      <span className="font-semibold text-[#111111] block">UPI Payment (QR Code & UTR Verification)</span>
-                      <span className="text-[#6B6B6B] text-[11px] block">
-                        Scan using Google Pay, PhonePe, Paytm, BHIM, or any UPI app.
-                      </span>
-                    </div>
-                  </label>
-
-                  <label
-                    onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "COD" }))}
-                    className={`flex items-start space-x-3 p-4 border cursor-pointer ${
-                      formData.paymentMethod === "COD" ? "border-[#111111] bg-[#F7F7F5]" : "border-[#E5E5E2]"
-                    }`}
-                  >
-                    <Banknote className="w-5 h-5 text-[#111111] shrink-0 mt-0.5" />
-                    <div className="text-xs space-y-1">
-                      <span className="font-semibold text-[#111111] block">Cash on Delivery (COD)</span>
-                      <span className="text-[#6B6B6B] text-[11px] block">
-                        Pay cash upon physical arrival at your doorstep.
-                      </span>
-                    </div>
-                  </label>
-                </div>
-
-                {formData.paymentMethod === "UPI" && (
-                  <div className="p-6 bg-white border border-[#E5E5E2] space-y-6 text-center text-xs">
-                    <h4 className="font-semibold uppercase tracking-wider text-[#111111]">
-                      SCAN & PAY VIA UPI ({formatPrice(estimatedTotal)})
-                    </h4>
-
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="relative w-48 h-48 sm:w-56 sm:h-56 bg-white border-2 border-[#111111] p-2 flex items-center justify-center">
-                        {upiSettings.upiQrUrl ? (
-                          <Image
-                            src={upiSettings.upiQrUrl}
-                            alt="FictionFigure UPI QR Code"
-                            width={220}
-                            height={220}
-                            className="object-contain"
-                          />
-                        ) : (
-                          <div className="text-center space-y-2 text-[#6B6B6B]">
-                            <QrCode className="w-16 h-16 mx-auto text-[#111111]" />
-                            <p className="text-[10px] uppercase font-mono">Scan QR Code via GPay / PhonePe</p>
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-[#111111]">{addr.fullName}</span>
+                            {isSelected && (
+                              <span className="w-2 h-2 rounded-full bg-[#111111]"></span>
+                            )}
                           </div>
-                        )}
-                      </div>
+                          <p className="text-[#6B6B6B] text-[11px] leading-tight">
+                            {addr.streetAddress}, {addr.apartment ? `${addr.apartment}, ` : ""}
+                            {addr.city}, {addr.state} - {addr.postalCode}
+                          </p>
+                        </div>
+                      );
+                    })}
 
-                      <div className="space-y-1">
-                        <span className="text-[11px] text-[#6B6B6B] block">Official UPI ID:</span>
-                        <span className="font-mono font-bold text-sm text-[#111111] bg-[#F0F0ED] px-3 py-1 border border-[#E5E5E2] inline-block">
-                          {upiSettings.upiId}
-                        </span>
-                      </div>
+                    <div
+                      onClick={() => {
+                        setSelectedAddressId("new");
+                        setFormData((prev) => ({
+                          ...prev,
+                          streetAddress: "",
+                          apartment: "",
+                          city: "",
+                          state: "",
+                          postalCode: "",
+                        }));
+                      }}
+                      className={`p-3.5 border border-dashed text-center flex items-center justify-center cursor-pointer text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111] hover:border-[#111111] ${
+                        selectedAddressId === "new" ? "border-[#111111] bg-[#F7F7F5]" : "border-[#E5E5E2]"
+                      }`}
+                    >
+                      + Add New Address
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Address Form Inputs */}
+              <div className="space-y-4 text-xs pt-2">
+                <div className="space-y-1">
+                  <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Ren Amamiya"
+                    className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                  />
+                  {fieldErrors.fullName && (
+                    <p className="text-[11px] text-[#A83232]">{fieldErrors.fullName}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                    Street Address (Flat / House No. / Building / Street) *
+                  </label>
+                  <input
+                    type="text"
+                    name="streetAddress"
+                    value={formData.streetAddress}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 42 Collector's Enclave, Station Road"
+                    className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                  />
+                  {fieldErrors.streetAddress && (
+                    <p className="text-[11px] text-[#A83232]">{fieldErrors.streetAddress}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                      Apartment / Suite / Landmark (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="apartment"
+                      value={formData.apartment}
+                      onChange={handleInputChange}
+                      placeholder="Near City Circle"
+                      className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      placeholder="Bikaner"
+                      className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                    />
+                    {fieldErrors.city && (
+                      <p className="text-[11px] text-[#A83232]">{fieldErrors.city}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                      State *
+                    </label>
+                    <input
+                      type="text"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      placeholder="Rajasthan"
+                      className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                    />
+                    {fieldErrors.state && (
+                      <p className="text-[11px] text-[#A83232]">{fieldErrors.state}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                      PIN Code (6 Digits) *
+                    </label>
+                    <input
+                      type="text"
+                      name="postalCode"
+                      maxLength={6}
+                      value={formData.postalCode}
+                      onChange={handleInputChange}
+                      placeholder="334001"
+                      className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-[#111111] focus:border-[#111111] focus:outline-none"
+                    />
+                    {fieldErrors.postalCode && (
+                      <p className="text-[11px] text-[#A83232]">{fieldErrors.postalCode}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                      Country
+                    </label>
+                    <input
+                      type="text"
+                      name="country"
+                      value={formData.country}
+                      onChange={handleInputChange}
+                      readOnly
+                      className="w-full p-3 min-h-[44px] bg-[#E5E5E2]/50 border border-[#E5E5E2] text-[#6B6B6B] cursor-not-allowed focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 3: SHIPPING METHOD */}
+            <section className="space-y-4 pt-4 border-t border-[#E5E5E2]">
+              <div className="border-b border-[#E5E5E2] pb-3">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] flex items-center">
+                  <Truck className="w-4 h-4 mr-2 text-[#111111]" /> 3. Shipping Method
+                </h3>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <label
+                  onClick={() => setFormData((prev) => ({ ...prev, shippingMethod: "Standard Shipping" }))}
+                  className={`flex items-center justify-between p-4 border cursor-pointer min-h-[60px] transition-all ${
+                    formData.shippingMethod === "Standard Shipping"
+                      ? "border-[#111111] bg-[#F7F7F5]"
+                      : "border-[#E5E5E2] hover:border-[#111111]"
+                  }`}
+                >
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[#111111] block">
+                      Insured Standard Courier (3–5 Business Days)
+                    </span>
+                    <span className="text-[11px] text-[#6B6B6B]">
+                      Safe dispatch with protective outer layering. FREE for orders over ₹15,000.
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-[#111111] shrink-0 ml-3">
+                    {afterDiscount >= 15000 ? "FREE" : "₹350"}
+                  </span>
+                </label>
+
+                <label
+                  onClick={() => setFormData((prev) => ({ ...prev, shippingMethod: "Express Courier" }))}
+                  className={`flex items-center justify-between p-4 border cursor-pointer min-h-[60px] transition-all ${
+                    formData.shippingMethod === "Express Courier"
+                      ? "border-[#111111] bg-[#F7F7F5]"
+                      : "border-[#E5E5E2] hover:border-[#111111]"
+                  }`}
+                >
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[#111111] block">
+                      Priority Express Air Freight (24–48 Hours)
+                    </span>
+                    <span className="text-[11px] text-[#6B6B6B]">
+                      Priority dispatch with wooden corner reinforced box padding.
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-[#111111] shrink-0 ml-3">₹500</span>
+                </label>
+              </div>
+            </section>
+
+            {/* SECTION 4: PAYMENT METHOD */}
+            <section className="space-y-4 pt-4 border-t border-[#E5E5E2]">
+              <div className="border-b border-[#E5E5E2] pb-3">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] flex items-center">
+                  <CreditCard className="w-4 h-4 mr-2 text-[#111111]" /> 4. Payment Method
+                </h3>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                {/* UPI Option */}
+                <label
+                  onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "UPI" }))}
+                  className={`flex items-start space-x-3 p-4 border cursor-pointer transition-all ${
+                    formData.paymentMethod === "UPI" ? "border-[#111111] bg-[#F7F7F5]" : "border-[#E5E5E2] hover:border-[#111111]"
+                  }`}
+                >
+                  <QrCode className="w-5 h-5 text-[#111111] shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[#111111] block">UPI / Online Payment (Instant QR Code)</span>
+                    <span className="text-[#6B6B6B] text-[11px]">
+                      Scan using Google Pay, PhonePe, Paytm, BHIM, or any UPI banking app.
+                    </span>
+                  </div>
+                </label>
+
+                {/* COD Option */}
+                <label
+                  onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "COD" }))}
+                  className={`flex items-start space-x-3 p-4 border cursor-pointer transition-all ${
+                    formData.paymentMethod === "COD" ? "border-[#111111] bg-[#F7F7F5]" : "border-[#E5E5E2] hover:border-[#111111]"
+                  }`}
+                >
+                  <Banknote className="w-5 h-5 text-[#111111] shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[#111111] block">Cash on Delivery (COD)</span>
+                    <span className="text-[#6B6B6B] text-[11px]">
+                      Pay cash upon physical arrival at your doorstep (+₹100 COD handling fee).
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* UPI Sub-Section (QR & UTR input) */}
+              {formData.paymentMethod === "UPI" && (
+                <div className="p-6 bg-[#F7F7F5] border border-[#E5E5E2] space-y-6 text-center text-xs">
+                  <h4 className="font-bold uppercase tracking-wider text-[#111111]">
+                    SCAN & PAY VIA UPI ({formatPrice(grandTotal)})
+                  </h4>
+
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="relative w-48 h-48 bg-white border-2 border-[#111111] p-2 flex items-center justify-center">
+                      {upiSettings.upiQrUrl ? (
+                        <Image
+                          src={upiSettings.upiQrUrl}
+                          alt="FictionFigure UPI QR Code"
+                          width={200}
+                          height={200}
+                          className="object-contain"
+                        />
+                      ) : (
+                        <div className="text-center space-y-2 text-[#6B6B6B]">
+                          <QrCode className="w-16 h-16 mx-auto text-[#111111]" />
+                          <p className="text-[10px] uppercase font-mono">Scan QR via GPay / PhonePe</p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="space-y-2 max-w-md mx-auto text-left pt-2">
-                      <label className="font-semibold uppercase text-[#111111] text-[11px]">
-                        12-Digit Transaction / UTR Number *
-                      </label>
-                      <input
-                        type="text"
-                        value={utrNumber}
-                        onChange={(e) => setUtrNumber(e.target.value)}
-                        placeholder="e.g. 423456789012"
-                        className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
-                      />
-                      <span className="text-[10px] text-[#6B6B6B] block">
-                        Enter the 12-digit UTR or Reference ID from your UPI app receipt after payment.
+                    <div className="space-y-1">
+                      <span className="text-[11px] text-[#6B6B6B] block">Official UPI ID:</span>
+                      <span className="font-mono font-bold text-sm text-[#111111] bg-white px-3 py-1 border border-[#E5E5E2] inline-block">
+                        {upiSettings.upiId}
                       </span>
                     </div>
                   </div>
+
+                  <div className="space-y-2 max-w-md mx-auto text-left pt-2">
+                    <label className="font-bold uppercase text-[#111111] text-[11px]">
+                      12-Digit UTR / Transaction Reference Number *
+                    </label>
+                    <input
+                      type="text"
+                      value={utrNumber}
+                      onChange={(e) => setUtrNumber(e.target.value)}
+                      placeholder="e.g. 423456789012"
+                      className="w-full p-3 min-h-[44px] bg-white border border-[#E5E5E2] font-mono text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
+                    />
+                    <span className="text-[10px] text-[#6B6B6B] block">
+                      Enter the 12-digit UTR or Reference ID from your UPI app receipt after making payment.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* SECTION 5: FINAL COMPLETE ORDER CTA */}
+            <div className="pt-4 border-t border-[#E5E5E2]">
+              <button
+                type="button"
+                onClick={handlePlaceOrder}
+                disabled={isSubmitting}
+                className="w-full min-h-[52px] px-8 py-4 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <span>Processing Order...</span>
+                  </>
+                ) : formData.paymentMethod === "UPI" ? (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    <span>PAY {formatPrice(grandTotal)} & PLACE ORDER</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    <span>PLACE COD ORDER — {formatPrice(grandTotal)}</span>
+                  </>
                 )}
+              </button>
 
-                <div className="flex justify-between pt-4">
-                  <button onClick={() => setStep(3)} className="text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] min-h-[44px] px-2">
-                    ← Back
-                  </button>
-                  <button
-                    onClick={handleAdvanceToStep5}
-                    className="min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
-                  >
-                    Review Final Order <ArrowRight className="w-4 h-4 inline ml-2" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 5: Review Order */}
-            {step === 5 && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
-                  Step 5 — Final Order Review
-                </h3>
-                <div className="p-4 bg-[#F7F7F5] border border-[#E5E5E2] space-y-3 text-xs">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-[#6B6B6B]">Customer Contact:</span>
-                    <span className="text-[#111111] font-mono">{formData.phone}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-[#E5E5E2] pt-2">
-                    <span className="font-semibold text-[#6B6B6B]">Ship To:</span>
-                    <span className="text-[#111111] text-right">
-                      {formData.fullName}, {formData.streetAddress}, {formData.city}, {formData.state} - {formData.postalCode}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t border-[#E5E5E2] pt-2">
-                    <span className="font-semibold text-[#6B6B6B]">Delivery Method:</span>
-                    <span className="text-[#111111] font-semibold">{formData.shippingMethod}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-[#E5E5E2] pt-2">
-                    <span className="font-semibold text-[#6B6B6B]">Payment Method:</span>
-                    <span className="text-[#111111] font-semibold">
-                      {formData.paymentMethod === "UPI" ? `UPI QR (UTR: ${utrNumber || "N/A"})` : "Cash on Delivery (COD)"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between pt-4">
-                  <button onClick={() => setStep(4)} className="text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] min-h-[44px] px-2">
-                    ← Back
-                  </button>
-                  <button
-                    onClick={handlePlaceOrder}
-                    disabled={isSubmitting}
-                    className="min-h-[48px] px-10 py-4 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" /> Submitting Order...
-                      </>
-                    ) : (
-                      <>Place Order ({formatPrice(estimatedTotal)})</>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
+              <p className="text-[10px] text-center text-[#6B6B6B] mt-3">
+                By placing your order, you agree to FictionFigure’s Terms & Conditions and Store Policies.
+              </p>
+            </div>
           </div>
 
-          {/* Right Column: Summary Box */}
-          <div className="space-y-4">
+          {/* RIGHT COLUMN (~40% / 5 cols): Desktop Order Summary Sidebar */}
+          <aside className="hidden lg:block lg:col-span-5 space-y-6 sticky top-24">
             <div className="bg-white border border-[#E5E5E2] p-6 space-y-6">
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
                 Order Summary ({cart.length})
               </h3>
 
-              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+              {/* Product Items List */}
+              <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
                 {cart.map((item) => (
                   <div key={item.variantId} className="flex space-x-3 items-center text-xs">
-                    <div className="relative w-12 h-12 bg-[#F0F0ED] shrink-0 border border-[#E5E5E2]">
-                      {item.image && <Image src={item.image} alt={item.title} fill className="object-cover" />}
+                    <div className="relative w-14 h-14 bg-[#F7F7F5] shrink-0 border border-[#E5E5E2]">
+                      {item.image && <Image src={item.image} alt={item.title} fill className="object-contain p-1" />}
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 space-y-0.5">
                       <h5 className="font-semibold text-[#111111] truncate">{item.title}</h5>
-                      <span className="text-[10px] text-[#6B6B6B]">Qty: {item.quantity}</span>
+                      <div className="text-[10px] text-[#6B6B6B] flex items-center space-x-2">
+                        <span>Qty: {item.quantity}</span>
+                        <span>•</span>
+                        <span className="font-mono">{formatPrice(item.price)} each</span>
+                      </div>
                     </div>
                     <span className="font-mono font-semibold text-[#111111]">
                       {formatPrice(item.price * item.quantity)}
@@ -991,30 +1066,81 @@ export function CheckoutClient() {
                 ))}
               </div>
 
-              <div className="space-y-2 pt-3 border-t border-[#E5E5E2] text-xs">
+              {/* Coupon Code Entry Box */}
+              <div className="pt-4 border-t border-[#E5E5E2] space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block">
+                  Discount Code
+                </label>
+                {!appliedCoupon ? (
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Enter coupon code"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                      className="flex-1 p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-xs uppercase focus:border-[#111111] focus:outline-none"
+                    />
+                    <button
+                      onClick={() => handleApplyCoupon()}
+                      disabled={isValidatingCoupon}
+                      className="px-4 py-2.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50 transition-colors"
+                    >
+                      {isValidatingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Apply"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-3 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] font-semibold text-xs">
+                    <div className="flex items-center space-x-1.5 font-mono">
+                      <Tag className="w-3.5 h-3.5" />
+                      <span>{appliedCoupon.code} (-{formatPrice(appliedCoupon.discountAmount)})</span>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-[#2E6B44] hover:underline text-[10px] uppercase font-bold"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+                {couponError && <p className="text-[11px] text-[#A83232]">{couponError}</p>}
+              </div>
+
+              {/* Authoritative Price Breakdown Table */}
+              <div className="space-y-2.5 pt-4 border-t border-[#E5E5E2] text-xs">
                 <div className="flex justify-between text-[#6B6B6B]">
                   <span>Subtotal</span>
                   <span className="font-mono text-[#111111]">{formatPrice(cartSubtotal)}</span>
                 </div>
+
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-[#2E6B44]">
-                    <span>Discount (Code: {formData.couponCode})</span>
+                    <span>Discount ({appliedCoupon?.code})</span>
                     <span className="font-mono">-{formatPrice(couponDiscount)}</span>
                   </div>
                 )}
+
                 <div className="flex justify-between text-[#6B6B6B]">
-                  <span>Shipping</span>
+                  <span>Shipping ({formData.shippingMethod})</span>
                   <span className="font-mono text-[#111111]">
                     {shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-[#E5E5E2] text-sm font-semibold">
-                  <span className="uppercase text-xs tracking-wider">Estimated Total</span>
-                  <span className="font-mono text-[#111111]">{formatPrice(estimatedTotal)}</span>
+
+                {codFee > 0 && (
+                  <div className="flex justify-between text-[#6B6B6B]">
+                    <span>COD Handling Fee</span>
+                    <span className="font-mono text-[#111111]">{formatPrice(codFee)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-3 border-t border-[#E5E5E2] text-sm font-bold">
+                  <span className="uppercase text-xs tracking-wider">Total Amount</span>
+                  <span className="font-mono text-base text-[#111111]">{formatPrice(grandTotal)}</span>
                 </div>
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </main>
     </div>
