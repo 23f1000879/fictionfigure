@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { FolderTree, Plus, Edit2, Trash2, ArrowUpRight, Loader2, AlertCircle, CheckCircle2, Package } from "lucide-react";
 import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -27,7 +27,7 @@ export default function AdminCategoriesPage() {
 
   const fetchCategories = () => {
     setLoading(true);
-    fetch(`${API_BASE}/admin/categories`)
+    adminFetch(`${API_BASE}/admin/categories`)
       .then((res) => res.json())
       .then((data) => setCategories(data.categories || []))
       .catch(() => setCategories([]))
@@ -79,7 +79,7 @@ export default function AdminCategoriesPage() {
         : `${API_BASE}/admin/categories`;
       const method = editingCategory ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
+      const res = await adminFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -103,7 +103,7 @@ export default function AdminCategoriesPage() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(
+      const res = await adminFetch(
         `${API_BASE}/admin/categories/${cat.id}?action=${action}`,
         { method: "DELETE" }
       );

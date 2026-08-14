@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { UploadCloud, Image as ImageIcon, X, RefreshCw, Link as LinkIcon, Loader2, AlertCircle } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 interface ProductImageUploaderProps {
   label: string;
@@ -58,7 +58,7 @@ export function ProductImageUploader({
       const formData = new FormData();
       formData.append("image", file);
 
-      const res = await fetch(`${API_BASE}/admin/uploads/product-image`, {
+      const res = await adminFetch(`${API_BASE}/admin/uploads/product-image`, {
         method: "POST",
         body: formData,
       });

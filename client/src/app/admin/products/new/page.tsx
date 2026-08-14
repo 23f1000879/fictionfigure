@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, AlertCircle, PlusCircle } from "lucide-react";
 import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminNewProductPage() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function AdminNewProductPage() {
   });
 
   useEffect(() => {
-    fetch(`${API_BASE}/admin/categories`)
+    adminFetch(`${API_BASE}/admin/categories`)
       .then((res) => res.json())
       .then((data) => {
         const catList = data.categories || [];
@@ -91,7 +91,7 @@ export default function AdminNewProductPage() {
         throw new Error("Please upload or provide at least one Primary Product Image.");
       }
 
-      const res = await fetch(`${API_BASE}/admin/products`, {
+      const res = await adminFetch(`${API_BASE}/admin/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
