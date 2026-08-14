@@ -403,42 +403,80 @@ router.post("/submit-upi-payment", async (req, res) => {
 
     const orderNumber = `FF-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        userId,
-        status: "PENDING",
-        subtotal: totals.subtotal,
-        discountAmount: totals.discountAmount,
-        shippingAmount: totals.shippingAmount,
-        totalAmount: totals.totalAmount,
-        shippingAddressJson: JSON.stringify({
-          ...shippingAddress,
-          postalCode: cleanPin,
-          phone: verifiedUser.phone || shippingAddress.phone,
-        }),
-        shippingMethod: validShippingMethod,
-        couponId: totals.appliedCoupon ? totals.appliedCoupon.id : null,
-        items: {
-          create: totals.verifiedItems.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            title: item.title,
-            sku: item.sku,
-            price: item.price,
-            quantity: item.quantity,
-            total: item.total,
-          })),
-        },
-        payments: {
-          create: {
-            paymentMethod: "UPI",
-            status: "PENDING",
-            amount: totals.totalAmount,
-            transactionRef: utr.trim(),
-          },
+    const orderData = {
+      orderNumber,
+      userId,
+      status: "PENDING",
+      subtotal: totals.subtotal,
+      discountAmount: totals.discountAmount,
+      shippingAmount: totals.shippingAmount,
+      totalAmount: totals.totalAmount,
+      shippingAddressJson: JSON.stringify({
+        ...shippingAddress,
+        postalCode: cleanPin,
+        phone: verifiedUser.phone || shippingAddress.phone,
+      }),
+      shippingMethod: validShippingMethod,
+      couponId: totals.appliedCoupon ? totals.appliedCoupon.id : null,
+      items: {
+        create: totals.verifiedItems.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          title: item.title,
+          sku: item.sku,
+          price: item.price,
+          quantity: item.quantity,
+          total: item.total,
+        })),
+      },
+      payments: {
+        create: {
+          paymentMethod: "UPI",
+          status: "PENDING",
+          amount: totals.totalAmount,
+          transactionRef: utr.trim(),
         },
       },
+    };
+
+    const order = await prisma.$transaction(async (tx) => {
+      // Atomically check & deduct inventory
+      for (const item of totals.verifiedItems) {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          include: { inventory: true, product: true },
+        });
+
+        if (!variant) {
+          throw new Error(`Product variant ${item.title} no longer exists.`);
+        }
+
+        const currentStock = variant.inventory ? variant.inventory.quantity : variant.inventoryCount;
+        if (currentStock < item.quantity) {
+          throw new Error(`Insufficient stock for "${variant.product.name}". Only ${currentStock} available.`);
+        }
+
+        if (variant.inventory) {
+          await tx.inventory.update({
+            where: { variantId: item.variantId },
+            data: { quantity: { decrement: item.quantity } },
+          });
+        }
+
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { inventoryCount: { decrement: item.quantity } },
+        });
+      }
+
+      if (orderData.couponId) {
+        await tx.coupon.update({
+          where: { id: orderData.couponId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
+      return await tx.order.create({ data: orderData });
     });
 
     res.json({
@@ -517,41 +555,79 @@ router.post("/submit-cod", async (req, res) => {
 
     const orderNumber = `FF-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        userId,
-        status: "PENDING",
-        subtotal: totals.subtotal,
-        discountAmount: totals.discountAmount,
-        shippingAmount: totals.shippingAmount,
-        totalAmount: totals.totalAmount,
-        shippingAddressJson: JSON.stringify({
-          ...shippingAddress,
-          postalCode: cleanPin,
-          phone: verifiedUser.phone || shippingAddress.phone,
-        }),
-        shippingMethod: validShippingMethod,
-        couponId: totals.appliedCoupon ? totals.appliedCoupon.id : null,
-        items: {
-          create: totals.verifiedItems.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            title: item.title,
-            sku: item.sku,
-            price: item.price,
-            quantity: item.quantity,
-            total: item.total,
-          })),
-        },
-        payments: {
-          create: {
-            paymentMethod: "COD",
-            status: "PENDING",
-            amount: totals.totalAmount,
-          },
+    const orderData = {
+      orderNumber,
+      userId,
+      status: "PENDING",
+      subtotal: totals.subtotal,
+      discountAmount: totals.discountAmount,
+      shippingAmount: totals.shippingAmount,
+      totalAmount: totals.totalAmount,
+      shippingAddressJson: JSON.stringify({
+        ...shippingAddress,
+        postalCode: cleanPin,
+        phone: verifiedUser.phone || shippingAddress.phone,
+      }),
+      shippingMethod: validShippingMethod,
+      couponId: totals.appliedCoupon ? totals.appliedCoupon.id : null,
+      items: {
+        create: totals.verifiedItems.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          title: item.title,
+          sku: item.sku,
+          price: item.price,
+          quantity: item.quantity,
+          total: item.total,
+        })),
+      },
+      payments: {
+        create: {
+          paymentMethod: "COD",
+          status: "PENDING",
+          amount: totals.totalAmount,
         },
       },
+    };
+
+    const order = await prisma.$transaction(async (tx) => {
+      // Atomically check & deduct inventory
+      for (const item of totals.verifiedItems) {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          include: { inventory: true, product: true },
+        });
+
+        if (!variant) {
+          throw new Error(`Product variant ${item.title} no longer exists.`);
+        }
+
+        const currentStock = variant.inventory ? variant.inventory.quantity : variant.inventoryCount;
+        if (currentStock < item.quantity) {
+          throw new Error(`Insufficient stock for "${variant.product.name}". Only ${currentStock} available.`);
+        }
+
+        if (variant.inventory) {
+          await tx.inventory.update({
+            where: { variantId: item.variantId },
+            data: { quantity: { decrement: item.quantity } },
+          });
+        }
+
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { inventoryCount: { decrement: item.quantity } },
+        });
+      }
+
+      if (orderData.couponId) {
+        await tx.coupon.update({
+          where: { id: orderData.couponId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
+      return await tx.order.create({ data: orderData });
     });
 
     res.json({

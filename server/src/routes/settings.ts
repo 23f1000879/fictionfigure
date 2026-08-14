@@ -30,9 +30,23 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   homepage_hero_featured_product_id: "",
 };
 
+let cachedSettingsPayload: { settings: Record<string, string>; featuredProduct: any } | null = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds memory cache
+
+export function clearSettingsCache() {
+  cachedSettingsPayload = null;
+  lastCacheTime = 0;
+}
+
 // 1. Fetch All Dynamic Store Settings & Featured Product Info
 router.get("/", async (_req, res) => {
   try {
+    const now = Date.now();
+    if (cachedSettingsPayload && now - lastCacheTime < CACHE_TTL_MS) {
+      return res.json(cachedSettingsPayload);
+    }
+
     const dbSettings = await prisma.storeSetting.findMany();
     const settingsMap: Record<string, string> = { ...DEFAULT_SETTINGS };
 
@@ -57,7 +71,10 @@ router.get("/", async (_req, res) => {
       }
     }
 
-    res.json({ settings: settingsMap, featuredProduct });
+    cachedSettingsPayload = { settings: settingsMap, featuredProduct };
+    lastCacheTime = now;
+
+    res.json(cachedSettingsPayload);
   } catch (err: any) {
     res.json({ settings: DEFAULT_SETTINGS, featuredProduct: null });
   }
@@ -77,6 +94,8 @@ router.patch("/", async (req, res) => {
       update: { value },
       create: { key, value },
     });
+
+    clearSettingsCache();
 
     res.json({ success: true, setting: updated });
   } catch (err: any) {
