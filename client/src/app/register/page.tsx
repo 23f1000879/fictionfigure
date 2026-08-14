@@ -130,6 +130,22 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center p-4 sm:p-6 text-[#111111]">
       <div className="w-full max-w-[460px] bg-white border border-[#E5E5E2] p-8 shadow-xs space-y-6">
+        {/* Top Navigation Bar: Back to Store */}
+        <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E2]">
+          <Link
+            href="/shop"
+            className="inline-flex items-center text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to Store
+          </Link>
+          <Link
+            href="/"
+            className="text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111] transition-colors"
+          >
+            Home
+          </Link>
+        </div>
+
         {step === "FORM" ? (
           <>
             {/* Header Branding */}

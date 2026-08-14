@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { normalizeIndianPhone } from "@/lib/phone";
 import { API_BASE } from "@/lib/api";
 
@@ -22,6 +22,29 @@ function LoginForm() {
 
   const [showForgot, setShowForgot] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
+
+  // Check if already authenticated on mount
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") : null;
+    if (token) {
+      fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.authenticated && data.user) {
+            if (data.user.role === "ADMIN") {
+              router.replace("/admin");
+            } else if (redirectUrl && redirectUrl.startsWith("/")) {
+              router.replace(redirectUrl);
+            } else {
+              router.replace("/account");
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [router, redirectUrl]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,10 +138,27 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center p-4 sm:p-6 text-[#111111]">
-      <div className="w-full max-w-[460px] bg-white border border-[#E5E5E2] p-8 shadow-xs space-y-6">
+    <div className="min-h-screen bg-[#F7F7F5] flex flex-col items-center justify-center p-4 sm:p-6 text-[#111111]">
+      <div className="w-full max-w-[460px] bg-white border border-[#E5E5E2] p-6 sm:p-8 shadow-xs space-y-6">
+        
+        {/* Top Navigation Bar: Back to Store */}
+        <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E2]">
+          <Link
+            href="/shop"
+            className="inline-flex items-center text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to Store
+          </Link>
+          <Link
+            href="/"
+            className="text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111] transition-colors"
+          >
+            Home
+          </Link>
+        </div>
+
         {/* Header Branding */}
-        <div className="text-center space-y-2 flex flex-col items-center">
+        <div className="text-center space-y-2 flex flex-col items-center pt-2">
           <Link href="/" className="inline-block hover:opacity-85 transition-opacity mb-1">
             <Image
               src="/fictionfigure-icon.svg"
