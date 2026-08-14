@@ -13,8 +13,8 @@ interface AccountTabNavProps {
 
 export function AccountTabNav({ activeTab, orderCount, wishlistCount, isAdmin }: AccountTabNavProps) {
   return (
-    <div className="w-full overflow-x-auto whitespace-nowrap scrollbar-none border-b border-[#E5E5E2] bg-white text-xs font-semibold uppercase tracking-wider">
-      <div className="flex min-w-full">
+    <div className="w-full max-w-full overflow-x-auto whitespace-nowrap border-b border-[#E5E5E2] bg-white text-xs font-semibold uppercase tracking-wider">
+      <div className="flex w-max min-w-full">
         <Link
           href="/account"
           className={`px-4 sm:px-6 py-3.5 border-b-2 flex items-center space-x-2 shrink-0 transition-colors ${
@@ -23,7 +23,7 @@ export function AccountTabNav({ activeTab, orderCount, wishlistCount, isAdmin }:
               : "border-transparent text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]"
           }`}
         >
-          <User className="w-4 h-4" />
+          <User className="w-4 h-4 shrink-0" />
           <span>Profile</span>
         </Link>
 
@@ -35,7 +35,7 @@ export function AccountTabNav({ activeTab, orderCount, wishlistCount, isAdmin }:
               : "border-transparent text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]"
           }`}
         >
-          <Package className="w-4 h-4" />
+          <Package className="w-4 h-4 shrink-0" />
           <span>Orders {orderCount !== undefined ? `(${orderCount})` : ""}</span>
         </Link>
 
@@ -47,8 +47,8 @@ export function AccountTabNav({ activeTab, orderCount, wishlistCount, isAdmin }:
               : "border-transparent text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]"
           }`}
         >
-          <Heart className="w-4 h-4" />
-          <span>Wishlist & Vault {wishlistCount !== undefined ? `(${wishlistCount})` : ""}</span>
+          <Heart className="w-4 h-4 shrink-0" />
+          <span>Wishlist {wishlistCount !== undefined ? `(${wishlistCount})` : ""}</span>
         </Link>
 
         {isAdmin && (
@@ -56,7 +56,7 @@ export function AccountTabNav({ activeTab, orderCount, wishlistCount, isAdmin }:
             href="/admin"
             className="px-4 sm:px-6 py-3.5 bg-[#2E6B44] text-white font-bold tracking-widest flex items-center space-x-2 shrink-0 ml-auto"
           >
-            <ShieldCheck className="w-4 h-4" />
+            <ShieldCheck className="w-4 h-4 shrink-0" />
             <span>Admin Console</span>
           </Link>
         )}
