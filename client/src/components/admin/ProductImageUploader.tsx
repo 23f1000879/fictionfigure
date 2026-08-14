@@ -173,7 +173,7 @@ export function ProductImageUploader({
         // PREVIEW CARD WITH REPLACE & REMOVE ACTIONS
         <div className="relative bg-white border border-[#E5E5E2] p-4 flex flex-col sm:flex-row items-center gap-4">
           <div className="relative w-28 h-28 bg-[#F7F7F5] border border-[#E5E5E2] flex-shrink-0 flex items-center justify-center overflow-hidden">
-            <img src={value} alt={label} className="w-full h-full object-cover" />
+            <img src={value} alt={label} className="w-full h-full object-contain" />
           </div>
 
           <div className="flex-1 min-w-0 space-y-2 text-xs">

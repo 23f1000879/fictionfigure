@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { FolderTree, Plus, Edit2, Trash2, ArrowUpRight, Loader2, AlertCircle, CheckCircle2, Package } from "lucide-react";
+import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
 import { API_BASE } from "@/lib/api";
 
 export default function AdminCategoriesPage() {
@@ -20,6 +21,7 @@ export default function AdminCategoriesPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -182,8 +184,21 @@ export default function AdminCategoriesPage() {
               {categories.map((c) => (
                 <tr key={c.id} className="hover:bg-[#F7F7F5]">
                   <td className="p-4">
-                    <span className="font-semibold text-[#111111] block">{c.name}</span>
-                    <span className="text-[11px] text-[#6B6B6B] block truncate max-w-xs">{c.description || "No description"}</span>
+                    <div className="flex items-center space-x-3">
+                      {c.imageUrl ? (
+                        <div className="w-10 h-10 bg-[#F7F7F5] border border-[#E5E5E2] flex-shrink-0 overflow-hidden flex items-center justify-center p-0.5">
+                          <img src={c.imageUrl} alt={c.name} className="w-full h-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-[#F7F7F5] border border-[#E5E5E2] flex-shrink-0 flex items-center justify-center text-[#6B6B6B]">
+                          <FolderTree className="w-4 h-4 opacity-40" />
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-semibold text-[#111111] block">{c.name}</span>
+                        <span className="text-[11px] text-[#6B6B6B] block truncate max-w-xs">{c.description || "No description"}</span>
+                      </div>
+                    </div>
                   </td>
                   <td className="p-4 font-mono text-[#6B6B6B]">{c.slug}</td>
                   <td className="p-4 font-mono font-bold text-[#111111]">
@@ -271,14 +286,12 @@ export default function AdminCategoriesPage() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold uppercase text-[#6B6B6B]">Image URL (Optional)</label>
-                <input
-                  type="url"
+              <div className="pt-1">
+                <ProductImageUploader
+                  label="Category Image (Optional)"
                   value={form.imageUrl}
-                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-xs focus:border-[#111111] focus:outline-none"
+                  onChange={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
+                  onUploadingChange={setIsImageUploading}
                 />
               </div>
 
@@ -292,7 +305,7 @@ export default function AdminCategoriesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isImageUploading}
                   className="px-4 py-2 bg-[#111111] text-white font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50"
                 >
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Save Category</span>}

@@ -164,7 +164,7 @@ router.get("/categories/:id", async (req, res) => {
   }
 });
 
-router.post("/categories", async (req, res) => {
+router.post("/categories", requireAdmin, async (req, res) => {
   try {
     const { name, slug, description, imageUrl } = req.body;
 
@@ -198,7 +198,7 @@ router.post("/categories", async (req, res) => {
   }
 });
 
-router.patch("/categories/:id", async (req, res) => {
+router.patch("/categories/:id", requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, slug, description, imageUrl } = req.body;
