@@ -99,7 +99,7 @@ export default async function HomePage() {
                   fill
                   priority
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover"
+                  className="object-contain"
                 />
                 {featuredProduct && (
                   <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xs p-4 border border-[#E5E5E2] flex justify-between items-center gap-2">

@@ -217,7 +217,7 @@ export default function AdminSettingsPage() {
                       src={settings.homepage_hero_image_url}
                       alt="Hero Preview"
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B]">
