@@ -5,7 +5,19 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin/", "/account/"],
+      disallow: [
+        "/account",
+        "/account/*",
+        "/admin",
+        "/admin/*",
+        "/checkout",
+        "/checkout/*",
+        "/cart",
+        "/login",
+        "/register",
+        "/order",
+        "/order/*",
+      ],
     },
     sitemap: "https://www.fictionfigures.in/sitemap.xml",
   };
