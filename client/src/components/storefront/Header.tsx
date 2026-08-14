@@ -27,20 +27,23 @@ export function Header() {
       .catch(() => {});
   }, []);
 
-  // Prevent background scroll when mobile menu is open
+  // Handle ESC key press to close mobile menu
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
     if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
+      window.addEventListener("keydown", handleKeyDown);
     }
     return () => {
-      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 bg-[#F7F7F5]/90 backdrop-blur-md border-b border-[#E5E5E2] transition-colors w-full max-w-full overflow-hidden box-border">
+    <header className="sticky top-0 z-40 bg-[#F7F7F5]/90 backdrop-blur-md border-b border-[#E5E5E2] transition-colors w-full max-w-full box-border">
       {/* Top Banner Announcement */}
       <div className="bg-[#111111] text-white text-[10px] sm:text-[11px] font-medium tracking-widest text-center py-1.5 uppercase px-3 sm:px-4 w-full overflow-hidden whitespace-nowrap box-border">
         <p className="truncate w-full max-w-full block font-sans">
@@ -49,7 +52,7 @@ export function Header() {
       </div>
 
       {/* Main Header Container: [☰] [LOGO] <space> [SEARCH] [♡] [CART] */}
-      <div className="w-full max-w-[1340px] mx-auto flex items-center justify-between h-16 sm:h-20 px-3 sm:px-6 box-border">
+      <div className="w-full max-w-[1340px] mx-auto flex items-center justify-between h-14 sm:h-20 px-3 sm:px-6 box-border">
         {/* Left Section: Hamburger + Brand Logo */}
         <div className="flex items-center space-x-2 sm:space-x-4 shrink-0 min-w-0">
           {/* Mobile Menu Toggle */}
@@ -141,54 +144,64 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer */}
+      {/* Mobile Navigation Drawer & Backdrop */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-[#E5E5E2] px-6 py-6 space-y-4 animate-in slide-in-from-top duration-200">
-          <nav className="flex flex-col space-y-3 text-sm font-semibold uppercase tracking-wider text-[#111111]">
-            <Link
-              href="/shop"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 border-b border-[#F0F0ED]"
-            >
-              Shop All Figures
-            </Link>
-            <Link
-              href="/shop?sortBy=featured"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 border-b border-[#F0F0ED]"
-            >
-              Featured Collections
-            </Link>
-            <Link
-              href="/shop?sortBy=newest"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 border-b border-[#F0F0ED]"
-            >
-              New Arrivals
-            </Link>
-            <Link
-              href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 border-b border-[#F0F0ED]"
-            >
-              About FictionFigure
-            </Link>
-            <Link
-              href="/account"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 border-b border-[#F0F0ED]"
-            >
-              My Account
-            </Link>
-            <Link
-              href="/account/wishlist"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 border-b border-[#F0F0ED]"
-            >
-              Wishlist
-            </Link>
-          </nav>
-        </div>
+        <>
+          {/* Outside Tap Backdrop (Closes menu on tap outside) */}
+          <div
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Mobile Menu Panel */}
+          <div className="fixed top-[64px] sm:top-[80px] left-0 right-0 max-h-[calc(100dvh-80px)] overflow-y-auto bg-white border-b border-[#E5E5E2] px-6 py-6 space-y-4 z-50 lg:hidden shadow-xl animate-in slide-in-from-top duration-200">
+            <nav className="flex flex-col space-y-3 text-sm font-semibold uppercase tracking-wider text-[#111111]">
+              <Link
+                href="/shop"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+              >
+                Shop All Figures
+              </Link>
+              <Link
+                href="/shop?sortBy=featured"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+              >
+                Featured Collections
+              </Link>
+              <Link
+                href="/shop?sortBy=newest"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+              >
+                New Arrivals
+              </Link>
+              <Link
+                href="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+              >
+                About FictionFigure
+              </Link>
+              <Link
+                href="/account"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+              >
+                My Account
+              </Link>
+              <Link
+                href="/account/wishlist"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+              >
+                Wishlist
+              </Link>
+            </nav>
+          </div>
+        </>
       )}
     </header>
   );
