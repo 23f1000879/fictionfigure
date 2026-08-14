@@ -1,10 +1,9 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { normalizeIndianPhone } from "../utils/phone.js";
+import { prisma } from "../db.js";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || "fictionfigure_jwt_secret_key_2026";
 

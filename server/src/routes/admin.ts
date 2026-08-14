@@ -1,13 +1,12 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { v2 as cloudinary } from "cloudinary";
 import { requireAdmin } from "../middleware/auth.js";
+import { prisma } from "../db.js";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
   cloudinary.config({

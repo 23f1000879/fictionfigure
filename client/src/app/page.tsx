@@ -11,11 +11,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ShieldCheck, Truck, Award } from "lucide-react";
 
-export const revalidate = 0;
+export const revalidate = 60; // 60s Vercel Edge ISR Cache
 
 async function getHeroSettings() {
   try {
-    const res = await fetch(`${API_BASE}/settings`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/settings`, { next: { revalidate: 60 } });
     if (!res.ok) return { settings: {}, featuredProduct: null };
     return await res.json();
   } catch (err) {

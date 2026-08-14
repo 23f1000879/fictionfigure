@@ -1,8 +1,7 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db.js";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // POST /api/coupons/validate — Server-Side Coupon Validation & Discount Calculation
 router.post("/validate", async (req, res) => {

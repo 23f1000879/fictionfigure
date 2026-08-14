@@ -1,9 +1,8 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth.js";
+import { prisma } from "../db.js";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // 1. Get Authenticated Customer Wishlist (GET /api/wishlist)
 router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {

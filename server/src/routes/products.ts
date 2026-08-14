@@ -1,8 +1,21 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db.js";
 
 const router = Router();
-const prisma = new PrismaClient();
+
+// In-memory metadata cache for active categories, brands, and franchises (60s TTL)
+let cachedCategories: any[] | null = null;
+let cachedBrands: string[] | null = null;
+let cachedFranchises: string[] | null = null;
+let lastMetaCacheTime = 0;
+const META_CACHE_TTL = 60 * 1000;
+
+export function clearProductsMetaCache() {
+  cachedCategories = null;
+  cachedBrands = null;
+  cachedFranchises = null;
+  lastMetaCacheTime = 0;
+}
 
 // GET /api/products — Database-Driven Product Catalog & Dynamic Facets
 router.get("/", async (req, res) => {
@@ -87,8 +100,8 @@ router.get("/", async (req, res) => {
     const pageNum = Number(page) || 1;
     const skipNum = (pageNum - 1) * takeNum;
 
-    // Parallel Database Queries
-    const [products, totalCount, activeCategories, allActiveProducts] = await Promise.all([
+    // Execute paginated products + totalCount queries
+    const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where,
         take: takeNum,
@@ -101,42 +114,54 @@ router.get("/", async (req, res) => {
         },
       }),
       prisma.product.count({ where }),
-      prisma.category.findMany({
-        orderBy: { name: "asc" },
-        include: {
-          _count: {
-            select: {
-              products: {
-                where: { status: "ACTIVE" },
+    ]);
+
+    // Check if metadata is cached
+    const now = Date.now();
+    if (!cachedCategories || !cachedBrands || !cachedFranchises || now - lastMetaCacheTime > META_CACHE_TTL) {
+      const [activeCategories, allActiveProducts] = await Promise.all([
+        prisma.category.findMany({
+          orderBy: { name: "asc" },
+          include: {
+            _count: {
+              select: {
+                products: {
+                  where: { status: "ACTIVE" },
+                },
               },
             },
           },
-        },
-      }),
-      prisma.product.findMany({
-        where: { status: "ACTIVE" },
-        select: { brand: true, franchise: true },
-      }),
-    ]);
+        }),
+        prisma.product.findMany({
+          where: { status: "ACTIVE" },
+          select: { brand: true, franchise: true },
+        }),
+      ]);
 
-    // Extract Distinct Brands & Franchises
-    const brandsSet = new Set<string>();
-    const franchisesSet = new Set<string>();
+      const brandsSet = new Set<string>();
+      const franchisesSet = new Set<string>();
 
-    for (const p of allActiveProducts) {
-      if (p.brand && p.brand.trim()) brandsSet.add(p.brand.trim());
-      if (p.franchise && p.franchise.trim()) franchisesSet.add(p.franchise.trim());
+      for (const p of allActiveProducts) {
+        if (p.brand && p.brand.trim()) brandsSet.add(p.brand.trim());
+        if (p.franchise && p.franchise.trim()) franchisesSet.add(p.franchise.trim());
+      }
+
+      cachedCategories = activeCategories;
+      cachedBrands = Array.from(brandsSet).sort();
+      cachedFranchises = Array.from(franchisesSet).sort();
+      lastMetaCacheTime = now;
     }
 
-    const brands = Array.from(brandsSet).sort();
-    const franchises = Array.from(franchisesSet).sort();
+    const categories = cachedCategories;
+    const brands = cachedBrands;
+    const franchises = cachedFranchises;
 
     res.json({
       products,
       totalCount,
       totalPages: Math.ceil(totalCount / takeNum) || 1,
       currentPage: pageNum,
-      categories: activeCategories,
+      categories,
       brands,
       franchises,
     });

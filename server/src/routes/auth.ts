@@ -1,11 +1,10 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { normalizeIndianPhone } from "../utils/phone.js";
+import { prisma } from "../db.js";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // 1. Check if Mobile Number is already registered
 router.post("/check-phone", async (req, res) => {

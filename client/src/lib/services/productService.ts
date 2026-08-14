@@ -3,7 +3,7 @@ import { API_BASE } from "@/lib/api";
 
 export async function getCategories() {
   try {
-    const res = await fetch(`${API_BASE}/admin/categories`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/admin/categories`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
       return data.categories || [];
@@ -16,7 +16,7 @@ export async function getCategories() {
 
 export async function getCategoryBySlug(slug: string) {
   try {
-    const res = await fetch(`${API_BASE}/admin/categories/${slug}`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/admin/categories/${slug}`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
       return data.category || null;
@@ -41,7 +41,7 @@ export async function getProducts(filters: Partial<ProductFilterInput> & { sortB
     if (filters.limit) queryParams.set("limit", String(filters.limit));
     if (filters.page) queryParams.set("page", String(filters.page));
 
-    const res = await fetch(`${API_BASE}/products?${queryParams.toString()}`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/products?${queryParams.toString()}`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
       return {
@@ -71,7 +71,7 @@ export async function getProducts(filters: Partial<ProductFilterInput> & { sortB
 
 export async function getProductBySlug(slug: string) {
   try {
-    const res = await fetch(`${API_BASE}/products/${slug}`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/products/${slug}`, { next: { revalidate: 60 } });
     if (res.ok) {
       return await res.json();
     }
@@ -87,7 +87,7 @@ export async function getProductBySlug(slug: string) {
 
 export async function getBrandsAndMetadata() {
   try {
-    const res = await fetch(`${API_BASE}/products?limit=100`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/products?limit=100`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
       return {

@@ -10,7 +10,7 @@ import { CartProvider } from "@/context/CartContext";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ArrowUpDown } from "lucide-react";
 
-export const revalidate = 0; // Dynamic rendering
+export const revalidate = 60; // 60s Vercel Edge ISR Cache for Catalog
 
 interface ShopPageProps {
   searchParams?: any;
