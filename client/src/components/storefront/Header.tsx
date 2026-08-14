@@ -186,18 +186,18 @@ export function Header() {
                 <span>About FictionFigure</span>
               </Link>
               <Link
-                href="/account"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
-              >
-                <span>My Account</span>
-              </Link>
-              <Link
                 href="/account/wishlist"
                 onClick={() => setMobileMenuOpen(false)}
                 className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
               >
                 <span>Wishlist</span>
+              </Link>
+              <Link
+                href="/account"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
+              >
+                <span>My Account</span>
               </Link>
             </nav>
 
