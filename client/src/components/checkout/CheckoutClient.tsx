@@ -20,7 +20,6 @@ import {
   ChevronDown,
   ChevronUp,
   MapPin,
-  Truck,
   CreditCard,
   UserCheck,
 } from "lucide-react";
@@ -421,9 +420,53 @@ export function CheckoutClient() {
     );
   }
 
+  // Reusable Coupon Form Component
+  const CouponComponent = () => (
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block">
+        Discount Code
+      </label>
+      {!appliedCoupon ? (
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            placeholder="Enter coupon code"
+            value={couponInput}
+            onChange={(e) => setCouponInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+            className="flex-1 p-2.5 bg-white border border-[#E5E5E2] font-mono text-xs uppercase focus:border-[#111111] focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => handleApplyCoupon()}
+            disabled={isValidatingCoupon}
+            className="px-4 py-2.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50 transition-colors shrink-0"
+          >
+            {isValidatingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Apply"}
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between p-3 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] font-semibold text-xs">
+          <div className="flex items-center space-x-1.5 font-mono truncate mr-2">
+            <Tag className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{appliedCoupon.code} (-{formatPrice(appliedCoupon.discountAmount)})</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleRemoveCoupon}
+            className="text-[#2E6B44] hover:underline text-[10px] uppercase font-bold shrink-0"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+      {couponError && <p className="text-[11px] text-[#A83232]">{couponError}</p>}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col font-sans">
-      {/* 1. Header: FICTIONFIGURE Logo + Return to Cart Link (No security marketing badge) */}
+      {/* 1. Header: FICTIONFIGURE Logo + Return to Cart Link */}
       <header className="bg-white border-b border-[#E5E5E2] sticky top-0 z-30">
         <div className="editorial-container flex justify-between items-center py-4 px-4 sm:px-6">
           <Link
@@ -478,37 +521,9 @@ export function CheckoutClient() {
               ))}
             </div>
 
-            {/* Mobile Coupon Box */}
-            <div className="pt-2 border-t border-[#E5E5E2] space-y-2">
-              {!appliedCoupon ? (
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Discount code"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value)}
-                    className="flex-1 p-2.5 bg-white border border-[#E5E5E2] font-mono text-xs uppercase focus:border-[#111111] focus:outline-none"
-                  />
-                  <button
-                    onClick={() => handleApplyCoupon()}
-                    disabled={isValidatingCoupon}
-                    className="px-4 py-2.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors"
-                  >
-                    {isValidatingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Apply"}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between p-2.5 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] font-semibold">
-                  <div className="flex items-center space-x-1.5 font-mono">
-                    <Tag className="w-3.5 h-3.5" />
-                    <span>{appliedCoupon.code} (-{formatPrice(appliedCoupon.discountAmount)})</span>
-                  </div>
-                  <button onClick={handleRemoveCoupon} className="text-[#2E6B44] hover:underline text-[10px] uppercase font-bold">
-                    Remove
-                  </button>
-                </div>
-              )}
-              {couponError && <p className="text-[11px] text-[#A83232]">{couponError}</p>}
+            {/* Mobile Coupon Component */}
+            <div className="pt-2 border-t border-[#E5E5E2]">
+              <CouponComponent />
             </div>
 
             {/* Mobile Price Summary */}
@@ -533,13 +548,16 @@ export function CheckoutClient() {
                   <span className="font-mono text-[#111111]">{formatPrice(codFee)}</span>
                 </div>
               )}
+              <p className="text-[10px] text-[#6B6B6B] italic pt-1">
+                Free shipping on orders above ₹499.
+              </p>
             </div>
           </div>
         )}
       </div>
 
       {/* Main Checkout Grid Layout */}
-      <main className="editorial-container py-8 sm:py-12 flex-1 px-4 sm:px-6">
+      <main className="editorial-container py-6 sm:py-12 flex-1 px-4 sm:px-6">
         {/* Global Error Banner */}
         {errorMessage && (
           <div className="mb-6 p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center space-x-2">
@@ -550,7 +568,7 @@ export function CheckoutClient() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* LEFT COLUMN (~60% / 7 cols): Checkout Flow Sections */}
-          <div className="lg:col-span-7 space-y-8 bg-white border border-[#E5E5E2] p-6 sm:p-8">
+          <div className="lg:col-span-7 space-y-8 bg-white border border-[#E5E5E2] p-5 sm:p-8">
             {/* SECTION 1: CONTACT INFORMATION */}
             <section className="space-y-4">
               <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-3">
@@ -849,30 +867,11 @@ export function CheckoutClient() {
               </div>
             </section>
 
-            {/* SECTION 3: SHIPPING & DELIVERY POLICY (Simplified, no radio buttons) */}
-            <section className="space-y-3 pt-4 border-t border-[#E5E5E2]">
-              <div className="border-b border-[#E5E5E2] pb-3">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] flex items-center">
-                  <Truck className="w-4 h-4 mr-2 text-[#111111]" /> 3. Shipping & Delivery
-                </h3>
-              </div>
-
-              <div className="p-4 bg-[#F7F7F5] border border-[#E5E5E2] space-y-1.5 text-xs">
-                <div className="flex justify-between items-center font-bold text-[#111111]">
-                  <span>Shipping & Delivery Fee</span>
-                  <span className="font-mono">{cartSubtotal >= 500 ? "FREE" : "₹100"}</span>
-                </div>
-                <p className="text-[11px] text-[#6B6B6B]">
-                  ₹100 shipping fee on orders below ₹500. <strong className="text-[#111111]">FREE SHIPPING</strong> on orders of ₹500 or more.
-                </p>
-              </div>
-            </section>
-
-            {/* SECTION 4: PAYMENT METHOD */}
+            {/* SECTION 3: PAYMENT METHOD */}
             <section className="space-y-4 pt-4 border-t border-[#E5E5E2]">
               <div className="border-b border-[#E5E5E2] pb-3">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] flex items-center">
-                  <CreditCard className="w-4 h-4 mr-2 text-[#111111]" /> 4. Payment Method
+                  <CreditCard className="w-4 h-4 mr-2 text-[#111111]" /> 3. Payment Method
                 </h3>
               </div>
 
@@ -910,34 +909,34 @@ export function CheckoutClient() {
                 </label>
               </div>
 
-              {/* UPI Sub-Section (QR & UTR input) */}
+              {/* UPI Sub-Section (Responsive QR & UTR input) */}
               {formData.paymentMethod === "UPI" && (
-                <div className="p-6 bg-[#F7F7F5] border border-[#E5E5E2] space-y-6 text-center text-xs">
+                <div className="p-4 sm:p-6 bg-[#F7F7F5] border border-[#E5E5E2] space-y-5 text-center text-xs">
                   <h4 className="font-bold uppercase tracking-wider text-[#111111]">
                     SCAN & PAY VIA UPI ({formatPrice(grandTotal)})
                   </h4>
 
                   <div className="flex flex-col items-center justify-center space-y-3">
-                    <div className="relative w-48 h-48 bg-white border-2 border-[#111111] p-2 flex items-center justify-center">
+                    <div className="relative w-40 h-40 max-w-full bg-white border-2 border-[#111111] p-2 flex items-center justify-center mx-auto">
                       {upiSettings.upiQrUrl ? (
                         <Image
                           src={upiSettings.upiQrUrl}
                           alt="FictionFigure UPI QR Code"
-                          width={200}
-                          height={200}
-                          className="object-contain"
+                          width={160}
+                          height={160}
+                          className="object-contain max-w-full h-auto"
                         />
                       ) : (
                         <div className="text-center space-y-2 text-[#6B6B6B]">
-                          <QrCode className="w-16 h-16 mx-auto text-[#111111]" />
+                          <QrCode className="w-12 h-12 mx-auto text-[#111111]" />
                           <p className="text-[10px] uppercase font-mono">Scan QR via GPay / PhonePe</p>
                         </div>
                       )}
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1 max-w-full overflow-hidden">
                       <span className="text-[11px] text-[#6B6B6B] block">Official UPI ID:</span>
-                      <span className="font-mono font-bold text-sm text-[#111111] bg-white px-3 py-1 border border-[#E5E5E2] inline-block">
+                      <span className="font-mono font-bold text-xs sm:text-sm text-[#111111] bg-white px-3 py-1 border border-[#E5E5E2] inline-block truncate max-w-full">
                         {upiSettings.upiId}
                       </span>
                     </div>
@@ -962,13 +961,18 @@ export function CheckoutClient() {
               )}
             </section>
 
-            {/* SECTION 5: FINAL COMPLETE ORDER CTA */}
+            {/* Mobile Coupon Section (Visible on Mobile) */}
+            <div className="lg:hidden pt-4 border-t border-[#E5E5E2]">
+              <CouponComponent />
+            </div>
+
+            {/* FINAL COMPLETE ORDER CTA */}
             <div className="pt-4 border-t border-[#E5E5E2]">
               <button
                 type="button"
                 onClick={handlePlaceOrder}
                 disabled={isSubmitting}
-                className="w-full min-h-[52px] px-8 py-4 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
+                className="w-full min-h-[52px] px-6 sm:px-8 py-4 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center"
               >
                 {isSubmitting ? (
                   <>
@@ -977,19 +981,19 @@ export function CheckoutClient() {
                   </>
                 ) : formData.paymentMethod === "UPI" ? (
                   <>
-                    <Lock className="w-4 h-4 mr-2" />
-                    <span>PAY {formatPrice(grandTotal)} & PLACE ORDER</span>
+                    <Lock className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">PAY {formatPrice(grandTotal)} & PLACE ORDER</span>
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 mr-2" />
-                    <span>PLACE COD ORDER — {formatPrice(grandTotal)}</span>
+                    <Check className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">PLACE COD ORDER — {formatPrice(grandTotal)}</span>
                   </>
                 )}
               </button>
 
               <p className="text-[10px] text-center text-[#6B6B6B] mt-3">
-                By placing your order, you agree to FictionFigure’s Terms & Conditions and Store Policies.
+                Free shipping on orders above ₹499. By placing your order, you agree to Store Policies.
               </p>
             </div>
           </div>
@@ -1023,44 +1027,9 @@ export function CheckoutClient() {
                 ))}
               </div>
 
-              {/* Coupon Code Entry Box */}
-              <div className="pt-4 border-t border-[#E5E5E2] space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block">
-                  Discount Code
-                </label>
-                {!appliedCoupon ? (
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      placeholder="Enter coupon code"
-                      value={couponInput}
-                      onChange={(e) => setCouponInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
-                      className="flex-1 p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-xs uppercase focus:border-[#111111] focus:outline-none"
-                    />
-                    <button
-                      onClick={() => handleApplyCoupon()}
-                      disabled={isValidatingCoupon}
-                      className="px-4 py-2.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50 transition-colors"
-                    >
-                      {isValidatingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Apply"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-3 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] font-semibold text-xs">
-                    <div className="flex items-center space-x-1.5 font-mono">
-                      <Tag className="w-3.5 h-3.5" />
-                      <span>{appliedCoupon.code} (-{formatPrice(appliedCoupon.discountAmount)})</span>
-                    </div>
-                    <button
-                      onClick={handleRemoveCoupon}
-                      className="text-[#2E6B44] hover:underline text-[10px] uppercase font-bold"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-                {couponError && <p className="text-[11px] text-[#A83232]">{couponError}</p>}
+              {/* Desktop Coupon Code Entry Box */}
+              <div className="pt-4 border-t border-[#E5E5E2]">
+                <CouponComponent />
               </div>
 
               {/* Authoritative Price Breakdown Table */}
@@ -1095,6 +1064,10 @@ export function CheckoutClient() {
                   <span className="uppercase text-xs tracking-wider">Total Amount</span>
                   <span className="font-mono text-base text-[#111111]">{formatPrice(grandTotal)}</span>
                 </div>
+
+                <p className="text-[10px] text-[#6B6B6B] italic pt-1 text-right">
+                  Free shipping on orders above ₹499.
+                </p>
               </div>
             </div>
           </aside>
