@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, User, Heart, ShoppingBag, Menu, X } from "lucide-react";
@@ -12,11 +13,13 @@ export function Header() {
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
   const { wishlistCount } = useWishlist();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [announcement, setAnnouncement] = useState(
     "⚡ COMPLIMENTARY EXPRESS SHIPPING ON ORDERS OVER ₹15,000 | AUTHENTIC IMPORTS DIRECT FROM TOKYO"
   );
 
   useEffect(() => {
+    setMounted(true);
     fetch(`${API_BASE}/settings`)
       .then((res) => res.json())
       .then((data) => {
@@ -27,17 +30,23 @@ export function Header() {
       .catch(() => {});
   }, []);
 
-  // Handle ESC key press to close mobile menu
+  // Body scroll lock & ESC key listener for mobile menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setMobileMenuOpen(false);
       }
     };
+
     if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleKeyDown);
+    } else {
+      document.body.style.overflow = "";
     }
+
     return () => {
+      document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [mobileMenuOpen]);
@@ -144,18 +153,18 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation Full-Height Drawer & Backdrop */}
-      {mobileMenuOpen && (
+      {/* Mobile Navigation Drawer & Backdrop Rendered via React Portal */}
+      {mounted && mobileMenuOpen && createPortal(
         <>
-          {/* Backdrop (Closes menu when tapping backdrop/header area) */}
+          {/* Dark Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity"
+            className="fixed inset-0 bg-black/60 z-[9998] lg:hidden transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Full-Height Mobile Menu Panel */}
-          <div className="fixed top-[82px] left-0 right-0 bottom-0 z-50 bg-white border-t border-[#E5E5E2] p-6 lg:hidden shadow-2xl overflow-y-auto animate-in slide-in-from-top duration-200 flex flex-col justify-between">
+          {/* Full-Height Mobile Menu Drawer Panel */}
+          <div className="fixed top-[64px] sm:top-[80px] left-0 right-0 bottom-0 z-[9999] bg-white border-t border-[#E5E5E2] px-6 py-6 lg:hidden shadow-2xl overflow-y-auto animate-in slide-in-from-top duration-200 flex flex-col justify-between">
             <nav className="flex flex-col space-y-1 text-sm font-semibold uppercase tracking-wider text-[#111111]">
               <Link
                 href="/shop"
@@ -200,13 +209,9 @@ export function Header() {
                 <span>My Account</span>
               </Link>
             </nav>
-
-            <div className="pt-6 border-t border-[#E5E5E2] text-xs text-[#6B6B6B] space-y-1 font-mono">
-              <p className="font-bold text-[#111111] uppercase tracking-wider">FICTIONFIGURE OFFICIAL STORE</p>
-              <p className="text-[11px]">Bikaner, Rajasthan, India • Delivers Pan-India</p>
-            </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </header>
   );
