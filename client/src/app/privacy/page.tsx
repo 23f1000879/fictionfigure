@@ -4,12 +4,11 @@ import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { Lock, ShieldCheck, Phone } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | FictionFigure",
   description:
-    "Read FictionFigure's Privacy Policy explaining how customer information, mobile OTP verification, and delivery details are handled securely.",
+    "Read FictionFigure's Privacy Policy explaining how customer information, payments, third-party services, and delivery details are handled.",
 };
 
 export default function PrivacyPage() {
@@ -59,7 +58,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Account creation, customer sign-in, and mobile OTP authentication</li>
-              <li>Processing order payments (via integrated payment providers such as Razorpay or UPI)</li>
+              <li>Processing order payments and completing checkouts</li>
               <li>Packing and delivering packages across India via national courier services</li>
               <li>Providing customer support regarding your orders</li>
             </ul>
@@ -67,33 +66,47 @@ export default function PrivacyPage() {
 
           <section className="space-y-2 border-t border-[#E5E5E2] pt-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
-              3. Payment Credentials & Gateway Security
+              3. Payments
             </h3>
             <p>
-              FictionFigure does not store sensitive payment credentials (such as card numbers or banking passwords) on our servers. Online payments are processed through secure payment gateway services (e.g., Razorpay) operating over encrypted connections.
+              FictionFigure currently offers Cash on Delivery (COD) and UPI/online payment options where available at checkout.
+            </p>
+            <p>
+              For online payments, customers may be redirected to or interact with the applicable payment service to complete their transaction.
+            </p>
+            <p>
+              Payment information is handled according to the payment provider's applicable security and privacy practices.
             </p>
           </section>
 
           <section className="space-y-2 border-t border-[#E5E5E2] pt-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
-              4. Third-Party Service Integration
+              4. Third-Party Services
             </h3>
             <p>
-              We utilize trusted infrastructure providers to run our store services effectively:
+              We may use trusted third-party service providers to help us operate FictionFigure, process orders and payments, deliver products, provide customer support, send necessary notifications, and maintain the website.
             </p>
+            <p>
+              These service providers may process information only as necessary to provide their services to us and are expected to handle information in accordance with applicable privacy and security requirements.
+            </p>
+            <p>Examples may include:</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li><strong>MSG91</strong>: Used for SMS delivery and mobile One-Time Password (OTP) verification.</li>
-              <li><strong>Cloudinary</strong>: Used for media storage and figure image delivery.</li>
-              <li><strong>Database & Hosting Services</strong>: Secure cloud servers used for database storage and website hosting.</li>
+              <li>Payment service providers</li>
+              <li>Shipping and delivery partners</li>
+              <li>Communication and notification providers</li>
+              <li>Website and infrastructure providers</li>
             </ul>
           </section>
 
           <section className="space-y-2 border-t border-[#E5E5E2] pt-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
-              5. Local Storage
+              5. Cookies and Local Storage
             </h3>
             <p>
-              Our website uses browser local storage (`fictionfigure_token`) to maintain your authenticated customer session so you do not need to log in repeatedly during active browsing.
+              FictionFigure may use cookies and browser storage technologies to support essential website functionality, maintain customer sessions, remember certain preferences, and help provide a smooth browsing experience.
+            </p>
+            <p>
+              These technologies may be necessary for features such as authentication, cart functionality, security, and website operation.
             </p>
           </section>
 
