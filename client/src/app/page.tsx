@@ -9,7 +9,7 @@ import { getProducts, getCategories } from "@/lib/services/productService";
 import { API_BASE } from "@/lib/api";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ShieldCheck, Truck, Award } from "lucide-react";
+import { ArrowRight, ShieldCheck, Truck, Award, FolderTree } from "lucide-react";
 
 export const revalidate = 60; // 60s Vercel Edge ISR Cache
 
@@ -203,31 +203,40 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.slice(0, 4).map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/shop?category=${cat.slug}`}
-                className="group relative aspect-[4/5] bg-white border border-[#E5E5E2] overflow-hidden block"
-              >
-                {cat.imageUrl && (
-                  <Image
-                    src={cat.imageUrl}
-                    alt={cat.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 text-white">
-                  <span className="text-[10px] uppercase tracking-widest text-white/70 font-mono">
-                    Category
-                  </span>
-                  <h3 className="text-lg font-semibold tracking-tight">{cat.name}</h3>
-                  <span className="text-xs text-white/90 mt-1 flex items-center font-medium group-hover:underline">
-                    Explore items <ArrowRight className="w-3 h-3 ml-1" />
-                  </span>
-                </div>
-              </Link>
-            ))}
+            {categories.slice(0, 4).map((cat) => {
+              const imageSrc = cat.imageUrl || cat.image;
+              return (
+                <Link
+                  key={cat.id}
+                  href={`/shop?category=${cat.slug}`}
+                  className="group relative aspect-[3/4] bg-[#F7F7F5] border border-[#E5E5E2] overflow-hidden block shadow-xs"
+                >
+                  {imageSrc ? (
+                    <Image
+                      src={imageSrc}
+                      alt={cat.name}
+                      fill
+                      priority
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#111111]/90 flex items-center justify-center">
+                      <FolderTree className="w-12 h-12 text-white/20" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white pointer-events-none">
+                    <span className="text-[10px] uppercase tracking-widest text-white/70 font-mono">
+                      Category
+                    </span>
+                    <h3 className="text-lg font-semibold tracking-tight">{cat.name}</h3>
+                    <span className="text-xs text-white/90 mt-1 flex items-center font-medium group-hover:underline">
+                      Explore items <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
 
