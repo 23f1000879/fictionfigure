@@ -7,7 +7,7 @@ import { CartProvider } from "@/context/CartContext";
 
 export default function TermsPage() {
   return (
-    <CartProvider>
+    <>
       <Header />
       <SearchModal />
       <CartDrawer />
@@ -43,6 +43,6 @@ export default function TermsPage() {
       </main>
 
       <Footer />
-    </CartProvider>
+    </>
   );
 }

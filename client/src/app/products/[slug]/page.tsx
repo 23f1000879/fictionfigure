@@ -29,7 +29,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const { product, relatedProducts } = data;
 
   return (
-    <CartProvider>
+    <>
       <Header />
       <SearchModal />
       <CartDrawer />
@@ -68,6 +68,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </main>
 
       <Footer />
-    </CartProvider>
+    </>
   );
 }

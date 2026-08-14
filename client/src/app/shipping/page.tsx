@@ -8,7 +8,7 @@ import { Truck, ShieldCheck, Box, Clock } from "lucide-react";
 
 export default function ShippingPage() {
   return (
-    <CartProvider>
+    <>
       <Header />
       <SearchModal />
       <CartDrawer />
@@ -78,6 +78,6 @@ export default function ShippingPage() {
       </main>
 
       <Footer />
-    </CartProvider>
+    </>
   );
 }

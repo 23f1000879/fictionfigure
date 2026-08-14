@@ -8,7 +8,7 @@ import { Lock, ShieldCheck } from "lucide-react";
 
 export default function PrivacyPage() {
   return (
-    <CartProvider>
+    <>
       <Header />
       <SearchModal />
       <CartDrawer />
@@ -51,6 +51,6 @@ export default function PrivacyPage() {
       </main>
 
       <Footer />
-    </CartProvider>
+    </>
   );
 }

@@ -43,7 +43,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     totalCount === 1 ? "1 Product" : totalCount === 0 ? "No Products" : `${totalCount} Products`;
 
   return (
-    <CartProvider>
+    <>
       <Header />
       <SearchModal />
       <CartDrawer />
@@ -182,6 +182,6 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       </main>
 
       <Footer />
-    </CartProvider>
+    </>
   );
 }

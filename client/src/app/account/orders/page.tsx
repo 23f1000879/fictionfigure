@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { Package, ArrowLeft, Loader2, AlertCircle, ShoppingBag, ArrowRight, RefreshCw } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { API_BASE } from "@/lib/api";
+import { Header } from "@/components/storefront/Header";
+import { Footer } from "@/components/storefront/Footer";
+import { SearchModal } from "@/components/search/SearchModal";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 
 export default function AccountOrdersPage() {
   const router = useRouter();
@@ -16,7 +20,7 @@ export default function AccountOrdersPage() {
   const fetchOrders = () => {
     const token = localStorage.getItem("fictionfigure_token");
     if (!token) {
-      router.push("/login");
+      router.push("/login?redirect=/account/orders");
       return;
     }
 
@@ -64,15 +68,27 @@ export default function AccountOrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-xs text-[#6B6B6B] space-y-2">
-        <Loader2 className="w-6 h-6 animate-spin text-[#111111]" />
-        <span>Loading your order history...</span>
-      </div>
+      <>
+        <Header />
+        <SearchModal />
+        <CartDrawer />
+        <main className="editorial-container py-16 text-[#111111] min-h-[60vh] flex items-center justify-center">
+          <div className="text-center text-xs text-[#6B6B6B] space-y-2">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#111111]" />
+            <span>Loading your order history...</span>
+          </div>
+        </main>
+        <Footer />
+      </>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 text-[#111111] space-y-6 sm:space-y-8">
+    <>
+      <Header />
+      <SearchModal />
+      <CartDrawer />
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 text-[#111111] space-y-6 sm:space-y-8 min-h-[70vh]">
       {/* Header */}
       <div className="flex items-center space-x-3 border-b border-[#E5E5E2] pb-6">
         <Link
@@ -183,6 +199,8 @@ export default function AccountOrdersPage() {
           })}
         </div>
       )}
-    </div>
+      </main>
+      <Footer />
+    </>
   );
 }

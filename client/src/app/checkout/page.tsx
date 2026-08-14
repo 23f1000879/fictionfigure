@@ -4,10 +4,8 @@ import { CartProvider } from "@/context/CartContext";
 
 export default function CheckoutPage() {
   return (
-    <CartProvider>
-      <Suspense fallback={<div className="p-8 text-xs text-[#6B6B6B]">Loading checkout...</div>}>
-        <CheckoutClient />
-      </Suspense>
-    </CartProvider>
+    <Suspense fallback={<div className="p-8 text-xs text-[#6B6B6B]">Loading checkout...</div>}>
+      <CheckoutClient />
+    </Suspense>
   );
 }

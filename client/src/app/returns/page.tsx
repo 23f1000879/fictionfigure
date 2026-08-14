@@ -8,7 +8,7 @@ import { RotateCcw, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function ReturnsPage() {
   return (
-    <CartProvider>
+    <>
       <Header />
       <SearchModal />
       <CartDrawer />
@@ -58,6 +58,6 @@ export default function ReturnsPage() {
       </main>
 
       <Footer />
-    </CartProvider>
+    </>
   );
 }

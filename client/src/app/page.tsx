@@ -51,7 +51,7 @@ export default async function HomePage() {
   const secondaryUrl = settings.homepage_hero_secondary_url || "/shop?sortBy=newest";
 
   return (
-    <CartProvider>
+    <>
       <Header />
       <SearchModal />
       <CartDrawer />
@@ -256,6 +256,6 @@ export default async function HomePage() {
       </main>
 
       <Footer />
-    </CartProvider>
+    </>
   );
 }

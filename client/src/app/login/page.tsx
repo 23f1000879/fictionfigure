@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { normalizeIndianPhone } from "@/lib/phone";
 import { API_BASE } from "@/lib/api";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -67,6 +69,8 @@ export default function LoginPage() {
 
       if (data.user?.role === "ADMIN") {
         router.push("/admin");
+      } else if (redirectUrl && redirectUrl.startsWith("/")) {
+        router.push(redirectUrl);
       } else {
         router.push("/account");
       }
@@ -290,5 +294,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-[#6B6B6B]">Loading login...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

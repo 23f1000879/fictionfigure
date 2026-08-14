@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
+import { CartProvider } from "@/context/CartContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,8 +31,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-[#F7F7F5] text-[#111111] font-sans selection:bg-[#111111] selection:text-white">
-        {children}
-        <AIChatWidget />
+        <CartProvider>
+          {children}
+          <AIChatWidget />
+        </CartProvider>
       </body>
     </html>
   );

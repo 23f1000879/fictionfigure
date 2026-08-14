@@ -8,7 +8,7 @@ import { ShieldCheck, Award, Box } from "lucide-react";
 
 export default function AboutPage() {
   return (
-    <CartProvider>
+    <>
       <Header />
       <SearchModal />
       <CartDrawer />
@@ -48,6 +48,6 @@ export default function AboutPage() {
       </main>
 
       <Footer />
-    </CartProvider>
+    </>
   );
 }

@@ -18,6 +18,10 @@ import {
 import { formatDisplayPhone } from "@/lib/phone";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { API_BASE } from "@/lib/api";
+import { Header } from "@/components/storefront/Header";
+import { Footer } from "@/components/storefront/Footer";
+import { SearchModal } from "@/components/search/SearchModal";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -68,9 +72,17 @@ export default function AccountPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center text-xs text-[#6B6B6B]">
-        <Loader2 className="w-5 h-5 animate-spin mr-2 text-[#111111]" /> Accessing Member Sanctuary...
-      </div>
+      <>
+        <Header />
+        <SearchModal />
+        <CartDrawer />
+        <main className="editorial-container py-16 text-[#111111] min-h-[60vh] flex items-center justify-center">
+          <div className="text-center text-xs text-[#6B6B6B]">
+            <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#111111]" /> Accessing Member Sanctuary...
+          </div>
+        </main>
+        <Footer />
+      </>
     );
   }
 
@@ -79,7 +91,11 @@ export default function AccountPage() {
   const wishlistCount = wishlistItems.length;
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] py-8 sm:py-12 text-[#111111]">
+    <>
+      <Header />
+      <SearchModal />
+      <CartDrawer />
+      <main className="min-h-screen bg-[#F7F7F5] py-8 sm:py-12 text-[#111111]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-10">
         
         {/* 1. NEW ACCOUNT HEADER */}
@@ -350,7 +366,9 @@ export default function AccountPage() {
           )}
         </div>
 
-      </div>
-    </div>
+        </div>
+      </main>
+      <Footer />
+    </>
   );
 }
