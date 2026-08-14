@@ -11,7 +11,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "fictionfigure_jwt_secret_key_2026"
 export async function calculateAuthoritativeTotals(
   cartItems: { variantId: string; quantity: number }[],
   couponCode?: string,
-  userId?: string
+  userId?: string,
+  isCOD: boolean = false
 ) {
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     throw new Error("Your cart is empty.");
@@ -100,18 +101,21 @@ export async function calculateAuthoritativeTotals(
     }
   }
 
-  // Fetch Free Shipping Threshold from Store Settings
-  const dbSetting = await prisma.storeSetting.findUnique({ where: { key: "free_shipping_min" } });
-  const freeShippingThreshold = dbSetting ? Number(dbSetting.value) || 15000 : 15000;
+  // Exact Business Rules for Shipping and COD Fees:
+  // 1. FREE SHIPPING eligibility is based on the merchandise subtotal BEFORE coupon discount (subtotal >= 500)
+  // 2. Shipping is ₹100 if subtotal < 500, otherwise FREE (₹0)
+  // 3. COD handling fee is ₹100 if paymentMethod is COD, otherwise ₹0
+  const shippingAmount = subtotal >= 500 || subtotal === 0 ? 0 : 100;
+  const codFee = isCOD ? 100 : 0;
 
   const afterDiscount = Math.max(0, subtotal - discountAmount);
-  const shippingAmount = afterDiscount >= freeShippingThreshold || subtotal === 0 ? 0 : 350;
-  const totalAmount = Math.max(0, afterDiscount + shippingAmount);
+  const totalAmount = Math.max(0, afterDiscount + shippingAmount + codFee);
 
   return {
     subtotal,
     discountAmount,
     shippingAmount,
+    codFee,
     totalAmount,
     verifiedItems,
     appliedCoupon,
@@ -324,8 +328,9 @@ router.get("/addresses", async (req, res) => {
 // 3. Authoritative Order Calculation Endpoint
 router.post("/calculate", async (req, res) => {
   try {
-    const { cartItems, couponCode } = req.body;
-    const totals = await calculateAuthoritativeTotals(cartItems, couponCode);
+    const { cartItems, couponCode, paymentMethod } = req.body;
+    const isCOD = paymentMethod === "COD";
+    const totals = await calculateAuthoritativeTotals(cartItems, couponCode, undefined, isCOD);
     res.json({ success: true, totals });
   } catch (err: any) {
     res.status(400).json({ error: err.message || "Failed to calculate totals." });
@@ -333,10 +338,9 @@ router.post("/calculate", async (req, res) => {
 });
 
 // 4. Submit Manual UPI QR Order with 12-Digit UTR
-// 4. Submit Manual UPI QR Order with 12-Digit UTR
 router.post("/submit-upi-payment", async (req, res) => {
   try {
-    const { cartItems, couponCode, shippingAddress, shippingMethod, utr } = req.body;
+    const { cartItems, couponCode, shippingAddress, utr } = req.body;
     const authHeader = req.headers.authorization;
 
     // 1. Enforce Authentication & Verified Customer Session
@@ -386,13 +390,10 @@ router.post("/submit-upi-payment", async (req, res) => {
       return res.status(400).json({ error: "Please enter a valid 6-digit Indian PIN code." });
     }
 
-    // 4. Validate Shipping Method
-    const validShippingMethod = shippingMethod === "Express Courier" ? "Express Courier" : "Standard Shipping";
-
-    // 5. Authoritative Server-Side Calculation & Inventory Check
+    // 4. Authoritative Server-Side Calculation & Inventory Check (isCOD = false)
     let totals;
     try {
-      totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined);
+      totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined, false);
     } catch (calcErr: any) {
       if (calcErr.message && calcErr.message.includes("Insufficient stock")) {
         return res.status(409).json({ error: calcErr.message });
@@ -415,7 +416,7 @@ router.post("/submit-upi-payment", async (req, res) => {
         postalCode: cleanPin,
         phone: verifiedUser.phone || shippingAddress.phone,
       }),
-      shippingMethod: validShippingMethod,
+      shippingMethod: "Standard Delivery",
       couponId: totals.appliedCoupon ? totals.appliedCoupon.id : null,
       items: {
         create: totals.verifiedItems.map((item) => ({
@@ -439,7 +440,61 @@ router.post("/submit-upi-payment", async (req, res) => {
     };
 
     const order = await prisma.$transaction(async (tx) => {
-      // Atomically check & deduct inventory
+      // 1. Save/Update Customer Name & Email on Verified User
+      const nameParts = String(shippingAddress.fullName || "").trim().split(" ");
+      const firstName = nameParts[0] || "Collector";
+      const lastName = nameParts.slice(1).join(" ") || "Customer";
+
+      await tx.user.update({
+        where: { id: verifiedUser.id },
+        data: {
+          firstName,
+          lastName,
+          email: shippingAddress.email ? shippingAddress.email.trim().toLowerCase() : verifiedUser.email,
+        },
+      });
+
+      // 2. Save/UPSERT Delivery Address against Verified Customer Identity
+      const existingAddress = await tx.address.findFirst({
+        where: {
+          userId: verifiedUser.id,
+          streetAddress: shippingAddress.streetAddress.trim(),
+          postalCode: cleanPin,
+        },
+      });
+
+      if (existingAddress) {
+        await tx.address.update({
+          where: { id: existingAddress.id },
+          data: {
+            fullName: shippingAddress.fullName.trim(),
+            streetAddress: shippingAddress.streetAddress.trim(),
+            apartment: shippingAddress.apartment ? shippingAddress.apartment.trim() : null,
+            city: shippingAddress.city.trim(),
+            state: shippingAddress.state.trim(),
+            postalCode: cleanPin,
+            country: shippingAddress.country || "India",
+            phone: verifiedUser.phone || shippingAddress.phone,
+          },
+        });
+      } else {
+        await tx.address.create({
+          data: {
+            userId: verifiedUser.id,
+            fullName: shippingAddress.fullName.trim(),
+            streetAddress: shippingAddress.streetAddress.trim(),
+            apartment: shippingAddress.apartment ? shippingAddress.apartment.trim() : null,
+            city: shippingAddress.city.trim(),
+            state: shippingAddress.state.trim(),
+            postalCode: cleanPin,
+            country: shippingAddress.country || "India",
+            phone: verifiedUser.phone || shippingAddress.phone,
+            isDefault: true,
+          },
+        });
+      }
+
+      // 3. Atomically check & deduct inventory
       for (const item of totals.verifiedItems) {
         const variant = await tx.productVariant.findUnique({
           where: { id: item.variantId },
@@ -493,7 +548,7 @@ router.post("/submit-upi-payment", async (req, res) => {
 // 5. Submit Cash on Delivery (COD) Order
 router.post("/submit-cod", async (req, res) => {
   try {
-    const { cartItems, couponCode, shippingAddress, shippingMethod } = req.body;
+    const { cartItems, couponCode, shippingAddress } = req.body;
     const authHeader = req.headers.authorization;
 
     // 1. Enforce Authentication & Verified Customer Session
@@ -538,13 +593,10 @@ router.post("/submit-cod", async (req, res) => {
       return res.status(400).json({ error: "Please enter a valid 6-digit Indian PIN code." });
     }
 
-    // 3. Validate Shipping Method
-    const validShippingMethod = shippingMethod === "Express Courier" ? "Express Courier" : "Standard Shipping";
-
-    // 4. Authoritative Server-Side Calculation & Inventory Check
+    // 3. Authoritative Server-Side Calculation & Inventory Check (isCOD = true)
     let totals;
     try {
-      totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined);
+      totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined, true);
     } catch (calcErr: any) {
       if (calcErr.message && calcErr.message.includes("Insufficient stock")) {
         return res.status(409).json({ error: calcErr.message });
@@ -567,7 +619,7 @@ router.post("/submit-cod", async (req, res) => {
         postalCode: cleanPin,
         phone: verifiedUser.phone || shippingAddress.phone,
       }),
-      shippingMethod: validShippingMethod,
+      shippingMethod: "Standard Delivery",
       couponId: totals.appliedCoupon ? totals.appliedCoupon.id : null,
       items: {
         create: totals.verifiedItems.map((item) => ({
@@ -590,7 +642,61 @@ router.post("/submit-cod", async (req, res) => {
     };
 
     const order = await prisma.$transaction(async (tx) => {
-      // Atomically check & deduct inventory
+      // 1. Save/Update Customer Name & Email on Verified User
+      const nameParts = String(shippingAddress.fullName || "").trim().split(" ");
+      const firstName = nameParts[0] || "Collector";
+      const lastName = nameParts.slice(1).join(" ") || "Customer";
+
+      await tx.user.update({
+        where: { id: verifiedUser.id },
+        data: {
+          firstName,
+          lastName,
+          email: shippingAddress.email ? shippingAddress.email.trim().toLowerCase() : verifiedUser.email,
+        },
+      });
+
+      // 2. Save/UPSERT Delivery Address against Verified Customer Identity
+      const existingAddress = await tx.address.findFirst({
+        where: {
+          userId: verifiedUser.id,
+          streetAddress: shippingAddress.streetAddress.trim(),
+          postalCode: cleanPin,
+        },
+      });
+
+      if (existingAddress) {
+        await tx.address.update({
+          where: { id: existingAddress.id },
+          data: {
+            fullName: shippingAddress.fullName.trim(),
+            streetAddress: shippingAddress.streetAddress.trim(),
+            apartment: shippingAddress.apartment ? shippingAddress.apartment.trim() : null,
+            city: shippingAddress.city.trim(),
+            state: shippingAddress.state.trim(),
+            postalCode: cleanPin,
+            country: shippingAddress.country || "India",
+            phone: verifiedUser.phone || shippingAddress.phone,
+          },
+        });
+      } else {
+        await tx.address.create({
+          data: {
+            userId: verifiedUser.id,
+            fullName: shippingAddress.fullName.trim(),
+            streetAddress: shippingAddress.streetAddress.trim(),
+            apartment: shippingAddress.apartment ? shippingAddress.apartment.trim() : null,
+            city: shippingAddress.city.trim(),
+            state: shippingAddress.state.trim(),
+            postalCode: cleanPin,
+            country: shippingAddress.country || "India",
+            phone: verifiedUser.phone || shippingAddress.phone,
+            isDefault: true,
+          },
+        });
+      }
+
+      // 3. Atomically check & deduct inventory
       for (const item of totals.verifiedItems) {
         const variant = await tx.productVariant.findUnique({
           where: { id: item.variantId },

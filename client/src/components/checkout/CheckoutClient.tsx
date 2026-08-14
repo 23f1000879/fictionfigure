@@ -17,7 +17,6 @@ import {
   AlertCircle,
   ShieldCheck,
   Tag,
-  X,
   ChevronDown,
   ChevronUp,
   MapPin,
@@ -59,7 +58,6 @@ export function CheckoutClient() {
     state: "",
     postalCode: "",
     country: "India",
-    shippingMethod: "Standard Shipping" as "Standard Shipping" | "Express Courier",
     paymentMethod: "UPI" as "UPI" | "COD",
   });
 
@@ -194,17 +192,15 @@ export function CheckoutClient() {
     }
   }, [cartSubtotal]);
 
-  // Price Calculation Breakdown
+  // Exact Business Rules for Price Calculation:
+  // 1. FREE SHIPPING eligibility is based on the merchandise subtotal BEFORE coupon discount (cartSubtotal >= 500)
+  // 2. Shipping is ₹100 if cartSubtotal < 500, otherwise FREE (₹0)
+  // 3. COD handling fee is ₹100 if paymentMethod is COD, otherwise ₹0
   const couponDiscount = appliedCoupon ? appliedCoupon.discountAmount : 0;
-  const afterDiscount = Math.max(0, cartSubtotal - couponDiscount);
-  const shippingFee =
-    formData.shippingMethod === "Express Courier"
-      ? 500
-      : afterDiscount >= 15000 || cartSubtotal === 0
-      ? 0
-      : 350;
-
+  const shippingFee = cartSubtotal >= 500 || cartSubtotal === 0 ? 0 : 100;
   const codFee = formData.paymentMethod === "COD" ? 100 : 0;
+
+  const afterDiscount = Math.max(0, cartSubtotal - couponDiscount);
   const grandTotal = Math.max(0, afterDiscount + shippingFee + codFee);
 
   // Form Input Change Handler
@@ -379,7 +375,6 @@ export function CheckoutClient() {
           phone: formData.phone,
           email: formData.email,
         },
-        shippingMethod: formData.shippingMethod,
       };
 
       if (formData.paymentMethod === "UPI") {
@@ -428,7 +423,7 @@ export function CheckoutClient() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col font-sans">
-      {/* 1. Header: Minimal Secure Checkout Navigation */}
+      {/* 1. Header: FICTIONFIGURE Logo + Return to Cart Link (No security marketing badge) */}
       <header className="bg-white border-b border-[#E5E5E2] sticky top-0 z-30">
         <div className="editorial-container flex justify-between items-center py-4 px-4 sm:px-6">
           <Link
@@ -438,19 +433,13 @@ export function CheckoutClient() {
             FICTIONFIGURE
           </Link>
 
-          <div className="flex items-center space-x-4 text-xs text-[#6B6B6B]">
-            <div className="hidden sm:flex items-center space-x-1.5 font-mono text-[11px] text-[#2E6B44] bg-[#2E6B44]/10 px-2.5 py-1 border border-[#2E6B44]/20">
-              <Lock className="w-3.5 h-3.5 shrink-0" />
-              <span>256-Bit Encrypted Secure Checkout</span>
-            </div>
-            <Link
-              href="/cart"
-              className="flex items-center space-x-1 text-[#6B6B6B] hover:text-[#111111] transition-colors font-medium"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="text-[11px] uppercase tracking-wider">Return to Cart</span>
-            </Link>
-          </div>
+          <Link
+            href="/cart"
+            className="flex items-center space-x-1.5 text-xs text-[#6B6B6B] hover:text-[#111111] transition-colors font-medium"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="uppercase tracking-wider text-[11px]">Return to Cart</span>
+          </Link>
         </div>
       </header>
 
@@ -535,7 +524,7 @@ export function CheckoutClient() {
                 </div>
               )}
               <div className="flex justify-between text-[#6B6B6B]">
-                <span>Shipping ({formData.shippingMethod})</span>
+                <span>Shipping & Delivery</span>
                 <span className="font-mono text-[#111111]">{shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}</span>
               </div>
               {codFee > 0 && (
@@ -860,54 +849,22 @@ export function CheckoutClient() {
               </div>
             </section>
 
-            {/* SECTION 3: SHIPPING METHOD */}
-            <section className="space-y-4 pt-4 border-t border-[#E5E5E2]">
+            {/* SECTION 3: SHIPPING & DELIVERY POLICY (Simplified, no radio buttons) */}
+            <section className="space-y-3 pt-4 border-t border-[#E5E5E2]">
               <div className="border-b border-[#E5E5E2] pb-3">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] flex items-center">
-                  <Truck className="w-4 h-4 mr-2 text-[#111111]" /> 3. Shipping Method
+                  <Truck className="w-4 h-4 mr-2 text-[#111111]" /> 3. Shipping & Delivery
                 </h3>
               </div>
 
-              <div className="space-y-3 text-xs">
-                <label
-                  onClick={() => setFormData((prev) => ({ ...prev, shippingMethod: "Standard Shipping" }))}
-                  className={`flex items-center justify-between p-4 border cursor-pointer min-h-[60px] transition-all ${
-                    formData.shippingMethod === "Standard Shipping"
-                      ? "border-[#111111] bg-[#F7F7F5]"
-                      : "border-[#E5E5E2] hover:border-[#111111]"
-                  }`}
-                >
-                  <div className="space-y-0.5">
-                    <span className="font-bold text-[#111111] block">
-                      Insured Standard Courier (3–5 Business Days)
-                    </span>
-                    <span className="text-[11px] text-[#6B6B6B]">
-                      Safe dispatch with protective outer layering. FREE for orders over ₹15,000.
-                    </span>
-                  </div>
-                  <span className="font-mono font-bold text-xs text-[#111111] shrink-0 ml-3">
-                    {afterDiscount >= 15000 ? "FREE" : "₹350"}
-                  </span>
-                </label>
-
-                <label
-                  onClick={() => setFormData((prev) => ({ ...prev, shippingMethod: "Express Courier" }))}
-                  className={`flex items-center justify-between p-4 border cursor-pointer min-h-[60px] transition-all ${
-                    formData.shippingMethod === "Express Courier"
-                      ? "border-[#111111] bg-[#F7F7F5]"
-                      : "border-[#E5E5E2] hover:border-[#111111]"
-                  }`}
-                >
-                  <div className="space-y-0.5">
-                    <span className="font-bold text-[#111111] block">
-                      Priority Express Air Freight (24–48 Hours)
-                    </span>
-                    <span className="text-[11px] text-[#6B6B6B]">
-                      Priority dispatch with wooden corner reinforced box padding.
-                    </span>
-                  </div>
-                  <span className="font-mono font-bold text-xs text-[#111111] shrink-0 ml-3">₹500</span>
-                </label>
+              <div className="p-4 bg-[#F7F7F5] border border-[#E5E5E2] space-y-1.5 text-xs">
+                <div className="flex justify-between items-center font-bold text-[#111111]">
+                  <span>Shipping & Delivery Fee</span>
+                  <span className="font-mono">{cartSubtotal >= 500 ? "FREE" : "₹100"}</span>
+                </div>
+                <p className="text-[11px] text-[#6B6B6B]">
+                  ₹100 shipping fee on orders below ₹500. <strong className="text-[#111111]">FREE SHIPPING</strong> on orders of ₹500 or more.
+                </p>
               </div>
             </section>
 
@@ -1121,7 +1078,7 @@ export function CheckoutClient() {
                 )}
 
                 <div className="flex justify-between text-[#6B6B6B]">
-                  <span>Shipping ({formData.shippingMethod})</span>
+                  <span>Shipping & Delivery</span>
                   <span className="font-mono text-[#111111]">
                     {shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}
                   </span>
