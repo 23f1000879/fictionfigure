@@ -693,7 +693,7 @@ export function CheckoutClient() {
                         name="city"
                         value={formData.city}
                         onChange={handleInputChange}
-                        placeholder="Mumbai"
+                        placeholder="Bikaner"
                         className="w-full p-3 min-h-[44px] bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
                       />
                     </div>
