@@ -144,62 +144,67 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer & Backdrop */}
+      {/* Mobile Navigation Full-Height Drawer & Backdrop */}
       {mobileMenuOpen && (
         <>
-          {/* Outside Tap Backdrop (Closes menu on tap outside) */}
+          {/* Backdrop (Closes menu when tapping backdrop/header area) */}
           <div
-            className="fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Mobile Menu Panel */}
-          <div className="fixed top-[64px] sm:top-[80px] left-0 right-0 max-h-[calc(100dvh-80px)] overflow-y-auto bg-white border-b border-[#E5E5E2] px-6 py-6 space-y-4 z-50 lg:hidden shadow-xl animate-in slide-in-from-top duration-200">
-            <nav className="flex flex-col space-y-3 text-sm font-semibold uppercase tracking-wider text-[#111111]">
+          {/* Full-Height Mobile Menu Panel */}
+          <div className="fixed top-[82px] left-0 right-0 bottom-0 z-50 bg-white border-t border-[#E5E5E2] p-6 lg:hidden shadow-2xl overflow-y-auto animate-in slide-in-from-top duration-200 flex flex-col justify-between">
+            <nav className="flex flex-col space-y-1 text-sm font-semibold uppercase tracking-wider text-[#111111]">
               <Link
                 href="/shop"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+                className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
               >
-                Shop All Figures
+                <span>Shop All Figures</span>
               </Link>
               <Link
                 href="/shop?sortBy=featured"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+                className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
               >
-                Featured Collections
+                <span>Featured Collections</span>
               </Link>
               <Link
                 href="/shop?sortBy=newest"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+                className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
               >
-                New Arrivals
+                <span>New Arrivals</span>
               </Link>
               <Link
                 href="/about"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+                className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
               >
-                About FictionFigure
+                <span>About FictionFigure</span>
               </Link>
               <Link
                 href="/account"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+                className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
               >
-                My Account
+                <span>My Account</span>
               </Link>
               <Link
                 href="/account/wishlist"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2 border-b border-[#F0F0ED] hover:text-[#6B6B6B] transition-colors"
+                className="py-3.5 border-b border-[#E5E5E2] hover:text-[#6B6B6B] transition-colors flex justify-between items-center"
               >
-                Wishlist
+                <span>Wishlist</span>
               </Link>
             </nav>
+
+            <div className="pt-6 border-t border-[#E5E5E2] text-xs text-[#6B6B6B] space-y-1 font-mono">
+              <p className="font-bold text-[#111111] uppercase tracking-wider">FICTIONFIGURE OFFICIAL STORE</p>
+              <p className="text-[11px]">Bikaner, Rajasthan, India • Delivers Pan-India</p>
+            </div>
           </div>
         </>
       )}
