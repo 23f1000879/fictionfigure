@@ -22,6 +22,7 @@ import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { AccountTabNav } from "@/components/account/AccountTabNav";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -188,38 +189,12 @@ export default function AccountPage() {
         </div>
 
         {/* 6. QUICK NAVIGATION TABS */}
-        <div className="flex border-b border-[#E5E5E2] bg-white text-xs font-semibold uppercase tracking-wider overflow-x-auto">
-          <Link
-            href="/account"
-            className="px-6 py-3.5 border-b-2 border-[#111111] text-[#111111] font-bold flex items-center space-x-2 whitespace-nowrap"
-          >
-            <UserIcon className="w-4 h-4" />
-            <span>Profile</span>
-          </Link>
-          <Link
-            href="/account/orders"
-            className="px-6 py-3.5 text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5] transition-colors flex items-center space-x-2 whitespace-nowrap"
-          >
-            <Package className="w-4 h-4" />
-            <span>Orders ({orderCount})</span>
-          </Link>
-          <Link
-            href="/account/wishlist"
-            className="px-6 py-3.5 text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5] transition-colors flex items-center space-x-2 whitespace-nowrap"
-          >
-            <Heart className="w-4 h-4" />
-            <span>Wishlist & Vault</span>
-          </Link>
-          {user.role === "ADMIN" && (
-            <Link
-              href="/admin"
-              className="px-6 py-3.5 bg-[#2E6B44] text-white font-bold tracking-widest flex items-center space-x-2 whitespace-nowrap ml-auto"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Admin Console</span>
-            </Link>
-          )}
-        </div>
+        <AccountTabNav
+          activeTab="profile"
+          orderCount={orderCount}
+          wishlistCount={wishlistCount}
+          isAdmin={user.role === "ADMIN"}
+        />
 
         {/* 3. PROFILE CARD (NO EMPTY EMAIL UI) */}
         <div className="bg-white border border-[#E5E5E2] p-6 sm:p-8 space-y-6">

@@ -10,6 +10,7 @@ import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { AccountTabNav } from "@/components/account/AccountTabNav";
 
 export default function AccountOrdersPage() {
   const router = useRouter();
@@ -106,6 +107,9 @@ export default function AccountOrdersPage() {
           </h1>
         </div>
       </div>
+
+      {/* Account Tab Navigation */}
+      <AccountTabNav activeTab="orders" orderCount={orders.length} />
 
       {/* Genuine API Server Error Banner (Not swallowed) */}
       {error && (

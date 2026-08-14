@@ -9,6 +9,7 @@ import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { ProductCard } from "@/components/product/ProductCard";
+import { AccountTabNav } from "@/components/account/AccountTabNav";
 import { API_BASE } from "@/lib/api";
 
 export default function AccountWishlistPage() {
@@ -22,7 +23,7 @@ export default function AccountWishlistPage() {
 
     // REDIRECT BEFORE DATA FETCH: If unauthenticated, redirect immediately to login with return path
     if (!token) {
-      router.push("/login?redirect=/account/wishlist");
+      router.replace("/login?redirect=/account/wishlist");
       return;
     }
 
@@ -38,7 +39,7 @@ export default function AccountWishlistPage() {
       .then(async (res) => {
         if (res.status === 401) {
           localStorage.removeItem("fictionfigure_token");
-          router.push("/login?redirect=/account/wishlist");
+          router.replace("/login?redirect=/account/wishlist");
           return;
         }
         const data = await res.json();
@@ -99,6 +100,9 @@ export default function AccountWishlistPage() {
             </h1>
           </div>
         </div>
+
+        {/* Account Tab Navigation */}
+        <AccountTabNav activeTab="wishlist" wishlistCount={products.length} />
 
         {/* Wishlist Grid / Empty State */}
         {products.length === 0 ? (
