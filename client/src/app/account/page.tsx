@@ -23,12 +23,13 @@ import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { AccountTabNav } from "@/components/account/AccountTabNav";
+import { useWishlist } from "@/context/WishlistContext";
 
 export default function AccountPage() {
   const router = useRouter();
+  const { wishlistProducts, wishlistCount } = useWishlist();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem("fictionfigure_token");
@@ -58,12 +59,6 @@ export default function AccountPage() {
         localStorage.removeItem("fictionfigure_token");
         router.push("/login");
       });
-
-    // Fetch real wishlist items for Vault preview
-    fetch(`${API_BASE}/products?limit=2`)
-      .then((res) => res.json())
-      .then((data) => setWishlistItems(data.products || []))
-      .catch(() => setWishlistItems([]));
   }, [router]);
 
   const handleLogout = () => {
@@ -89,7 +84,6 @@ export default function AccountPage() {
 
   const orderCount = user._count?.orders || user.orders?.length || 0;
   const addressCount = user._count?.addresses || 0;
-  const wishlistCount = wishlistItems.length;
 
   return (
     <>
@@ -305,7 +299,7 @@ export default function AccountPage() {
             </Link>
           </div>
 
-          {wishlistItems.length === 0 ? (
+          {wishlistProducts.length === 0 ? (
             <div className="py-10 text-center space-y-3">
               <Heart className="w-8 h-8 text-[#6B6B6B] mx-auto opacity-50" />
               <p className="text-xs text-[#6B6B6B]">Nothing saved yet.</p>
@@ -318,15 +312,15 @@ export default function AccountPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              {wishlistItems.map((item) => (
+              {wishlistProducts.map((item) => (
                 <div key={item.id} className="border border-[#E5E5E2] p-4 flex items-center space-x-4 bg-[#F7F7F5]">
                   <img
-                    src={item.imageUrl || item.primaryImage || "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300&auto=format&fit=crop&q=80"}
-                    alt={item.title}
+                    src={item.images?.[0]?.url || item.imageUrl || "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300&auto=format&fit=crop&q=80"}
+                    alt={item.name || item.title}
                     className="w-16 h-16 object-cover bg-white border border-[#E5E5E2]"
                   />
                   <div className="flex-1 min-w-0 space-y-1">
-                    <h4 className="font-semibold text-[#111111] truncate">{item.title}</h4>
+                    <h4 className="font-semibold text-[#111111] truncate">{item.name || item.title}</h4>
                     <p className="font-mono font-bold text-[#111111]">{formatPrice(item.price)}</p>
                     <Link
                       href={`/products/${item.slug || item.id}`}

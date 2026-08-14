@@ -5,10 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search, User, Heart, ShoppingBag, Menu, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { API_BASE } from "@/lib/api";
 
 export function Header() {
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
+  const { wishlistCount } = useWishlist();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [announcement, setAnnouncement] = useState(
     "⚡ COMPLIMENTARY EXPRESS SHIPPING ON ORDERS OVER ₹15,000 | AUTHENTIC IMPORTS DIRECT FROM TOKYO"
@@ -112,10 +114,15 @@ export function Header() {
           {/* Wishlist Icon */}
           <Link
             href="/account/wishlist"
-            className="p-2 flex items-center justify-center hover:text-[#6B6B6B] transition-colors min-w-[36px] min-h-[36px]"
+            className="p-2 flex items-center justify-center hover:text-[#6B6B6B] transition-colors relative min-w-[36px] min-h-[36px]"
             aria-label="Saved Wishlist"
           >
             <Heart className="w-4 h-4" />
+            {wishlistCount > 0 && (
+              <span className="absolute top-1 right-0.5 bg-[#111111] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono">
+                {wishlistCount}
+              </span>
+            )}
           </Link>
 
           {/* Cart Icon with Badge */}

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,8 +33,10 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-[#F7F7F5] text-[#111111] font-sans selection:bg-[#111111] selection:text-white">
         <CartProvider>
-          {children}
-          <AIChatWidget />
+          <WishlistProvider>
+            {children}
+            <AIChatWidget />
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>

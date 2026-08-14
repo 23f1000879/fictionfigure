@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Heart, Star, ShoppingBag } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 export interface ProductCardProps {
   product: {
@@ -26,7 +27,8 @@ export interface ProductCardProps {
 
 export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps) {
   const { addItem } = useCart();
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(product.id);
   const primaryImage = product.images?.[0]?.url || "";
   const secondaryImage = product.images?.[1]?.url || primaryImage;
 
@@ -85,9 +87,10 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
 
         {/* Wishlist Button */}
         <button
-          onClick={(e) => {
+          onClick={async (e) => {
             e.preventDefault();
-            setIsWishlisted(!isWishlisted);
+            e.stopPropagation();
+            await toggleWishlist(product.id);
           }}
           className="absolute top-2 right-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/90 backdrop-blur-xs border border-[#E5E5E2] hover:bg-white text-[#111111] transition-all z-10"
           aria-label="Save to Wishlist"

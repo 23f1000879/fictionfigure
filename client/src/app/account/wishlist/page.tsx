@@ -3,19 +3,18 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, ArrowLeft, Loader2, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
+import { Heart, ArrowLeft, Loader2, ShoppingBag } from "lucide-react";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { ProductCard } from "@/components/product/ProductCard";
 import { AccountTabNav } from "@/components/account/AccountTabNav";
-import { API_BASE } from "@/lib/api";
+import { useWishlist } from "@/context/WishlistContext";
 
 export default function AccountWishlistPage() {
   const router = useRouter();
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { wishlistProducts, wishlistCount, loading } = useWishlist();
   const [authChecking, setAuthChecking] = useState(true);
 
   useEffect(() => {
@@ -28,34 +27,6 @@ export default function AccountWishlistPage() {
     }
 
     setAuthChecking(false);
-    setLoading(true);
-
-    // Fetch authenticated user's real saved wishlist from backend API
-    fetch(`${API_BASE}/wishlist`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (res) => {
-        if (res.status === 401) {
-          localStorage.removeItem("fictionfigure_token");
-          router.replace("/login?redirect=/account/wishlist");
-          return;
-        }
-        const data = await res.json();
-        if (data.products) {
-          setProducts(data.products);
-        } else if (data.items) {
-          setProducts(data.items.map((i: any) => i.product).filter(Boolean));
-        } else {
-          setProducts([]);
-        }
-      })
-      .catch((err) => {
-        console.error("Wishlist fetch error:", err);
-        setProducts([]);
-      })
-      .finally(() => setLoading(false));
   }, [router]);
 
   // Loading or Auth-Redirecting State
@@ -96,16 +67,16 @@ export default function AccountWishlistPage() {
               Collector Vault
             </span>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#111111]">
-              Saved Wishlist ({products.length})
+              Saved Wishlist ({wishlistCount})
             </h1>
           </div>
         </div>
 
         {/* Account Tab Navigation */}
-        <AccountTabNav activeTab="wishlist" wishlistCount={products.length} />
+        <AccountTabNav activeTab="wishlist" wishlistCount={wishlistCount} />
 
         {/* Wishlist Grid / Empty State */}
-        {products.length === 0 ? (
+        {wishlistProducts.length === 0 ? (
           <div className="p-8 sm:p-12 text-center bg-white border border-[#E5E5E2] space-y-4 text-xs">
             <Heart className="w-8 h-8 text-[#6B6B6B] mx-auto opacity-40" />
             <div className="space-y-1">
@@ -121,7 +92,7 @@ export default function AccountWishlistPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {products.map((p) => (
+            {wishlistProducts.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
