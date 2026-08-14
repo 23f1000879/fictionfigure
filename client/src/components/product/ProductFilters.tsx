@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { RotateCcw, SlidersHorizontal, X, Check } from "lucide-react";
 
 interface ProductFiltersProps {
-  categories: { id: string; name: string; slug: string; _count: { products: number } }[];
+  categories: { id: string; name: string; slug: string; _count?: { products: number } }[];
   brands: string[];
   franchises: string[];
 }
@@ -19,13 +19,21 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
   const currentBrand = searchParams.get("brand") || "";
   const currentFranchise = searchParams.get("franchise") || "";
   const inStockOnly = searchParams.get("inStockOnly") === "true";
-  const minPrice = searchParams.get("minPrice") || "";
-  const maxPrice = searchParams.get("maxPrice") || "";
+  const minPriceParam = searchParams.get("minPrice") || "";
+  const maxPriceParam = searchParams.get("maxPrice") || "";
+
+  const [localMinPrice, setLocalMinPrice] = useState(minPriceParam);
+  const [localMaxPrice, setLocalMaxPrice] = useState(maxPriceParam);
+
+  useEffect(() => {
+    setLocalMinPrice(minPriceParam);
+    setLocalMaxPrice(maxPriceParam);
+  }, [minPriceParam, maxPriceParam]);
 
   const updateParam = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
+    if (value && value.trim() !== "") {
+      params.set(key, value.trim());
     } else {
       params.delete(key);
     }
@@ -33,19 +41,45 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
     router.push(`/shop?${params.toString()}`);
   };
 
+  const applyPriceFilter = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (localMinPrice && localMinPrice.trim() !== "") {
+      params.set("minPrice", localMinPrice.trim());
+    } else {
+      params.delete("minPrice");
+    }
+    if (localMaxPrice && localMaxPrice.trim() !== "") {
+      params.set("maxPrice", localMaxPrice.trim());
+    } else {
+      params.delete("maxPrice");
+    }
+    params.set("page", "1");
+    router.push(`/shop?${params.toString()}`);
+  };
+
   const handleReset = () => {
+    setLocalMinPrice("");
+    setLocalMaxPrice("");
     router.push("/shop");
   };
+
+  const hasActiveFilters =
+    Boolean(currentCategory) ||
+    Boolean(currentBrand) ||
+    Boolean(currentFranchise) ||
+    inStockOnly ||
+    Boolean(minPriceParam) ||
+    Boolean(maxPriceParam);
 
   const filterContent = (
     <div className="space-y-6 text-xs">
       {/* Reset Action */}
-      {(currentCategory || currentBrand || currentFranchise || inStockOnly || minPrice || maxPrice) && (
+      {hasActiveFilters && (
         <button
           onClick={handleReset}
-          className="flex items-center text-[#6B6B6B] hover:text-[#111111] font-medium tracking-wide uppercase text-[10px] min-h-[44px]"
+          className="flex items-center text-[#A83232] hover:underline font-semibold tracking-wider uppercase text-[11px] min-h-[44px]"
         >
-          <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Reset All Filters
+          <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Clear All Filters
         </button>
       )}
 
@@ -57,28 +91,32 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
         <div className="space-y-1">
           <button
             onClick={() => updateParam("category", null)}
-            className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 ${
-              !currentCategory ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
+            className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 transition-colors ${
+              !currentCategory ? "font-bold text-[#111111] underline" : "text-[#6B6B6B]"
             }`}
           >
             All Categories
           </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => updateParam("category", cat.slug)}
-              className={`flex justify-between items-center w-full text-left hover:text-[#111111] min-h-[36px] py-1 ${
-                currentCategory === cat.slug ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
-              }`}
-            >
-              <span>{cat.name}</span>
-              <span className="text-[10px] text-[#6B6B6B] font-mono">({cat._count.products})</span>
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const isSelected = currentCategory === cat.slug || currentCategory === cat.id;
+            const count = cat._count?.products ?? 0;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => updateParam("category", cat.slug)}
+                className={`flex justify-between items-center w-full text-left hover:text-[#111111] min-h-[36px] py-1 transition-colors ${
+                  isSelected ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
+                }`}
+              >
+                <span className="truncate pr-2">{cat.name}</span>
+                <span className="text-[10px] text-[#6B6B6B] font-mono shrink-0">({count})</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Brand */}
+      {/* Brand / Manufacturer */}
       {brands.length > 0 && (
         <div className="space-y-3">
           <h4 className="font-semibold uppercase tracking-widest text-[#111111] text-[11px] border-b border-[#E5E5E2] pb-2">
@@ -87,8 +125,8 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
           <div className="space-y-1 max-h-48 overflow-y-auto pr-2">
             <button
               onClick={() => updateParam("brand", null)}
-              className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 ${
-                !currentBrand ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
+              className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 transition-colors ${
+                !currentBrand ? "font-bold text-[#111111] underline" : "text-[#6B6B6B]"
               }`}
             >
               All Brands
@@ -97,7 +135,7 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
               <button
                 key={b}
                 onClick={() => updateParam("brand", b)}
-                className={`block text-left w-full hover:text-[#111111] truncate min-h-[36px] py-1 ${
+                className={`block text-left w-full hover:text-[#111111] truncate min-h-[36px] py-1 transition-colors ${
                   currentBrand === b ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
                 }`}
               >
@@ -108,7 +146,7 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
         </div>
       )}
 
-      {/* Franchise */}
+      {/* Franchise / Universe */}
       {franchises.length > 0 && (
         <div className="space-y-3">
           <h4 className="font-semibold uppercase tracking-widest text-[#111111] text-[11px] border-b border-[#E5E5E2] pb-2">
@@ -117,8 +155,8 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
           <div className="space-y-1 max-h-48 overflow-y-auto pr-2">
             <button
               onClick={() => updateParam("franchise", null)}
-              className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 ${
-                !currentFranchise ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
+              className={`block text-left w-full hover:text-[#111111] min-h-[36px] py-1 transition-colors ${
+                !currentFranchise ? "font-bold text-[#111111] underline" : "text-[#6B6B6B]"
               }`}
             >
               All Franchises
@@ -127,7 +165,7 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
               <button
                 key={f}
                 onClick={() => updateParam("franchise", f)}
-                className={`block text-left w-full hover:text-[#111111] truncate min-h-[36px] py-1 ${
+                className={`block text-left w-full hover:text-[#111111] truncate min-h-[36px] py-1 transition-colors ${
                   currentFranchise === f ? "font-bold text-[#111111]" : "text-[#6B6B6B]"
                 }`}
               >
@@ -143,14 +181,14 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
         <h4 className="font-semibold uppercase tracking-widest text-[#111111] text-[11px] border-b border-[#E5E5E2] pb-2">
           Availability
         </h4>
-        <label className="flex items-center space-x-2 text-[#111111] cursor-pointer min-h-[44px]">
+        <label className="flex items-center space-x-2 text.111111 cursor-pointer min-h-[44px]">
           <input
             type="checkbox"
             checked={inStockOnly}
             onChange={(e) => updateParam("inStockOnly", e.target.checked ? "true" : null)}
-            className="w-4 h-4 accent-[#111111]"
+            className="w-4 h-4 accent-[#111111] cursor-pointer"
           />
-          <span>In Stock Only</span>
+          <span className="font-medium">In Stock Only</span>
         </label>
       </div>
 
@@ -159,21 +197,34 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
         <h4 className="font-semibold uppercase tracking-widest text-[#111111] text-[11px] border-b border-[#E5E5E2] pb-2">
           Price Range (₹)
         </h4>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            placeholder="Min"
-            value={minPrice}
-            onChange={(e) => updateParam("minPrice", e.target.value || null)}
-            className="w-full p-2.5 min-h-[44px] bg-white border border-[#E5E5E2] text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none font-mono text-xs"
-          />
-          <input
-            type="number"
-            placeholder="Max"
-            value={maxPrice}
-            onChange={(e) => updateParam("maxPrice", e.target.value || null)}
-            className="w-full p-2.5 min-h-[44px] bg-white border border-[#E5E5E2] text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none font-mono text-xs"
-          />
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              placeholder="Min"
+              value={localMinPrice}
+              onChange={(e) => setLocalMinPrice(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && applyPriceFilter()}
+              onBlur={applyPriceFilter}
+              className="w-full p-2.5 min-h-[44px] bg-white border border-[#E5E5E2] text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none font-mono text-xs"
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              value={localMaxPrice}
+              onChange={(e) => setLocalMaxPrice(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && applyPriceFilter()}
+              onBlur={applyPriceFilter}
+              className="w-full p-2.5 min-h-[44px] bg-white border border-[#E5E5E2] text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none font-mono text-xs"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={applyPriceFilter}
+            className="w-full py-2 bg-[#111111] text-white text-[10px] font-semibold uppercase tracking-wider hover:bg-black transition-colors"
+          >
+            Apply Price
+          </button>
         </div>
       </div>
     </div>
@@ -215,7 +266,7 @@ export function ProductFilters({ categories, brands, franchises }: ProductFilter
                   onClick={() => setIsOpen(false)}
                   className="w-full min-h-[44px] bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest py-3"
                 >
-                  Apply Filters
+                  Apply & Close
                 </button>
               </div>
             </div>

@@ -101,8 +101,8 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
 
         {/* Catalog Main Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
-          {/* Desktop Filter Sidebar */}
-          <aside className="hidden lg:block space-y-6">
+          {/* Filter Sidebar & Mobile Drawer */}
+          <aside className="space-y-6">
             <Suspense fallback={<div className="text-xs text-[#6B6B6B]">Loading filters...</div>}>
               <ProductFilters
                 categories={categories}
