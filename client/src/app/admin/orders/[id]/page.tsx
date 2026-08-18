@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, CheckCircle2, Clock, Truck, Package, Loader2, AlertCircle, MapPin, Tag } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminOrderDetailPage() {
   const router = useRouter();
@@ -14,35 +14,18 @@ export default function AdminOrderDetailPage() {
   const orderId = params?.id as string;
 
   const [order, setOrder] = useState<any>(null);
-  const [status, setStatus] = useState<string>("PENDING");
+  const [status, setStatus] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const getAuthHeaders = () => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") : null;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
-
   const fetchOrderDetails = () => {
     if (!orderId) return;
 
-    const headers = getAuthHeaders();
-    if (!headers.Authorization) {
-      router.push(`/login?redirect=/admin/orders/${orderId}`);
-      return;
-    }
-
     setIsLoading(true);
-    fetch(`${API_BASE}/admin/orders/${orderId}`, { headers })
-      .then((res) => {
-        if (res.status === 401 || res.status === 403) {
-          router.push("/login");
-          throw new Error("Admin authentication required.");
-        }
-        return res.json();
-      })
+    adminFetch(`${API_BASE}/admin/orders/${orderId}`)
+      .then((res) => res.json())
       .then((data) => {
         if (data.order) {
           setOrder(data.order);
@@ -65,12 +48,9 @@ export default function AdminOrderDetailPage() {
     setError("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/orders`, {
+      const res = await adminFetch(`${API_BASE}/admin/orders`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: order?.id || orderId, status: newStatus }),
       });
 
@@ -210,9 +190,8 @@ export default function AdminOrderDetailPage() {
                   if (confirm(`Confirm receipt of ${formatPrice(order.totalAmount)} for UTR: ${primaryPayment?.transactionRef || "N/A"}?`)) {
                     setIsUpdating(true);
                     try {
-                      const res = await fetch(`${API_BASE}/admin/orders/${order.id}/verify-payment`, {
+                      const res = await adminFetch(`${API_BASE}/admin/orders/${order.id}/verify-payment`, {
                         method: "PATCH",
-                        headers: getAuthHeaders(),
                       });
                       const data = await res.json();
                       if (res.ok) {
@@ -240,9 +219,8 @@ export default function AdminOrderDetailPage() {
                   if (confirm("Reject payment and cancel order?")) {
                     setIsUpdating(true);
                     try {
-                      const res = await fetch(`${API_BASE}/admin/orders/${order.id}/reject-payment`, {
+                      const res = await adminFetch(`${API_BASE}/admin/orders/${order.id}/reject-payment`, {
                         method: "PATCH",
-                        headers: getAuthHeaders(),
                       });
                       const data = await res.json();
                       if (res.ok) {

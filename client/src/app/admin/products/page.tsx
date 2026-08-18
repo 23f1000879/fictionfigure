@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { Plus, Loader2, ExternalLink, Edit, Copy, Trash2, CheckCircle2, AlertCircle, Package } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -16,21 +16,25 @@ export default function AdminProductsPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
-  const fetchCatalog = () => {
+  const fetchCatalog = async () => {
     setLoading(true);
-    Promise.all([
-      fetch(`${API_BASE}/admin/products`).then((res) => res.json()),
-      fetch(`${API_BASE}/admin/categories`).then((res) => res.json()),
-    ])
-      .then(([prodData, catData]) => {
-        setProducts(prodData.products || []);
-        setCategories(catData.categories || []);
-      })
-      .catch(() => {
-        setProducts([]);
-        setCategories([]);
-      })
-      .finally(() => setLoading(false));
+    setErrorMsg("");
+    try {
+      const [prodRes, catRes] = await Promise.all([
+        adminFetch(`${API_BASE}/admin/products`),
+        adminFetch(`${API_BASE}/admin/categories`),
+      ]);
+
+      const prodData = await prodRes.json();
+      const catData = await catRes.json();
+
+      setProducts(prodData.products || []);
+      setCategories(catData.categories || []);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to load catalog.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export default function AdminProductsPage() {
     setErrorMsg("");
     setSuccessMsg("");
     try {
-      const res = await fetch(`${API_BASE}/admin/products/${p.id}/duplicate`, {
+      const res = await adminFetch(`${API_BASE}/admin/products/${p.id}/duplicate`, {
         method: "POST",
       });
       const data = await res.json();
@@ -60,7 +64,7 @@ export default function AdminProductsPage() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/products/${deleteTarget.id}`, {
+      const res = await adminFetch(`${API_BASE}/admin/products/${deleteTarget.id}`, {
         method: "DELETE",
       });
       const data = await res.json();

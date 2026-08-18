@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Users, ShoppingBag, ShieldCheck, Phone, Mail, MapPin, AlertTriangle, CheckCircle2, Ban, Trash2 } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminCustomerDetailPage() {
   const params = useParams();
@@ -18,23 +18,13 @@ export default function AdminCustomerDetailPage() {
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const getAdminHeaders = () => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") : "";
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    };
-  };
-
   const fetchCustomerProfile = async () => {
     if (!customerId) return;
     setLoading(true);
     setErrorMessage("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/customers/${customerId}`, {
-        headers: getAdminHeaders(),
-      });
+      const res = await adminFetch(`${API_BASE}/admin/customers/${customerId}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load customer profile.");
       if (data.customer) {
@@ -70,9 +60,9 @@ export default function AdminCustomerDetailPage() {
     setErrorMessage("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/users/${customer.id}/block`, {
+      const res = await adminFetch(`${API_BASE}/admin/users/${customer.id}/block`, {
         method: "PATCH",
-        headers: getAdminHeaders(),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ blocked: !isCurrentlyBlocked }),
       });
 
@@ -104,9 +94,8 @@ export default function AdminCustomerDetailPage() {
     setErrorMessage("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/users/${customer.id}`, {
+      const res = await adminFetch(`${API_BASE}/admin/users/${customer.id}`, {
         method: "DELETE",
-        headers: getAdminHeaders(),
       });
 
       const data = await res.json();

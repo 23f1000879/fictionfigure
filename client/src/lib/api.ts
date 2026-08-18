@@ -10,7 +10,7 @@ const cleanUrl = rawUrl.replace(/\/$/, "");
 export const API_BASE = cleanUrl.endsWith("/api") ? cleanUrl : `${cleanUrl}/api`;
 
 /**
- * Retrieves the stored admin bearer token from localStorage if in a browser environment.
+ * Retrieves stored admin bearer token from localStorage in browser environment.
  */
 export const getAdminAuthHeader = (): Record<string, string> => {
   if (typeof window === "undefined") return {};
@@ -20,6 +20,8 @@ export const getAdminAuthHeader = (): Record<string, string> => {
 
 /**
  * Authenticated fetch helper for admin API requests.
+ * Automatically attaches Authorization: Bearer <token> header.
+ * Handles 401/403 responses by throwing an explicit error and clearing stale tokens.
  */
 export const adminFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const authHeader = getAdminAuthHeader();
@@ -27,5 +29,17 @@ export const adminFetch = async (url: string, options: RequestInit = {}): Promis
     ...authHeader,
     ...((options.headers as Record<string, string>) || {}),
   };
-  return fetch(url, { ...options, headers });
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401 || response.status === 403) {
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      console.warn(`Admin API returned ${response.status} Unauthorized for ${url}. Redirecting to login...`);
+      localStorage.removeItem("fictionfigure_token");
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+    }
+    throw new Error("Admin authentication required or session expired. Please sign in again.");
+  }
+
+  return response;
 };

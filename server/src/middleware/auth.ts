@@ -62,6 +62,7 @@ export const requireAdmin = async (req: AuthenticatedRequest, res: Response, nex
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log(`[AdminAuth] Rejected ${req.method} ${req.originalUrl}: Bearer token missing.`);
       return res.status(401).json({ success: false, error: "Admin authentication required. Bearer token missing." });
     }
 

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { formatPrice } from "@/lib/utils";
-import { Boxes, Plus, Minus, AlertTriangle, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { Boxes, Plus, Minus, AlertTriangle, RefreshCw, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminInventoryPage() {
   const [inventoryList, setInventoryList] = useState<any[]>([]);
@@ -13,15 +13,17 @@ export default function AdminInventoryPage() {
   const [reason, setReason] = useState<string>("Restock");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const fetchInventory = async () => {
     setLoading(true);
+    setErrorMsg("");
     try {
-      const res = await fetch(`${API_BASE}/admin/inventory`);
+      const res = await adminFetch(`${API_BASE}/admin/inventory`);
       const data = await res.json();
       setInventoryList(data.inventory || []);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setErrorMsg(e.message || "Failed to load inventory.");
       setInventoryList([]);
     } finally {
       setLoading(false);
@@ -44,9 +46,10 @@ export default function AdminInventoryPage() {
 
     setIsSubmitting(true);
     setMessage("");
+    setErrorMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/inventory`, {
+      const res = await adminFetch(`${API_BASE}/admin/inventory`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -63,7 +66,7 @@ export default function AdminInventoryPage() {
       setActionVariant(null);
       fetchInventory();
     } catch (err: any) {
-      alert(err.message || "Failed to update inventory");
+      setErrorMsg(err.message || "Failed to update inventory.");
     } finally {
       setIsSubmitting(false);
     }
@@ -92,6 +95,13 @@ export default function AdminInventoryPage() {
         <div className="p-3 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold flex items-center">
           <CheckCircle2 className="w-4 h-4 mr-2" />
           <span>{message}</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-3 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center">
+          <AlertCircle className="w-4 h-4 mr-2" />
+          <span>{errorMsg}</span>
         </div>
       )}
 

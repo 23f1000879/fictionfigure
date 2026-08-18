@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Loader2, Save, Image as ImageIcon } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminEditProductPage() {
   const router = useRouter();
@@ -31,7 +31,7 @@ export default function AdminEditProductPage() {
   });
 
   useEffect(() => {
-    fetch(`${API_BASE}/admin/categories`)
+    adminFetch(`${API_BASE}/admin/categories`)
       .then((res) => res.json())
       .then((data) => setCategories(data.categories || []))
       .catch(() => setCategories([]));
@@ -39,7 +39,7 @@ export default function AdminEditProductPage() {
 
   useEffect(() => {
     if (productId) {
-      fetch(`${API_BASE}/products?limit=100`)
+      adminFetch(`${API_BASE}/products?limit=100`)
         .then((res) => res.json())
         .then((data) => {
           const found = (data.products || []).find((p: any) => p.id === productId || p.slug === productId);
@@ -71,7 +71,7 @@ export default function AdminEditProductPage() {
     setMessage("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/products/${productId}`, {
+      const res = await adminFetch(`${API_BASE}/admin/products/${productId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

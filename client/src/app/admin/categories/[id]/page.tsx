@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, Edit2, Loader2, Package, ArrowUpRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminCategoryDetailPage() {
   const params = useParams();
@@ -19,13 +19,13 @@ export default function AdminCategoryDetailPage() {
   const fetchCategoryDetail = () => {
     if (!categoryId) return;
     setLoading(true);
-    fetch(`${API_BASE}/admin/categories/${categoryId}`)
+    adminFetch(`${API_BASE}/admin/categories/${categoryId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.category) setCategory(data.category);
         else setError("Category not found");
       })
-      .catch(() => setError("Failed to fetch category detail"))
+      .catch((err: any) => setError(err.message || "Failed to fetch category detail"))
       .finally(() => setLoading(false));
   };
 
@@ -37,7 +37,7 @@ export default function AdminCategoryDetailPage() {
     if (!confirm("Are you sure you want to remove this product from this category?")) return;
 
     try {
-      const res = await fetch(
+      const res = await adminFetch(
         `${API_BASE}/admin/categories/${categoryId}/products/${productId}`,
         { method: "DELETE" }
       );

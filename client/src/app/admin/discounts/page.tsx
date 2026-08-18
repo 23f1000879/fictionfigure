@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { formatPrice } from "@/lib/utils";
 import { Tag, Plus, Edit2, Trash2, Loader2, AlertCircle, CheckCircle2, Power } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminDiscountsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -28,10 +28,13 @@ export default function AdminDiscountsPage() {
 
   const fetchCoupons = () => {
     setLoading(true);
-    fetch(`${API_BASE}/admin/coupons`)
+    adminFetch(`${API_BASE}/admin/coupons`)
       .then((res) => res.json())
       .then((data) => setCoupons(data.coupons || []))
-      .catch(() => setCoupons([]))
+      .catch((err: any) => {
+        setErrorMsg(err.message || "Failed to load coupons.");
+        setCoupons([]);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -62,10 +65,10 @@ export default function AdminDiscountsPage() {
       discountType: c.discountType || "PERCENTAGE",
       discountValue: c.discountValue || 0,
       minOrderValue: c.minOrderValue || 0,
-      maxDiscountAmount: c.maxDiscountAmount || "",
+      maxDiscountAmount: c.maxDiscountAmount ? String(c.maxDiscountAmount) : "",
       maxUsage: c.maxUsage || 100,
       perCustomerLimit: c.perCustomerLimit || 1,
-      isActive: c.isActive !== undefined ? c.isActive : true,
+      isActive: c.isActive ?? true,
     });
     setErrorMsg("");
     setIsModalOpen(true);
@@ -83,7 +86,7 @@ export default function AdminDiscountsPage() {
         : `${API_BASE}/admin/coupons`;
       const method = editingCoupon ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
+      const res = await adminFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -107,7 +110,7 @@ export default function AdminDiscountsPage() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/coupons/${c.id}`, {
+      const res = await adminFetch(`${API_BASE}/admin/coupons/${c.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !c.isActive }),
@@ -130,7 +133,7 @@ export default function AdminDiscountsPage() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/admin/coupons/${c.id}`, {
+      const res = await adminFetch(`${API_BASE}/admin/coupons/${c.id}`, {
         method: "DELETE",
       });
 

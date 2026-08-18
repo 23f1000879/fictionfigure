@@ -3,18 +3,22 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice, formatDate } from "@/lib/utils";
-import { TrendingUp, ShoppingBag, Clock, Package, ArrowUpRight, ShieldCheck, Loader2 } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { TrendingUp, ShoppingBag, Clock, Package, ArrowUpRight, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE}/admin/stats`)
+    setLoading(true);
+    setErrorMsg("");
+    adminFetch(`${API_BASE}/admin/stats`)
       .then((res) => res.json())
       .then((data) => setStats(data))
-      .catch(() => {
+      .catch((err: any) => {
+        setErrorMsg(err.message || "Failed to load admin stats.");
         setStats({
           totalRevenue: 0,
           totalOrders: 0,
@@ -59,6 +63,13 @@ export default function AdminDashboardPage() {
           + Add New Product
         </Link>
       </div>
+
+      {errorMsg && (
+        <div className="p-3 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center">
+          <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
 
       {/* Top 4 Dynamic KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

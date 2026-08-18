@@ -3,20 +3,26 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice, formatDate } from "@/lib/utils";
-import { ArrowUpRight, Loader2, Package } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { ArrowUpRight, Loader2, Package, AlertCircle } from "lucide-react";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE}/admin/orders`)
+    setLoading(true);
+    setErrorMsg("");
+    adminFetch(`${API_BASE}/admin/orders`)
       .then((res) => res.json())
       .then((data) => {
         setOrders(data.orders || []);
       })
-      .catch(() => setOrders([]))
+      .catch((err: any) => {
+        setErrorMsg(err.message || "Failed to load orders.");
+        setOrders([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -30,6 +36,13 @@ export default function AdminOrdersPage() {
           Fulfillment Orders ({orders.length})
         </h1>
       </div>
+
+      {errorMsg && (
+        <div className="p-3 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center">
+          <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
 
       {loading ? (
         <div className="p-12 text-center text-xs text-[#6B6B6B]">

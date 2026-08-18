@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Save, Loader2, RefreshCw, CheckCircle2, AlertCircle, Upload, Eye } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 interface ProductOption {
   id: string;
@@ -33,12 +33,6 @@ export default function AdminSettingsPage() {
     homepage_hero_image_url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80",
     homepage_hero_eyebrow: "CURATED COLLECTOR GALLERY",
     homepage_hero_title: "Figures worth collecting.",
-    homepage_hero_title_accent: "Stories worth keeping.",
-    homepage_hero_description: "Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.",
-    homepage_hero_primary_label: "SHOP COLLECTION",
-    homepage_hero_primary_url: "/shop",
-    homepage_hero_secondary_label: "EXPLORE NEW ARRIVALS",
-    homepage_hero_secondary_url: "/shop?sortBy=newest",
     homepage_hero_featured_product_id: "",
   });
 
@@ -52,7 +46,7 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/settings`);
+      const res = await adminFetch(`${API_BASE}/admin/settings`);
       const data = await res.json();
       if (data.settings && Object.keys(data.settings).length > 0) {
         setSettings((prev) => ({ ...prev, ...data.settings }));
@@ -60,8 +54,8 @@ export default function AdminSettingsPage() {
       if (data.products && Array.isArray(data.products)) {
         setProducts(data.products);
       }
-    } catch (e) {
-      console.error("Error fetching settings:", e);
+    } catch (e: any) {
+      setError(e.message || "Error fetching store settings.");
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +77,7 @@ export default function AdminSettingsPage() {
     formData.append("image", file);
 
     try {
-      const res = await fetch(`${API_BASE}/admin/uploads/product-image`, {
+      const res = await adminFetch(`${API_BASE}/admin/uploads/product-image`, {
         method: "POST",
         body: formData,
       });
@@ -113,7 +107,7 @@ export default function AdminSettingsPage() {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/admin/settings`, {
+      const res = await adminFetch(`${API_BASE}/admin/settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section: sectionName, settings: sectionPayload }),
