@@ -817,6 +817,8 @@ router.get("/orders/:id", async (req, res) => {
         shippingAddress: parsedAddress,
         items: order.items.map((item) => ({
           id: item.id,
+          productId: item.productId || item.variant?.productId || "",
+          productSlug: item.variant?.product?.slug || "",
           title: item.title,
           sku: item.sku,
           price: item.price,

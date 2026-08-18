@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { formatPrice, formatDate } from "@/lib/utils";
-import { CheckCircle2, Clock, Package, Truck, ArrowLeft, Loader2, AlertCircle, ShoppingBag, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock, Package, Truck, ArrowLeft, Loader2, AlertCircle, ShoppingBag, ShieldCheck, Star } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 export default function OrderDetailPage() {
@@ -15,23 +15,24 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const getAuthHeader = () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   useEffect(() => {
     if (!orderId) return;
 
-    const token = localStorage.getItem("fictionfigure_token");
-    const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    fetch(`${API_BASE}/checkout/orders/${orderId}`, { headers })
+    setLoading(true);
+    fetch(`${API_BASE}/checkout/order/${orderId}`, {
+      headers: getAuthHeader(),
+    })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.order) {
-          setOrder(data.order);
-        } else {
-          setError(data.error || "Order not found.");
-        }
+        if (data.order) setOrder(data.order);
+        else setError(data.error || "Order not found.");
       })
-      .catch(() => setError("Failed to load order details."))
+      .catch(() => setError("Failed to load order receipt."))
       .finally(() => setLoading(false));
   }, [orderId]);
 
@@ -232,27 +233,47 @@ export default function OrderDetailPage() {
         </h3>
 
         <div className="space-y-4 divide-y divide-[#E5E5E2]">
-          {order.items?.map((item: any) => (
-            <div key={item.id} className="pt-4 first:pt-0 flex space-x-3.5 items-center min-w-0">
-              <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-[#F0F0ED] shrink-0 border border-[#E5E5E2]">
-                {item.image ? (
-                  <Image src={item.image} alt={item.title} fill className="object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B]">
-                    No Image
+          {order.items?.map((item: any) => {
+            const isDelivered = order.status === "DELIVERED";
+            const productTarget = item.productSlug || item.productId;
+
+            return (
+              <div key={item.id} className="pt-4 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+                <div className="flex space-x-3.5 items-center min-w-0 flex-1">
+                  <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-[#F0F0ED] shrink-0 border border-[#E5E5E2]">
+                    {item.image ? (
+                      <Image src={item.image} alt={item.title} fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B]">
+                        No Image
+                      </div>
+                    )}
                   </div>
-                )}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <h5 className="font-semibold text-[#111111] leading-snug break-words">{item.title}</h5>
+                    <p className="text-[10px] text-[#6B6B6B] font-mono">SKU: {item.sku}</p>
+                    <p className="text-[11px] text-[#6B6B6B]">Qty: {item.quantity} × {formatPrice(item.price)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-end space-x-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#F7F7F5]">
+                  <span className="font-mono font-semibold text-[#111111]">
+                    {formatPrice(item.total)}
+                  </span>
+
+                  {isDelivered && productTarget && (
+                    <Link
+                      href={`/products/${productTarget}#reviews`}
+                      className="px-3 py-1.5 bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider hover:bg-black transition-colors inline-flex items-center space-x-1.5 shrink-0"
+                    >
+                      <Star className="w-3 h-3 fill-white text-white" />
+                      <span>Write Review</span>
+                    </Link>
+                  )}
+                </div>
               </div>
-              <div className="min-w-0 flex-1 space-y-1">
-                <h5 className="font-semibold text-[#111111] leading-snug break-words">{item.title}</h5>
-                <p className="text-[10px] text-[#6B6B6B] font-mono">SKU: {item.sku}</p>
-                <p className="text-[11px] text-[#6B6B6B]">Qty: {item.quantity} × {formatPrice(item.price)}</p>
-              </div>
-              <span className="font-mono font-semibold text-[#111111] shrink-0">
-                {formatPrice(item.total)}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Financial Breakdown */}

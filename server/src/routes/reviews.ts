@@ -135,17 +135,33 @@ router.get("/product/:productId", async (req, res) => {
         const decoded: any = jwt.verify(token, JWT_SECRET);
         if (decoded?.userId) {
           const userId = decoded.userId;
+          const user = await prisma.user.findUnique({ where: { id: userId } });
 
-          // Check if user already reviewed
+          // 1. Check if user already reviewed
           userReview = await prisma.review.findFirst({
-            where: { userId, productId: resolvedProductId },
+            where: {
+              productId: resolvedProductId,
+              OR: [
+                { userId },
+                ...(user?.phone ? [{ user: { phone: user.phone } }] : []),
+              ],
+            },
           });
 
-          // Check if user has a DELIVERED order for this product
+          // Build flexible customer ownership filter (userId, registered phone, or shipping phone)
+          const ownerFilters: any[] = [{ userId }];
+          if (user?.phone) {
+            ownerFilters.push({ user: { phone: user.phone } });
+            ownerFilters.push({ shippingAddressJson: { contains: user.phone } });
+            const cleanPhone = user.phone.replace(/\D/g, "").slice(-10);
+            if (cleanPhone) ownerFilters.push({ shippingAddressJson: { contains: cleanPhone } });
+          }
+
+          // 2. Check if user has a DELIVERED order for this product
           const deliveredOrder = await prisma.order.findFirst({
             where: {
-              userId,
-              status: "DELIVERED",
+              OR: ownerFilters,
+              status: { in: ["DELIVERED", "delivered"] },
               items: {
                 some: {
                   OR: [
@@ -237,12 +253,22 @@ router.post("/product/:productId", requireAuth, async (req: any, res) => {
 
     const resolvedProductId = targetProduct.id;
     const userId = req.user.id;
+    const userPhone = req.user.phone;
+
+    // Build flexible customer ownership filter (userId, registered phone, or shipping phone)
+    const ownerFilters: any[] = [{ userId }];
+    if (userPhone) {
+      ownerFilters.push({ user: { phone: userPhone } });
+      ownerFilters.push({ shippingAddressJson: { contains: userPhone } });
+      const cleanPhone = userPhone.replace(/\D/g, "").slice(-10);
+      if (cleanPhone) ownerFilters.push({ shippingAddressJson: { contains: cleanPhone } });
+    }
 
     // 1. STRICT SERVER-SIDE PURCHASE VERIFICATION
     const deliveredOrder = await prisma.order.findFirst({
       where: {
-        userId,
-        status: "DELIVERED",
+        OR: ownerFilters,
+        status: { in: ["DELIVERED", "delivered"] },
         items: {
           some: {
             OR: [
@@ -262,7 +288,13 @@ router.post("/product/:productId", requireAuth, async (req: any, res) => {
 
     // 2. CHECK FOR EXISTING REVIEW (One review per customer per product)
     const existingReview = await prisma.review.findFirst({
-      where: { userId, productId: resolvedProductId },
+      where: {
+        productId: resolvedProductId,
+        OR: [
+          { userId },
+          ...(userPhone ? [{ user: { phone: userPhone } }] : []),
+        ],
+      },
     });
 
     if (existingReview) {
