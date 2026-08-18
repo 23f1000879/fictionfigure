@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { ProductReviews } from "./ProductReviews";
 
 interface ProductDetailProps {
   product: {
@@ -458,39 +459,12 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
         </div>
       </div>
 
-      {/* Customer Reviews Section */}
-      {product.reviews.length > 0 && (
-        <div className="space-y-6 pt-6 border-t border-[#E5E5E2] w-full max-w-full box-border">
-          <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-4 gap-2">
-            <h3 className="text-base sm:text-lg font-semibold text-[#111111] tracking-tight">
-              Collector Reviews ({product.reviews.length})
-            </h3>
-            <div className="flex items-center space-x-1 shrink-0">
-              <Star className="w-4 h-4 fill-[#111111] text-[#111111]" />
-              <span className="font-mono text-[#111111] font-bold">
-                {product.rating.toFixed(1)} / 5.0
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-full">
-            {product.reviews.map((rev) => (
-              <div key={rev.id} className="p-4 bg-white border border-[#E5E5E2] space-y-2 box-border">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-[#111111]">{rev.authorName}</span>
-                  <div className="flex text-[#111111]">
-                    {Array.from({ length: rev.rating }).map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-[#111111]" />
-                    ))}
-                  </div>
-                </div>
-                <h5 className="text-xs font-semibold text-[#111111]">{rev.title}</h5>
-                <p className="text-xs text-[#6B6B6B] leading-relaxed break-words">{rev.comment}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Verified Customer Reviews Section */}
+      <ProductReviews
+        productId={product.id}
+        productSlug={product.slug}
+        productName={product.name}
+      />
 
       {/* Fullscreen Lightbox Modal */}
       {isLightboxOpen && (

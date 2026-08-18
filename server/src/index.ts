@@ -13,6 +13,7 @@ import couponsRouter from "./routes/coupons.js";
 import checkoutRouter from "./routes/checkout.js";
 import paymentsRouter from "./routes/payments.js";
 import wishlistRouter from "./routes/wishlist.js";
+import reviewsRouter from "./routes/reviews.js";
 
 const app = express();
 app.set("trust proxy", true);
@@ -61,6 +62,7 @@ app.use("/api/coupons", couponsRouter);
 app.use("/api/checkout", checkoutRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/wishlist", wishlistRouter);
+app.use("/api/reviews", reviewsRouter);
 
 // Health Check Endpoint
 app.get("/api/health", (req, res) => {

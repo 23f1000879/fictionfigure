@@ -13,6 +13,7 @@ import {
   Tag,
   Users,
   BarChart3,
+  Star,
   Sliders,
   ExternalLink,
   ShieldCheck,
@@ -37,6 +38,7 @@ export function AdminSidebar() {
     { href: "/admin/discounts", label: "Discounts", icon: Tag },
     { href: "/admin/customers", label: "Customers", icon: Users },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/admin/reviews", label: "Reviews", icon: Star },
     { href: "/admin/settings", label: "Store Settings", icon: Sliders },
   ];
 

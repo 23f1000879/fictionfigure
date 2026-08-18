@@ -123,11 +123,14 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
         <div>
           <div className="flex justify-between items-center text-[10px] uppercase tracking-wider text-[#6B6B6B] font-semibold mb-1">
             <span className="truncate max-w-[100px] sm:max-w-none">{product.brand || "FictionFigure"}</span>
-            {hasRealRating && (
+            {hasRealRating ? (
               <div className="flex items-center space-x-1 shrink-0">
                 <Star className="w-3 h-3 fill-[#111111] text-[#111111]" />
                 <span className="text-[#111111] font-mono">{product.rating?.toFixed(1)}</span>
+                <span className="text-[#6B6B6B] font-mono text-[9px]">({product.reviewCount})</span>
               </div>
+            ) : (
+              <span className="text-[9px] text-[#6B6B6B] font-mono shrink-0">No reviews yet</span>
             )}
           </div>
 

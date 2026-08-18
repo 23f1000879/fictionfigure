@@ -295,16 +295,25 @@ model Coupon {
 }
 
 model Review {
-  id         String   @id @default(uuid())
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  authorName String
-  rating     Int
-  title      String
-  comment    String
-  createdAt  DateTime @default(now())
+  id                 String   @id @default(uuid())
+  productId          String
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId             String?
+  user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orderId            String?
+  authorName         String
+  rating             Int
+  title              String?
+  comment            String?
+  isVerifiedPurchase Boolean  @default(true)
+  status             String   @default("APPROVED") // APPROVED, HIDDEN
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([status])
 }
 
 model Conversation {
