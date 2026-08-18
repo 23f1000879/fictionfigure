@@ -122,6 +122,9 @@ router.post("/uploads/product-image", (req, res) => {
   });
 });
 
+// Enforce Strict Admin Authentication & Authorization Across All Admin Console Endpoints
+router.use(requireAdmin);
+
 // ==========================================
 // 2. CATEGORIES MANAGEMENT (FULL CRUD)
 // ==========================================
@@ -937,8 +940,22 @@ router.get("/orders/:id", async (req, res) => {
     const order = await prisma.order.findFirst({
       where: { OR: [{ id }, { orderNumber: id }] },
       include: {
-        items: true,
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: {
+                    images: { orderBy: { sortOrder: "asc" }, take: 1 },
+                    category: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         payments: true,
+        coupon: true,
       },
     });
 
@@ -952,7 +969,44 @@ router.get("/orders/:id", async (req, res) => {
       });
     }
 
-    res.json({ order: { ...order, user: userDetails } });
+    let parsedShippingAddress = null;
+    try {
+      if (order.shippingAddressJson) {
+        const raw = order.shippingAddressJson;
+        parsedShippingAddress = typeof raw === "string" ? JSON.parse(raw) : raw;
+      }
+    } catch (e) {}
+
+    const formattedItems = order.items.map((item) => {
+      const variantTitle = item.variant && item.variant.title !== "Default Title" ? item.variant.title : null;
+      const productName = item.variant?.product?.name || item.title;
+      const categoryName = item.variant?.product?.category?.name || null;
+      const image = item.variant?.imageUrl || item.variant?.product?.images?.[0]?.url || "";
+
+      return {
+        id: item.id,
+        productId: item.productId,
+        variantId: item.variantId,
+        title: item.title,
+        sku: item.sku,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.total,
+        productName,
+        variantTitle,
+        categoryName,
+        image,
+      };
+    });
+
+    res.json({
+      order: {
+        ...order,
+        shippingAddress: parsedShippingAddress,
+        user: userDetails,
+        formattedItems,
+      },
+    });
   } catch (err: any) {
     console.error("GET orders/:id error:", err);
     res.status(500).json({ error: err.message || "Failed to fetch order details" });
