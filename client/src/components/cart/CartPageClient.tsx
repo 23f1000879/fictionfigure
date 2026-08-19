@@ -3,14 +3,14 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Trash2, Plus, Minus, ArrowRight, ArrowLeft, Tag, ShoppingBag, Check } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, ArrowLeft, Tag, ShoppingBag, Check, Loader2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
 import { formatPrice } from "@/lib/utils";
 import { API_BASE } from "@/lib/api";
 
 export function CartPageClient() {
-  const { cart, removeItem, updateQuantity, cartSubtotal } = useCart();
+  const { cart, removeItem, updateQuantity, cartSubtotal, isHydrating, isValidating } = useCart();
   const { shippingFee, freeShippingThreshold } = useSettings();
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -58,6 +58,17 @@ export function CartPageClient() {
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
   const shippingAmount = cartSubtotal >= freeShippingThreshold || cartSubtotal === 0 ? 0 : shippingFee;
   const finalTotal = Math.max(0, cartSubtotal - discountAmount + shippingAmount);
+
+  if (isHydrating || isValidating) {
+    return (
+      <div className="py-20 text-center space-y-4 max-w-md mx-auto">
+        <Loader2 className="w-10 h-10 text-[#111111] animate-spin mx-auto" />
+        <h2 className="text-sm font-semibold text-[#6B6B6B] uppercase tracking-wider">
+          Updating Shopping Cart...
+        </h2>
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (

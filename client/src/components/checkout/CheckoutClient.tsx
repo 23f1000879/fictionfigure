@@ -31,8 +31,14 @@ import { normalizeIndianPhone } from "@/lib/phone";
 export function CheckoutClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { cart, cartSubtotal, clearCart } = useCart();
+  const { cart, cartSubtotal, clearCart, isHydrating, isValidating, reconcileCart } = useCart();
   const { shippingFee: configShippingFee, freeShippingThreshold: configThreshold } = useSettings();
+
+  useEffect(() => {
+    if (!isHydrating && !isValidating && cart.length === 0) {
+      router.replace("/cart");
+    }
+  }, [cart.length, isHydrating, isValidating, router]);
 
   // State Management
   const [sessionToken, setSessionToken] = useState<string>("");

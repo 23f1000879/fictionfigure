@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateAuthoritativeTotals = calculateAuthoritativeTotals;
+exports.handleValidateCart = handleValidateCart;
 const express_1 = require("express");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const phone_js_1 = require("../utils/phone.js");
@@ -662,6 +663,113 @@ router.post("/submit-cod", async (req, res) => {
         res.status(500).json({ error: err.message || "Failed to submit COD order." });
     }
 });
+// POST /api/checkout/validate-cart & POST /api/cart/validate — Batched Cart Validation & Reconciliation
+async function handleValidateCart(req, res) {
+    try {
+        const { items } = req.body || {};
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.json({
+                success: true,
+                valid: true,
+                items: [],
+                removedItems: [],
+                updatedItems: [],
+            });
+        }
+        const variantIds = items
+            .map((i) => String(i.variantId || "").trim())
+            .filter(Boolean);
+        const dbVariants = await db_js_1.prisma.productVariant.findMany({
+            where: {
+                id: { in: variantIds },
+                product: { status: "ACTIVE" },
+            },
+            include: {
+                product: {
+                    include: {
+                        images: { orderBy: { sortOrder: "asc" }, take: 1 },
+                    },
+                },
+                inventory: true,
+            },
+        });
+        const dbMap = new Map(dbVariants.map((v) => [v.id, v]));
+        const validItems = [];
+        const removedItems = [];
+        const updatedItems = [];
+        for (const item of items) {
+            const dbVariant = dbMap.get(item.variantId);
+            if (!dbVariant || dbVariant.product.status !== "ACTIVE") {
+                removedItems.push({
+                    variantId: item.variantId,
+                    productId: item.productId,
+                    title: item.title || "Item no longer available",
+                    reason: "PRODUCT_DELETED_OR_INACTIVE",
+                });
+                continue;
+            }
+            const availableStock = dbVariant.inventory
+                ? dbVariant.inventory.quantity
+                : dbVariant.inventoryCount;
+            if (availableStock <= 0) {
+                removedItems.push({
+                    variantId: item.variantId,
+                    productId: item.productId,
+                    title: dbVariant.product.name,
+                    reason: "OUT_OF_STOCK",
+                });
+                continue;
+            }
+            let clampedQty = Number(item.quantity) || 1;
+            let qtyChanged = false;
+            if (clampedQty > availableStock) {
+                clampedQty = availableStock;
+                qtyChanged = true;
+            }
+            const freshPrice = dbVariant.price;
+            const priceChanged = Number(item.price) !== freshPrice;
+            const freshImage = dbVariant.imageUrl || dbVariant.product.images[0]?.url || item.image || "";
+            const freshTitle = dbVariant.product.name;
+            const freshVariantTitle = dbVariant.title;
+            const validItem = {
+                id: item.id || `${dbVariant.id}-${Date.now()}`,
+                variantId: dbVariant.id,
+                productId: dbVariant.productId,
+                title: freshTitle,
+                variantTitle: freshVariantTitle,
+                price: freshPrice,
+                image: freshImage,
+                quantity: clampedQty,
+                sku: dbVariant.sku,
+                brand: dbVariant.product.brand || item.brand || "FictionFigure",
+            };
+            if (priceChanged || qtyChanged) {
+                updatedItems.push({
+                    variantId: dbVariant.id,
+                    oldPrice: item.price,
+                    newPrice: freshPrice,
+                    oldQuantity: item.quantity,
+                    newQuantity: clampedQty,
+                    reason: priceChanged && qtyChanged ? "PRICE_AND_STOCK_UPDATED" : priceChanged ? "PRICE_UPDATED" : "STOCK_CLAMPED",
+                });
+            }
+            validItems.push(validItem);
+        }
+        return res.json({
+            success: true,
+            valid: removedItems.length === 0 && updatedItems.length === 0,
+            items: validItems,
+            removedItems,
+            updatedItems,
+        });
+    }
+    catch (e) {
+        console.error("validate-cart error:", e);
+        return res.status(500).json({ success: false, error: "Failed to validate cart" });
+    }
+}
+router.post("/validate-cart", handleValidateCart);
+router.post("/validate", handleValidateCart);
 const orders_js_1 = require("./orders.js");
 // Fixed routes FIRST
 router.get("/my-orders", orders_js_1.handleGetMyOrders);

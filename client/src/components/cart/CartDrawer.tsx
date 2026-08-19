@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
+import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
@@ -17,6 +17,8 @@ export function CartDrawer() {
     updateQuantity,
     cartCount,
     cartSubtotal,
+    isHydrating,
+    isValidating,
   } = useCart();
   const { freeShippingThreshold } = useSettings();
 
@@ -45,7 +47,7 @@ export function CartDrawer() {
             <div className="flex items-center space-x-2">
               <ShoppingBag className="w-5 h-5 text-[#111111]" />
               <h2 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
-                Shopping Cart ({cartCount})
+                Shopping Cart ({isHydrating ? "..." : cartCount})
               </h2>
             </div>
             <button
@@ -58,7 +60,14 @@ export function CartDrawer() {
 
           {/* Cart Items List */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {cart.length === 0 ? (
+            {isHydrating || isValidating ? (
+              <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-12">
+                <Loader2 className="w-8 h-8 text-[#111111] animate-spin" />
+                <p className="text-xs font-semibold text-[#6B6B6B] uppercase tracking-wider">
+                  Updating Cart...
+                </p>
+              </div>
+            ) : cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-12">
                 <ShoppingBag className="w-12 h-12 text-[#6B6B6B]" />
                 <div className="space-y-1">

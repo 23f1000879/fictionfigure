@@ -744,6 +744,127 @@ router.post("/submit-cod", async (req, res) => {
   }
 });
 
+// POST /api/checkout/validate-cart & POST /api/cart/validate — Batched Cart Validation & Reconciliation
+export async function handleValidateCart(req: any, res: any) {
+  try {
+    const { items } = req.body || {};
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.json({
+        success: true,
+        valid: true,
+        items: [],
+        removedItems: [],
+        updatedItems: [],
+      });
+    }
+
+    const variantIds = items
+      .map((i: any) => String(i.variantId || "").trim())
+      .filter(Boolean);
+
+    const dbVariants = await prisma.productVariant.findMany({
+      where: {
+        id: { in: variantIds },
+        product: { status: "ACTIVE" },
+      },
+      include: {
+        product: {
+          include: {
+            images: { orderBy: { sortOrder: "asc" }, take: 1 },
+          },
+        },
+        inventory: true,
+      },
+    });
+
+    const dbMap = new Map(dbVariants.map((v) => [v.id, v]));
+    const validItems: any[] = [];
+    const removedItems: any[] = [];
+    const updatedItems: any[] = [];
+
+    for (const item of items) {
+      const dbVariant = dbMap.get(item.variantId);
+
+      if (!dbVariant || dbVariant.product.status !== "ACTIVE") {
+        removedItems.push({
+          variantId: item.variantId,
+          productId: item.productId,
+          title: item.title || "Item no longer available",
+          reason: "PRODUCT_DELETED_OR_INACTIVE",
+        });
+        continue;
+      }
+
+      const availableStock = dbVariant.inventory
+        ? dbVariant.inventory.quantity
+        : dbVariant.inventoryCount;
+
+      if (availableStock <= 0) {
+        removedItems.push({
+          variantId: item.variantId,
+          productId: item.productId,
+          title: dbVariant.product.name,
+          reason: "OUT_OF_STOCK",
+        });
+        continue;
+      }
+
+      let clampedQty = Number(item.quantity) || 1;
+      let qtyChanged = false;
+      if (clampedQty > availableStock) {
+        clampedQty = availableStock;
+        qtyChanged = true;
+      }
+
+      const freshPrice = dbVariant.price;
+      const priceChanged = Number(item.price) !== freshPrice;
+      const freshImage = dbVariant.imageUrl || dbVariant.product.images[0]?.url || item.image || "";
+      const freshTitle = dbVariant.product.name;
+      const freshVariantTitle = dbVariant.title;
+
+      const validItem = {
+        id: item.id || `${dbVariant.id}-${Date.now()}`,
+        variantId: dbVariant.id,
+        productId: dbVariant.productId,
+        title: freshTitle,
+        variantTitle: freshVariantTitle,
+        price: freshPrice,
+        image: freshImage,
+        quantity: clampedQty,
+        sku: dbVariant.sku,
+        brand: dbVariant.product.brand || item.brand || "FictionFigure",
+      };
+
+      if (priceChanged || qtyChanged) {
+        updatedItems.push({
+          variantId: dbVariant.id,
+          oldPrice: item.price,
+          newPrice: freshPrice,
+          oldQuantity: item.quantity,
+          newQuantity: clampedQty,
+          reason: priceChanged && qtyChanged ? "PRICE_AND_STOCK_UPDATED" : priceChanged ? "PRICE_UPDATED" : "STOCK_CLAMPED",
+        });
+      }
+
+      validItems.push(validItem);
+    }
+
+    return res.json({
+      success: true,
+      valid: removedItems.length === 0 && updatedItems.length === 0,
+      items: validItems,
+      removedItems,
+      updatedItems,
+    });
+  } catch (e: any) {
+    console.error("validate-cart error:", e);
+    return res.status(500).json({ success: false, error: "Failed to validate cart" });
+  }
+}
+
+router.post("/validate-cart", handleValidateCart);
+router.post("/validate", handleValidateCart);
+
 import { handleGetOrderDetails, handleGetMyOrders } from "./orders.js";
 
 // Fixed routes FIRST

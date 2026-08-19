@@ -67,6 +67,7 @@ app.use("/api/settings", settingsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/coupons", couponsRouter);
 app.use("/api/checkout", checkoutRouter);
+app.use("/api/cart", checkoutRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/reviews", reviewsRouter);

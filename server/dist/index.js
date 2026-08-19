@@ -61,6 +61,7 @@ app.use("/api/settings", settings_js_1.default);
 app.use("/api/admin", admin_js_1.default);
 app.use("/api/coupons", coupons_js_1.default);
 app.use("/api/checkout", checkout_js_1.default);
+app.use("/api/cart", checkout_js_1.default);
 app.use("/api/payments", payments_js_1.default);
 app.use("/api/wishlist", wishlist_js_1.default);
 app.use("/api/reviews", reviews_js_1.default);
