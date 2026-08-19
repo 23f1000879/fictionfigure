@@ -221,6 +221,109 @@ router.get("/admin/summary", auth_js_1.requireAdmin, async (_req, res) => {
         res.status(500).json({ success: false, error: err.message || "Failed to fetch restock summary." });
     }
 });
+// 5b. Admin Restock Demand Analytics & Stock Health Integration
+router.get("/admin/analytics", auth_js_1.requireAdmin, async (_req, res) => {
+    try {
+        const pendingRequests = await db_js_1.prisma.restockRequest.findMany({
+            where: { status: "PENDING" },
+            include: {
+                product: {
+                    include: {
+                        images: { take: 1, orderBy: { isPrimary: "desc" } },
+                        variants: { take: 1, select: { inventoryCount: true } },
+                    },
+                },
+            },
+        });
+        const uniqueProductIds = new Set(pendingRequests.map((r) => r.productId));
+        const uniqueUserIds = new Set(pendingRequests.map((r) => r.userId));
+        const totalRequestedUnits = pendingRequests.reduce((sum, r) => sum + r.quantity, 0);
+        // Group demand by product
+        const productGroupMap = {};
+        pendingRequests.forEach((reqItem) => {
+            const p = reqItem.product;
+            if (!p)
+                return;
+            if (!productGroupMap[p.id]) {
+                productGroupMap[p.id] = {
+                    id: p.id,
+                    name: p.name,
+                    slug: p.slug,
+                    sku: p.sku,
+                    imageUrl: p.images[0]?.url || "",
+                    currentStock: p.variants[0]?.inventoryCount ?? 0,
+                    uniqueUserIds: new Set(),
+                    totalRequestedUnits: 0,
+                    pendingRequestsCount: 0,
+                };
+            }
+            const g = productGroupMap[p.id];
+            g.uniqueUserIds.add(reqItem.userId);
+            g.totalRequestedUnits += reqItem.quantity;
+            g.pendingRequestsCount += 1;
+        });
+        const topDemandProducts = Object.values(productGroupMap).map((g) => {
+            const uniqueCustomers = g.uniqueUserIds.size;
+            const totalUnits = g.totalRequestedUnits;
+            let priority = "LOW";
+            if (uniqueCustomers >= 10 || totalUnits >= 20) {
+                priority = "HIGH";
+            }
+            else if (uniqueCustomers >= 5 || totalUnits >= 10) {
+                priority = "MEDIUM";
+            }
+            return {
+                id: g.id,
+                name: g.name,
+                slug: g.slug,
+                sku: g.sku,
+                imageUrl: g.imageUrl,
+                currentStock: g.currentStock,
+                uniqueCustomers,
+                totalRequestedUnits: totalUnits,
+                pendingRequestsCount: g.pendingRequestsCount,
+                priority,
+            };
+        });
+        // Sort by totalRequestedUnits DESC
+        topDemandProducts.sort((a, b) => b.totalRequestedUnits - a.totalRequestedUnits);
+        // Stock health alerts calculation
+        const allProducts = await db_js_1.prisma.product.findMany({
+            include: {
+                variants: { select: { inventoryCount: true } },
+            },
+        });
+        let outOfStockCount = 0;
+        let outOfStockWithDemandCount = 0;
+        allProducts.forEach((p) => {
+            const stock = p.variants[0]?.inventoryCount ?? 0;
+            if (stock <= 0) {
+                outOfStockCount += 1;
+                if (uniqueProductIds.has(p.id)) {
+                    outOfStockWithDemandCount += 1;
+                }
+            }
+        });
+        res.json({
+            success: true,
+            analytics: {
+                productsRequested: uniqueProductIds.size,
+                customersWaiting: uniqueUserIds.size,
+                unitsRequested: totalRequestedUnits,
+                topDemandProducts,
+                stockHealth: {
+                    totalOutOfStock: outOfStockCount,
+                    outOfStockWithDemand: outOfStockWithDemandCount,
+                    totalUnitsRequested: totalRequestedUnits,
+                },
+            },
+        });
+    }
+    catch (err) {
+        console.error("GET /api/restock-requests/admin/analytics error:", err);
+        res.status(500).json({ success: false, error: err.message || "Failed to fetch restock analytics." });
+    }
+});
 // 6. Admin Aggregated Product Restock Demand List
 router.get("/admin/list", auth_js_1.requireAdmin, async (req, res) => {
     try {

@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { formatPrice } from "@/lib/utils";
 import { Loader2, TrendingUp, ShoppingBag, Users, AlertTriangle, Tag, Calendar, Package } from "lucide-react";
-import { API_BASE, adminFetch } from "@/lib/api";
+import { API_BASE, adminFetch, safeApiFetch } from "@/lib/api";
 
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<string>("all");
+
+  const [restockAnalytics, setRestockAnalytics] = useState<any>(null);
 
   const fetchAnalytics = (selectedPeriod: string) => {
     setLoading(true);
@@ -17,6 +19,17 @@ export default function AdminAnalyticsPage() {
       .then((resData) => setData(resData))
       .catch(() => setData(null))
       .finally(() => setLoading(false));
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") || localStorage.getItem("token") : null;
+    if (token) {
+      safeApiFetch<{ success: boolean; analytics: any }>(`${API_BASE}/restock-requests/admin/analytics`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (res.success) setRestockAnalytics(res.analytics);
+        })
+        .catch(() => {});
+    }
   };
 
   useEffect(() => {
@@ -108,12 +121,14 @@ export default function AdminAnalyticsPage() {
 
             <div className="bg-white border border-[#E5E5E2] p-5 space-y-1">
               <span className="text-[11px] uppercase font-semibold text-[#6B6B6B] flex items-center">
-                <AlertTriangle className="w-3.5 h-3.5 mr-1 text-[#A83232]" /> Stock Health Alerts
+                <AlertTriangle className="w-3.5 h-3.5 mr-1 text-[#A83232]" /> Stock Health & Demand Alerts
               </span>
-              <div className="text-lg font-bold font-mono text-[#111111]">
-                {data.lowStockProducts || 0} low stock / {data.outOfStockProducts || 0} out
+              <div className="text-sm font-bold font-mono text-[#111111]">
+                {data.outOfStockProducts || 0} out of stock
               </div>
-              <span className="text-[10px] text-[#6B6B6B] block">Stock levels monitored live</span>
+              <span className="text-[10px] text-[#B86E00] font-semibold block">
+                {restockAnalytics?.stockHealth?.outOfStockWithDemand ?? 0} have demand ({restockAnalytics?.stockHealth?.totalUnitsRequested ?? 0} units requested)
+              </span>
             </div>
 
             <div className="bg-white border border-[#E5E5E2] p-5 space-y-1">
@@ -194,6 +209,105 @@ export default function AdminAnalyticsPage() {
                       <span className="font-mono font-bold text-[#111111]">{formatPrice(c.revenue)}</span>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Customer Restock Demand Section */}
+          <div className="bg-white border border-[#E5E5E2] p-6 space-y-6 text-xs">
+            <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block">
+                  Inventory Intelligence
+                </span>
+                <h3 className="font-bold uppercase tracking-wider text-[#111111] text-sm">
+                  Customer Restock Demand
+                </h3>
+              </div>
+              <a
+                href="/admin/restock-requests"
+                className="text-xs font-bold text-[#111111] hover:underline uppercase"
+              >
+                View Full Restock Console &rarr;
+              </a>
+            </div>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-[#FAF9F6] border border-[#E5E5E2] p-4 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Products Requested</span>
+                <div className="text-xl font-bold font-mono text-[#111111]">
+                  {restockAnalytics?.productsRequested ?? 0}
+                </div>
+              </div>
+
+              <div className="bg-[#FAF9F6] border border-[#E5E5E2] p-4 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Customers Waiting</span>
+                <div className="text-xl font-bold font-mono text-[#111111]">
+                  {restockAnalytics?.customersWaiting ?? 0}
+                </div>
+              </div>
+
+              <div className="bg-[#FAF9F6] border border-[#E5E5E2] p-4 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Units Requested</span>
+                <div className="text-xl font-bold font-mono text-[#B86E00]">
+                  {restockAnalytics?.unitsRequested ?? 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Top Restock Demand Table */}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-xs uppercase tracking-wider text-[#111111]">
+                Top Restock Demand Collectibles
+              </h4>
+              {!restockAnalytics?.topDemandProducts || restockAnalytics.topDemandProducts.length === 0 ? (
+                <div className="p-6 bg-[#FAF9F6] text-center text-[#6B6B6B]">
+                  No active customer restock demand records found.
+                </div>
+              ) : (
+                <div className="border border-[#E5E5E2] overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#FAF9F6] border-b border-[#E5E5E2] uppercase text-[10px] font-bold text-[#6B6B6B]">
+                      <tr>
+                        <th className="px-4 py-3">Rank & Product</th>
+                        <th className="px-4 py-3">SKU</th>
+                        <th className="px-4 py-3 text-center">Customers</th>
+                        <th className="px-4 py-3 text-center">Units Requested</th>
+                        <th className="px-4 py-3 text-right">Priority</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E5E5E2]">
+                      {restockAnalytics.topDemandProducts.map((p: any, idx: number) => (
+                        <tr key={p.id} className="hover:bg-[#FAF9F6]">
+                          <td className="px-4 py-3 font-semibold text-[#111111]">
+                            #{idx + 1} {p.name}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-[#6B6B6B]">{p.sku}</td>
+                          <td className="px-4 py-3 text-center font-mono font-bold text-[#111111]">
+                            {p.uniqueCustomers}
+                          </td>
+                          <td className="px-4 py-3 text-center font-mono font-bold text-[#B86E00]">
+                            {p.totalRequestedUnits}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span
+                              className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 ${
+                                p.priority === "HIGH"
+                                  ? "bg-[#A83232] text-white"
+                                  : p.priority === "MEDIUM"
+                                  ? "bg-[#B86E00] text-white"
+                                  : "bg-[#F7F7F5] border border-[#E5E5E2] text-[#6B6B6B]"
+                              }`}
+                            >
+                              {p.priority} DEMAND
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
