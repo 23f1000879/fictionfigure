@@ -5,11 +5,13 @@ const router = Router();
 
 let cachedCategoriesData: any = null;
 let lastCategoriesCacheTime = 0;
-const CATEGORIES_CACHE_TTL = 10 * 1000; // 10 seconds TTL
+let pendingCategoriesPromise: Promise<any> | null = null;
+const CATEGORIES_CACHE_TTL = 30 * 1000; // 30 seconds TTL
 
 export function clearCategoriesCache() {
   cachedCategoriesData = null;
   lastCategoriesCacheTime = 0;
+  pendingCategoriesPromise = null;
 }
 
 export async function handleGetCategories(_req: any, res: any) {
@@ -19,27 +21,35 @@ export async function handleGetCategories(_req: any, res: any) {
       return res.status(200).json(cachedCategoriesData);
     }
 
-    const categories = await prisma.category.findMany({
-      orderBy: {
-        name: "asc",
-      },
-      include: {
-        _count: {
-          select: {
-            products: {
-              where: {
-                status: "ACTIVE",
+    if (!pendingCategoriesPromise) {
+      pendingCategoriesPromise = (async () => {
+        const categories = await prisma.category.findMany({
+          orderBy: {
+            name: "asc",
+          },
+          include: {
+            _count: {
+              select: {
+                products: {
+                  where: {
+                    status: "ACTIVE",
+                  },
+                },
               },
             },
           },
-        },
-      },
-    });
+        });
 
-    const responseData = { categories };
-    cachedCategoriesData = responseData;
-    lastCategoriesCacheTime = now;
+        const responseData = { categories };
+        cachedCategoriesData = responseData;
+        lastCategoriesCacheTime = Date.now();
+        return responseData;
+      })().finally(() => {
+        pendingCategoriesPromise = null;
+      });
+    }
 
+    const responseData = await pendingCategoriesPromise;
     return res.status(200).json(responseData);
   } catch (error: any) {
     console.error("[CATEGORIES]", error);

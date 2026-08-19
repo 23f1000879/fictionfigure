@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.clearProductsMetaCache = clearProductsMetaCache;
 const express_1 = require("express");
 const db_js_1 = require("../db.js");
+const categories_js_1 = require("./categories.js");
 const router = (0, express_1.Router)();
 // In-memory metadata cache for active categories, brands, and franchises (60s TTL)
 let cachedCategories = null;
@@ -11,13 +12,15 @@ let cachedFranchises = null;
 let lastMetaCacheTime = 0;
 const META_CACHE_TTL = 60 * 1000;
 let cachedCatalogResponse = {};
-const CATALOG_CACHE_TTL = 10 * 1000; // 10s TTL
+let pendingCatalogPromises = {};
+const CATALOG_CACHE_TTL = 30 * 1000; // 30s TTL
 function clearProductsMetaCache() {
     cachedCategories = null;
     cachedBrands = null;
     cachedFranchises = null;
     lastMetaCacheTime = 0;
     cachedCatalogResponse = {};
+    pendingCatalogPromises = {};
 }
 // GET /api/products — Database-Driven Product Catalog & Dynamic Facets
 router.get("/", async (req, res) => {
@@ -27,133 +30,141 @@ router.get("/", async (req, res) => {
         if (cachedCatalogResponse[cacheKey] && now - cachedCatalogResponse[cacheKey].time < CATALOG_CACHE_TTL) {
             return res.json(cachedCatalogResponse[cacheKey].data);
         }
-        const { query, category, brand, franchise, minPrice, maxPrice, inStockOnly, sortBy, limit, page, } = req.query;
-        const where = { status: "ACTIVE" };
-        // 1. Text Search Filter (name, description, brand, franchise, sku)
-        if (query && String(query).trim()) {
-            const q = String(query).trim();
-            where.OR = [
-                { name: { contains: q, mode: "insensitive" } },
-                { description: { contains: q, mode: "insensitive" } },
-                { brand: { contains: q, mode: "insensitive" } },
-                { franchise: { contains: q, mode: "insensitive" } },
-                { sku: { contains: q, mode: "insensitive" } },
-            ];
-        }
-        // 2. Category Filter (slug or ID)
-        if (category) {
-            const catStr = String(category);
-            where.category = {
-                OR: [{ slug: catStr }, { id: catStr }],
-            };
-        }
-        // 3. Brand Filter
-        if (brand) {
-            where.brand = String(brand);
-        }
-        // 4. Franchise Filter
-        if (franchise) {
-            where.franchise = String(franchise);
-        }
-        // 5. Price Range Filter
-        if (minPrice || maxPrice) {
-            where.price = {};
-            if (minPrice)
-                where.price.gte = Number(minPrice);
-            if (maxPrice)
-                where.price.lte = Number(maxPrice);
-        }
-        // 6. In-Stock Only Filter
-        if (inStockOnly === "true") {
-            where.variants = {
-                some: {
-                    inventoryCount: { gt: 0 },
-                },
-            };
-        }
-        // 7. Sorting Logic
-        let orderBy = { createdAt: "desc" }; // default: newest
-        if (sortBy === "featured") {
-            orderBy = [{ featured: "desc" }, { createdAt: "desc" }];
-        }
-        else if (sortBy === "price_asc") {
-            orderBy = { price: "asc" };
-        }
-        else if (sortBy === "price_desc") {
-            orderBy = { price: "desc" };
-        }
-        else if (sortBy === "name_asc") {
-            orderBy = { name: "asc" };
-        }
-        else if (sortBy === "newest") {
-            orderBy = { createdAt: "desc" };
-        }
-        // Pagination Parameters
-        const takeNum = Number(limit) || 12;
-        const pageNum = Number(page) || 1;
-        const skipNum = (pageNum - 1) * takeNum;
-        // Execute paginated products + totalCount queries
-        const [products, totalCount] = await Promise.all([
-            db_js_1.prisma.product.findMany({
-                where,
-                take: takeNum,
-                skip: skipNum,
-                orderBy,
-                include: {
-                    category: { select: { id: true, name: true, slug: true } },
-                    images: { orderBy: { sortOrder: "asc" } },
-                    variants: true,
-                },
-            }),
-            db_js_1.prisma.product.count({ where }),
-        ]);
-        // Check if metadata is cached
-        const currentNow = Date.now();
-        if (!cachedCategories || !cachedBrands || !cachedFranchises || currentNow - lastMetaCacheTime > META_CACHE_TTL) {
-            const [activeCategories, allActiveProducts] = await Promise.all([
-                db_js_1.prisma.category.findMany({
-                    orderBy: { name: "asc" },
-                    include: {
-                        _count: {
-                            select: {
-                                products: {
-                                    where: { status: "ACTIVE" },
+        if (!pendingCatalogPromises[cacheKey]) {
+            pendingCatalogPromises[cacheKey] = (async () => {
+                const { query, category, brand, franchise, minPrice, maxPrice, inStockOnly, sortBy, limit, page, } = req.query;
+                const where = { status: "ACTIVE" };
+                // 1. Text Search Filter (name, description, brand, franchise, sku)
+                if (query && String(query).trim()) {
+                    const q = String(query).trim();
+                    where.OR = [
+                        { name: { contains: q, mode: "insensitive" } },
+                        { description: { contains: q, mode: "insensitive" } },
+                        { brand: { contains: q, mode: "insensitive" } },
+                        { franchise: { contains: q, mode: "insensitive" } },
+                        { sku: { contains: q, mode: "insensitive" } },
+                    ];
+                }
+                // 2. Category Filter (slug or ID)
+                if (category) {
+                    const catStr = String(category);
+                    where.category = {
+                        OR: [{ slug: catStr }, { id: catStr }],
+                    };
+                }
+                // 3. Brand Filter
+                if (brand) {
+                    where.brand = String(brand);
+                }
+                // 4. Franchise Filter
+                if (franchise) {
+                    where.franchise = String(franchise);
+                }
+                // 5. Price Range Filter
+                if (minPrice || maxPrice) {
+                    where.price = {};
+                    if (minPrice)
+                        where.price.gte = Number(minPrice);
+                    if (maxPrice)
+                        where.price.lte = Number(maxPrice);
+                }
+                // 6. In-Stock Only Filter
+                if (inStockOnly === "true") {
+                    where.variants = {
+                        some: {
+                            inventoryCount: { gt: 0 },
+                        },
+                    };
+                }
+                // 7. Sorting Logic
+                let orderBy = { createdAt: "desc" }; // default: newest
+                if (sortBy === "featured") {
+                    orderBy = [{ featured: "desc" }, { createdAt: "desc" }];
+                }
+                else if (sortBy === "price_asc") {
+                    orderBy = { price: "asc" };
+                }
+                else if (sortBy === "price_desc") {
+                    orderBy = { price: "desc" };
+                }
+                else if (sortBy === "name_asc") {
+                    orderBy = { name: "asc" };
+                }
+                else if (sortBy === "newest") {
+                    orderBy = { createdAt: "desc" };
+                }
+                // Pagination Parameters
+                const takeNum = Number(limit) || 12;
+                const pageNum = Number(page) || 1;
+                const skipNum = (pageNum - 1) * takeNum;
+                // Execute paginated products + totalCount queries
+                const [products, totalCount] = await Promise.all([
+                    db_js_1.prisma.product.findMany({
+                        where,
+                        take: takeNum,
+                        skip: skipNum,
+                        orderBy,
+                        include: {
+                            category: { select: { id: true, name: true, slug: true } },
+                            images: { orderBy: { sortOrder: "asc" } },
+                            variants: true,
+                        },
+                    }),
+                    db_js_1.prisma.product.count({ where }),
+                ]);
+                // Check if metadata is cached
+                const currentNow = Date.now();
+                if (!cachedCategories || !cachedBrands || !cachedFranchises || currentNow - lastMetaCacheTime > META_CACHE_TTL) {
+                    const [activeCategories, allActiveProducts] = await Promise.all([
+                        db_js_1.prisma.category.findMany({
+                            orderBy: { name: "asc" },
+                            include: {
+                                _count: {
+                                    select: {
+                                        products: {
+                                            where: { status: "ACTIVE" },
+                                        },
+                                    },
                                 },
                             },
-                        },
-                    },
-                }),
-                db_js_1.prisma.product.findMany({
-                    where: { status: "ACTIVE" },
-                    select: { brand: true, franchise: true },
-                }),
-            ]);
-            const brandsSet = new Set();
-            const franchisesSet = new Set();
-            for (const p of allActiveProducts) {
-                if (p.brand && p.brand.trim())
-                    brandsSet.add(p.brand.trim());
-                if (p.franchise && p.franchise.trim())
-                    franchisesSet.add(p.franchise.trim());
-            }
-            cachedCategories = activeCategories;
-            cachedBrands = Array.from(brandsSet).sort();
-            cachedFranchises = Array.from(franchisesSet).sort();
-            lastMetaCacheTime = currentNow;
+                        }),
+                        db_js_1.prisma.product.findMany({
+                            where: { status: "ACTIVE" },
+                            select: { brand: true, franchise: true },
+                        }),
+                    ]);
+                    const brandsSet = new Set();
+                    const franchisesSet = new Set();
+                    for (const p of allActiveProducts) {
+                        if (p.brand && p.brand.trim())
+                            brandsSet.add(p.brand.trim());
+                        if (p.franchise && p.franchise.trim())
+                            franchisesSet.add(p.franchise.trim());
+                    }
+                    cachedCategories = activeCategories;
+                    cachedBrands = Array.from(brandsSet).sort();
+                    cachedFranchises = Array.from(franchisesSet).sort();
+                    lastMetaCacheTime = currentNow;
+                }
+                const categories = cachedCategories;
+                const brands = cachedBrands;
+                const franchises = cachedFranchises;
+                const responsePayload = {
+                    products,
+                    totalCount,
+                    totalPages: Math.ceil(totalCount / takeNum) || 1,
+                    currentPage: pageNum,
+                    categories,
+                    brands,
+                    franchises,
+                };
+                cachedCatalogResponse[cacheKey] = { data: responsePayload, time: Date.now() };
+                return responsePayload;
+            })().finally(() => {
+                delete pendingCatalogPromises[cacheKey];
+            });
         }
-        const categories = cachedCategories;
-        const brands = cachedBrands;
-        const franchises = cachedFranchises;
-        const responsePayload = {
-            products,
-            totalCount,
-            totalPages: Math.ceil(totalCount / takeNum) || 1,
-            currentPage: pageNum,
-            categories,
-            brands,
-            franchises,
-        };
-        cachedCatalogResponse[cacheKey] = { data: responsePayload, time: Date.now() };
+        const responsePayload = await pendingCatalogPromises[cacheKey];
         res.json(responsePayload);
     }
     catch (err) {
@@ -161,46 +172,8 @@ router.get("/", async (req, res) => {
     }
 });
 // GET /api/products/categories — Public Endpoint for Active Categories with Product Counts
-router.get("/categories", async (_req, res) => {
-    try {
-        const categories = await db_js_1.prisma.category.findMany({
-            orderBy: { name: "asc" },
-            include: {
-                _count: {
-                    select: {
-                        products: {
-                            where: { status: "ACTIVE" },
-                        },
-                    },
-                },
-            },
-        });
-        res.json({ categories });
-    }
-    catch (err) {
-        res.status(500).json({ error: "Failed to fetch active categories" });
-    }
-});
-router.get("/categories/public", async (_req, res) => {
-    try {
-        const categories = await db_js_1.prisma.category.findMany({
-            orderBy: { name: "asc" },
-            include: {
-                _count: {
-                    select: {
-                        products: {
-                            where: { status: "ACTIVE" },
-                        },
-                    },
-                },
-            },
-        });
-        res.json({ categories });
-    }
-    catch (err) {
-        res.status(500).json({ error: "Failed to fetch active categories" });
-    }
-});
+router.get("/categories", categories_js_1.handleGetCategories);
+router.get("/categories/public", categories_js_1.handleGetCategories);
 // GET /api/products/:slug — Single Product Detail View
 router.get("/:slug", async (req, res) => {
     try {

@@ -60,10 +60,12 @@ exports.DEFAULT_SETTINGS = {
 };
 let cachedSettingsPayload = null;
 let lastCacheTime = 0;
+let pendingSettingsPromise = null;
 const CACHE_TTL_MS = 30 * 1000; // 30 seconds memory cache
 function clearSettingsCache() {
     cachedSettingsPayload = null;
     lastCacheTime = 0;
+    pendingSettingsPromise = null;
 }
 async function getStoreSettingsHelper() {
     try {
@@ -92,73 +94,81 @@ async function getStoreSettingsHelper() {
         };
     }
 }
-// 1. Fetch All Dynamic Store Settings for Storefront
+// 1. Fetch All Dynamic Store Settings for Storefront with Single-Flight Deduplication
 router.get("/", async (_req, res) => {
     try {
         const now = Date.now();
         if (cachedSettingsPayload && now - lastCacheTime < CACHE_TTL_MS) {
             return res.json(cachedSettingsPayload);
         }
-        const { settingsMap, shippingFee, freeShippingThreshold, storeLocation, deliveryCoverage } = await getStoreSettingsHelper();
-        // Parse and expand announcements
-        let rawAnnouncements = [];
-        try {
-            if (settingsMap.announcements_json) {
-                rawAnnouncements = JSON.parse(settingsMap.announcements_json);
-            }
-        }
-        catch (e) { }
-        if (!Array.isArray(rawAnnouncements) || rawAnnouncements.length === 0) {
-            rawAnnouncements = JSON.parse(exports.DEFAULT_SETTINGS.announcements_json);
-        }
-        const processedAnnouncements = rawAnnouncements
-            .filter((a) => a && a.enabled !== false)
-            .map((a) => {
-            let expandedText = a.text || "";
-            expandedText = expandedText.replace(/\{\{FREE_SHIPPING_THRESHOLD\}\}/g, freeShippingThreshold.toLocaleString("en-IN"));
-            return {
-                id: a.id || String(Math.random()),
-                text: expandedText,
-                enabled: true,
-                sortOrder: a.sortOrder || 0,
-            };
-        })
-            .sort((a, b) => a.sortOrder - b.sortOrder);
-        let featuredProduct = null;
-        if (settingsMap.homepage_hero_featured_product_id) {
-            const prod = await db_js_1.prisma.product.findUnique({
-                where: { id: settingsMap.homepage_hero_featured_product_id },
-                include: { images: true },
-            });
-            if (prod) {
-                featuredProduct = {
-                    id: prod.id,
-                    name: prod.name,
-                    slug: prod.slug,
-                    sku: prod.sku,
-                    imageUrl: prod.images[0]?.url || "",
+        if (!pendingSettingsPromise) {
+            pendingSettingsPromise = (async () => {
+                const { settingsMap, shippingFee, freeShippingThreshold } = await getStoreSettingsHelper();
+                let rawAnnouncements = [];
+                try {
+                    if (settingsMap.announcements_json) {
+                        rawAnnouncements = JSON.parse(settingsMap.announcements_json);
+                    }
+                }
+                catch (e) { }
+                if (!Array.isArray(rawAnnouncements) || rawAnnouncements.length === 0) {
+                    rawAnnouncements = JSON.parse(exports.DEFAULT_SETTINGS.announcements_json);
+                }
+                const processedAnnouncements = rawAnnouncements
+                    .filter((a) => a && a.enabled !== false)
+                    .map((a) => {
+                    let expandedText = a.text || "";
+                    expandedText = expandedText.replace(/\{\{FREE_SHIPPING_THRESHOLD\}\}/g, freeShippingThreshold.toLocaleString("en-IN"));
+                    return {
+                        id: a.id || String(Math.random()),
+                        text: expandedText,
+                        enabled: true,
+                        sortOrder: a.sortOrder || 0,
+                    };
+                })
+                    .sort((a, b) => a.sortOrder - b.sortOrder);
+                let featuredProduct = null;
+                if (settingsMap.homepage_hero_featured_product_id) {
+                    const prod = await db_js_1.prisma.product.findUnique({
+                        where: { id: settingsMap.homepage_hero_featured_product_id },
+                        include: { images: true },
+                    });
+                    if (prod) {
+                        featuredProduct = {
+                            id: prod.id,
+                            name: prod.name,
+                            slug: prod.slug,
+                            sku: prod.sku,
+                            imageUrl: prod.images[0]?.url || "",
+                        };
+                    }
+                }
+                const resolveStringSetting = (key) => {
+                    return settingsMap[key] !== undefined ? settingsMap[key] : (exports.DEFAULT_SETTINGS[key] || "");
                 };
-            }
+                const payload = {
+                    success: true,
+                    settings: settingsMap,
+                    storeName: resolveStringSetting("store_name"),
+                    shippingFee,
+                    freeShippingThreshold,
+                    storeLocation: resolveStringSetting("store_location"),
+                    deliveryCoverage: resolveStringSetting("delivery_coverage"),
+                    supportPhone: resolveStringSetting("support_phone"),
+                    supportEmail: resolveStringSetting("support_email"),
+                    supportHours: resolveStringSetting("support_hours"),
+                    announcements: processedAnnouncements,
+                    featuredProduct,
+                };
+                cachedSettingsPayload = payload;
+                lastCacheTime = Date.now();
+                return payload;
+            })().finally(() => {
+                pendingSettingsPromise = null;
+            });
         }
-        const resolveStringSetting = (key) => {
-            return settingsMap[key] !== undefined ? settingsMap[key] : (exports.DEFAULT_SETTINGS[key] || "");
-        };
-        cachedSettingsPayload = {
-            success: true,
-            settings: settingsMap,
-            storeName: resolveStringSetting("store_name"),
-            shippingFee,
-            freeShippingThreshold,
-            storeLocation: resolveStringSetting("store_location"),
-            deliveryCoverage: resolveStringSetting("delivery_coverage"),
-            supportPhone: resolveStringSetting("support_phone"),
-            supportEmail: resolveStringSetting("support_email"),
-            supportHours: resolveStringSetting("support_hours"),
-            announcements: processedAnnouncements,
-            featuredProduct,
-        };
-        lastCacheTime = now;
-        res.json(cachedSettingsPayload);
+        const payload = await pendingSettingsPromise;
+        res.json(payload);
     }
     catch (err) {
         res.json({

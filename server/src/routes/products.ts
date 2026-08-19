@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { handleGetCategories } from "./categories.js";
 
 const router = Router();
 
@@ -11,7 +12,8 @@ let lastMetaCacheTime = 0;
 const META_CACHE_TTL = 60 * 1000;
 
 let cachedCatalogResponse: Record<string, { data: any; time: number }> = {};
-const CATALOG_CACHE_TTL = 10 * 1000; // 10s TTL
+let pendingCatalogPromises: Record<string, Promise<any>> = {};
+const CATALOG_CACHE_TTL = 30 * 1000; // 30s TTL
 
 export function clearProductsMetaCache() {
   cachedCategories = null;
@@ -19,6 +21,7 @@ export function clearProductsMetaCache() {
   cachedFranchises = null;
   lastMetaCacheTime = 0;
   cachedCatalogResponse = {};
+  pendingCatalogPromises = {};
 }
 
 // GET /api/products — Database-Driven Product Catalog & Dynamic Facets
@@ -30,6 +33,9 @@ router.get("/", async (req, res) => {
     if (cachedCatalogResponse[cacheKey] && now - cachedCatalogResponse[cacheKey].time < CATALOG_CACHE_TTL) {
       return res.json(cachedCatalogResponse[cacheKey].data);
     }
+
+    if (!pendingCatalogPromises[cacheKey]) {
+      pendingCatalogPromises[cacheKey] = (async () => {
 
     const {
       query,
@@ -167,18 +173,24 @@ router.get("/", async (req, res) => {
     const brands = cachedBrands;
     const franchises = cachedFranchises;
 
-    const responsePayload = {
-      products,
-      totalCount,
-      totalPages: Math.ceil(totalCount / takeNum) || 1,
-      currentPage: pageNum,
-      categories,
-      brands,
-      franchises,
-    };
+        const responsePayload = {
+          products,
+          totalCount,
+          totalPages: Math.ceil(totalCount / takeNum) || 1,
+          currentPage: pageNum,
+          categories,
+          brands,
+          franchises,
+        };
 
-    cachedCatalogResponse[cacheKey] = { data: responsePayload, time: Date.now() };
+        cachedCatalogResponse[cacheKey] = { data: responsePayload, time: Date.now() };
+        return responsePayload;
+      })().finally(() => {
+        delete pendingCatalogPromises[cacheKey];
+      });
+    }
 
+    const responsePayload = await pendingCatalogPromises[cacheKey];
     res.json(responsePayload);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to fetch products" });
@@ -186,44 +198,8 @@ router.get("/", async (req, res) => {
 });
 
 // GET /api/products/categories — Public Endpoint for Active Categories with Product Counts
-router.get("/categories", async (_req, res) => {
-  try {
-    const categories = await prisma.category.findMany({
-      orderBy: { name: "asc" },
-      include: {
-        _count: {
-          select: {
-            products: {
-              where: { status: "ACTIVE" },
-            },
-          },
-        },
-      },
-    });
-    res.json({ categories });
-  } catch (err: any) {
-    res.status(500).json({ error: "Failed to fetch active categories" });
-  }
-});
-router.get("/categories/public", async (_req, res) => {
-  try {
-    const categories = await prisma.category.findMany({
-      orderBy: { name: "asc" },
-      include: {
-        _count: {
-          select: {
-            products: {
-              where: { status: "ACTIVE" },
-            },
-          },
-        },
-      },
-    });
-    res.json({ categories });
-  } catch (err: any) {
-    res.status(500).json({ error: "Failed to fetch active categories" });
-  }
-});
+router.get("/categories", handleGetCategories);
+router.get("/categories/public", handleGetCategories);
 
 // GET /api/products/:slug — Single Product Detail View
 router.get("/:slug", async (req, res) => {
