@@ -64,12 +64,24 @@ export async function handleGetOrderDetails(req: any, res: any) {
     const isGuestOrder = !order.userId && !order.user?.phone;
     const isAuthenticated = Boolean(authenticatedUserId || authenticatedUserPhone);
 
+    const authPhone10 = authenticatedUserPhone ? authenticatedUserPhone.replace(/\D/g, "").slice(-10) : "";
+    const orderUserPhone10 = order.user?.phone ? order.user.phone.replace(/\D/g, "").slice(-10) : "";
+
+    let orderAddressPhone10 = "";
+    try {
+      if (order.shippingAddressJson) {
+        const parsed = typeof order.shippingAddressJson === "string" ? JSON.parse(order.shippingAddressJson) : order.shippingAddressJson;
+        if (parsed.phone) orderAddressPhone10 = String(parsed.phone).replace(/\D/g, "").slice(-10);
+      }
+    } catch (e) {}
+
     const isMatchingOwner =
       isGuestOrder ||
       (authenticatedUserId && order.userId === authenticatedUserId) ||
       (authenticatedUserPhone && order.user?.phone === authenticatedUserPhone) ||
-      (authenticatedUserPhone && order.shippingAddressJson?.includes(authenticatedUserPhone)) ||
-      (authenticatedUserPhone && order.shippingAddressJson?.includes(authenticatedUserPhone.replace("+91", "")));
+      (authPhone10 && orderUserPhone10 && authPhone10 === orderUserPhone10) ||
+      (authPhone10 && orderAddressPhone10 && authPhone10 === orderAddressPhone10) ||
+      (authenticatedUserPhone && order.shippingAddressJson?.includes(authenticatedUserPhone));
 
     if (!isMatchingOwner) {
       if (!isAuthenticated) {
