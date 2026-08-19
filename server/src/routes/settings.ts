@@ -1,8 +1,7 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db.js";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
   shipping_fee: "100",

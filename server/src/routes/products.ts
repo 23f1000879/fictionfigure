@@ -10,16 +10,27 @@ let cachedFranchises: string[] | null = null;
 let lastMetaCacheTime = 0;
 const META_CACHE_TTL = 60 * 1000;
 
+let cachedCatalogResponse: Record<string, { data: any; time: number }> = {};
+const CATALOG_CACHE_TTL = 10 * 1000; // 10s TTL
+
 export function clearProductsMetaCache() {
   cachedCategories = null;
   cachedBrands = null;
   cachedFranchises = null;
   lastMetaCacheTime = 0;
+  cachedCatalogResponse = {};
 }
 
 // GET /api/products — Database-Driven Product Catalog & Dynamic Facets
 router.get("/", async (req, res) => {
   try {
+    const cacheKey = JSON.stringify(req.query);
+    const now = Date.now();
+
+    if (cachedCatalogResponse[cacheKey] && now - cachedCatalogResponse[cacheKey].time < CATALOG_CACHE_TTL) {
+      return res.json(cachedCatalogResponse[cacheKey].data);
+    }
+
     const {
       query,
       category,
@@ -117,8 +128,8 @@ router.get("/", async (req, res) => {
     ]);
 
     // Check if metadata is cached
-    const now = Date.now();
-    if (!cachedCategories || !cachedBrands || !cachedFranchises || now - lastMetaCacheTime > META_CACHE_TTL) {
+    const currentNow = Date.now();
+    if (!cachedCategories || !cachedBrands || !cachedFranchises || currentNow - lastMetaCacheTime > META_CACHE_TTL) {
       const [activeCategories, allActiveProducts] = await Promise.all([
         prisma.category.findMany({
           orderBy: { name: "asc" },
@@ -149,14 +160,14 @@ router.get("/", async (req, res) => {
       cachedCategories = activeCategories;
       cachedBrands = Array.from(brandsSet).sort();
       cachedFranchises = Array.from(franchisesSet).sort();
-      lastMetaCacheTime = now;
+      lastMetaCacheTime = currentNow;
     }
 
     const categories = cachedCategories;
     const brands = cachedBrands;
     const franchises = cachedFranchises;
 
-    res.json({
+    const responsePayload = {
       products,
       totalCount,
       totalPages: Math.ceil(totalCount / takeNum) || 1,
@@ -164,7 +175,11 @@ router.get("/", async (req, res) => {
       categories,
       brands,
       franchises,
-    });
+    };
+
+    cachedCatalogResponse[cacheKey] = { data: responsePayload, time: Date.now() };
+
+    res.json(responsePayload);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to fetch products" });
   }

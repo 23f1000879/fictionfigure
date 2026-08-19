@@ -4,9 +4,8 @@ exports.DEFAULT_SETTINGS = void 0;
 exports.clearSettingsCache = clearSettingsCache;
 exports.getStoreSettingsHelper = getStoreSettingsHelper;
 const express_1 = require("express");
-const client_1 = require("@prisma/client");
+const db_js_1 = require("../db.js");
 const router = (0, express_1.Router)();
-const prisma = new client_1.PrismaClient();
 exports.DEFAULT_SETTINGS = {
     shipping_fee: "100",
     free_shipping_threshold: "500",
@@ -68,7 +67,7 @@ function clearSettingsCache() {
 }
 async function getStoreSettingsHelper() {
     try {
-        const dbSettings = await prisma.storeSetting.findMany();
+        const dbSettings = await db_js_1.prisma.storeSetting.findMany();
         const settingsMap = { ...exports.DEFAULT_SETTINGS };
         dbSettings.forEach((s) => {
             settingsMap[s.key] = s.value;
@@ -127,7 +126,7 @@ router.get("/", async (_req, res) => {
             .sort((a, b) => a.sortOrder - b.sortOrder);
         let featuredProduct = null;
         if (settingsMap.homepage_hero_featured_product_id) {
-            const prod = await prisma.product.findUnique({
+            const prod = await db_js_1.prisma.product.findUnique({
                 where: { id: settingsMap.homepage_hero_featured_product_id },
                 include: { images: true },
             });
@@ -188,7 +187,7 @@ router.patch("/", async (req, res) => {
         if (!key || typeof value !== "string") {
             return res.status(400).json({ error: "Setting key and string value required" });
         }
-        const updated = await prisma.storeSetting.upsert({
+        const updated = await db_js_1.prisma.storeSetting.upsert({
             where: { key },
             update: { value },
             create: { key, value },

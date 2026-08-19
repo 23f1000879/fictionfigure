@@ -439,29 +439,30 @@ router.post("/submit-upi-payment", async (req, res) => {
                     },
                 });
             }
-            // 3. Atomically check & deduct inventory
+            // 3. Atomically check & deduct inventory with strict concurrency protection
             for (const item of totals.verifiedItems) {
+                const updateResult = await tx.productVariant.updateMany({
+                    where: {
+                        id: item.variantId,
+                        inventoryCount: { gte: item.quantity },
+                    },
+                    data: {
+                        inventoryCount: { decrement: item.quantity },
+                    },
+                });
+                if (updateResult.count === 0) {
+                    throw new Error(`Insufficient stock available for "${item.title}".`);
+                }
                 const variant = await tx.productVariant.findUnique({
                     where: { id: item.variantId },
-                    include: { inventory: true, product: true },
+                    include: { inventory: true },
                 });
-                if (!variant) {
-                    throw new Error(`Product variant ${item.title} no longer exists.`);
-                }
-                const currentStock = variant.inventory ? variant.inventory.quantity : variant.inventoryCount;
-                if (currentStock < item.quantity) {
-                    throw new Error(`Insufficient stock for "${variant.product.name}". Only ${currentStock} available.`);
-                }
-                if (variant.inventory) {
+                if (variant && variant.inventory) {
                     await tx.inventory.update({
                         where: { variantId: item.variantId },
                         data: { quantity: { decrement: item.quantity } },
                     });
                 }
-                await tx.productVariant.update({
-                    where: { id: item.variantId },
-                    data: { inventoryCount: { decrement: item.quantity } },
-                });
             }
             if (orderData.couponId) {
                 await tx.coupon.update({
