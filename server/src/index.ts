@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
+import categoriesRouter from "./routes/categories.js";
 import productsRouter from "./routes/products.js";
 import authRouter from "./routes/auth.js";
 import settingsRouter from "./routes/settings.js";
@@ -55,8 +56,10 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 console.log("MSG91_AUTH_KEY configured:", Boolean(process.env.MSG91_AUTH_KEY));
 
 // Express REST API Routers
+// CRITICAL: Mount specific subpaths (/api/products/categories, /api/categories) BEFORE wildcard router (/api/products)
+app.use("/api/products/categories", categoriesRouter);
+app.use("/api/categories", categoriesRouter);
 app.use("/api/products", productsRouter);
-app.use("/api/categories", productsRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/admin", adminRouter);
