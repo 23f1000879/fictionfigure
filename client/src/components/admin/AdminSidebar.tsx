@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -18,14 +18,34 @@ import {
   ExternalLink,
   ShieldCheck,
   LogOut,
+  Bell,
 } from "lucide-react";
+import { API_BASE, safeApiFetch } from "@/lib/api";
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [pendingRestockCount, setPendingRestockCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") || localStorage.getItem("token") : null;
+    if (!token) return;
+
+    safeApiFetch<{ success: boolean; summary?: { totalPendingRequests: number } }>(
+      `${API_BASE}/restock-requests/admin/summary`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .then((data) => {
+        if (data.success && data.summary) {
+          setPendingRestockCount(data.summary.totalPendingRequests || 0);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("fictionfigure_token");
+    localStorage.removeItem("token");
     router.push("/login");
   };
 
@@ -34,6 +54,7 @@ export function AdminSidebar() {
     { href: "/admin/products", label: "Products", icon: Package },
     { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
     { href: "/admin/inventory", label: "Inventory", icon: Boxes },
+    { href: "/admin/restock-requests", label: "Restock Demand", icon: Bell, badge: pendingRestockCount },
     { href: "/admin/categories", label: "Categories", icon: FolderTree },
     { href: "/admin/discounts", label: "Discounts", icon: Tag },
     { href: "/admin/customers", label: "Customers", icon: Users },
@@ -73,14 +94,21 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center space-x-3 px-4 py-3 transition-colors ${
+              className={`flex items-center justify-between px-4 py-3 transition-colors ${
                 isActive
                   ? "bg-white text-[#111111] font-bold"
                   : "text-[#A0A0A0] hover:text-white hover:bg-[#1E1E1E]"
               }`}
             >
-              <Icon className="w-4 h-4" />
-              <span>{item.label}</span>
+              <div className="flex items-center space-x-3">
+                <Icon className="w-4 h-4" />
+                <span>{item.label}</span>
+              </div>
+              {item.badge !== undefined && item.badge !== null && item.badge > 0 && (
+                <span className="px-2 py-0.5 bg-[#B86E00] text-white text-[10px] font-mono font-bold rounded-full">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}

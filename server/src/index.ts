@@ -16,6 +16,7 @@ import paymentsRouter from "./routes/payments.js";
 import wishlistRouter from "./routes/wishlist.js";
 import reviewsRouter from "./routes/reviews.js";
 import ordersRouter from "./routes/orders.js";
+import restockRequestsRouter from "./routes/restockRequests.js";
 
 const app = express();
 app.set("trust proxy", true);
@@ -69,6 +70,7 @@ app.use("/api/checkout", checkoutRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/reviews", reviewsRouter);
+app.use("/api/restock-requests", restockRequestsRouter);
 
 // Wildcard products router (GET /api/products, GET /api/products/:slug) MUST COME AFTER CATEGORIES
 app.use("/api/products", productsRouter);

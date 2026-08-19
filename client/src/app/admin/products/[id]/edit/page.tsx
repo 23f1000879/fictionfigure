@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Loader2, Save, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Image as ImageIcon, Bell } from "lucide-react";
 import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminEditProductPage() {
@@ -37,6 +37,8 @@ export default function AdminEditProductPage() {
       .catch(() => setCategories([]));
   }, []);
 
+  const [restockDemand, setRestockDemand] = useState<any>(null);
+
   useEffect(() => {
     if (productId) {
       adminFetch(`${API_BASE}/products?limit=100`)
@@ -52,7 +54,7 @@ export default function AdminEditProductPage() {
               compareAtPrice: found.compareAtPrice || 0,
               shortDescription: found.shortDescription || "",
               description: found.description || "",
-              stockQuantity: found.variants?.[0]?.inventoryCount || 10,
+              stockQuantity: found.variants?.[0]?.inventoryCount || 0,
               images: [
                 found.images?.[0]?.url || "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80",
                 found.images?.[1]?.url || "https://images.unsplash.com/photo-1563089145-599997674d42?w=800&auto=format&fit=crop&q=80",
@@ -61,6 +63,19 @@ export default function AdminEditProductPage() {
           }
         })
         .finally(() => setIsLoading(false));
+
+      // Fetch Restock Demand Summary for this product
+      const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") || localStorage.getItem("token") : null;
+      if (token) {
+        adminFetch(`${API_BASE}/restock-requests/admin/product/${productId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && data.product) {
+              setRestockDemand(data.product);
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [productId]);
 
@@ -117,6 +132,41 @@ export default function AdminEditProductPage() {
 
       {error && <div className="p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold">{error}</div>}
       {message && <div className="p-4 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold">{message}</div>}
+
+      {/* Restock Demand Intelligence Banner */}
+      {restockDemand && (
+        <div className="bg-[#FFF8E1] border border-[#FFE082] p-5 space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#B86E00] flex items-center">
+              <Bell className="w-4 h-4 mr-1.5" /> RESTOCK DEMAND INTELLIGENCE
+            </span>
+            <Link
+              href="/admin/restock-requests"
+              className="text-xs font-bold text-[#111111] hover:underline"
+            >
+              Manage All Demands &rarr;
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div>
+              <span className="text-[#6B6B6B] text-[10px] uppercase font-bold block">Customers Requesting</span>
+              <span className="font-mono text-base font-bold text-[#111111]">{restockDemand.uniqueCustomers}</span>
+            </div>
+            <div>
+              <span className="text-[#6B6B6B] text-[10px] uppercase font-bold block">Units Requested</span>
+              <span className="font-mono text-base font-bold text-[#B86E00]">{restockDemand.totalRequestedUnits}</span>
+            </div>
+            <div>
+              <span className="text-[#6B6B6B] text-[10px] uppercase font-bold block">Pending Requests</span>
+              <span className="font-mono text-base font-bold text-[#111111]">{restockDemand.pendingRequestsCount}</span>
+            </div>
+            <div>
+              <span className="text-[#6B6B6B] text-[10px] uppercase font-bold block">Fulfilled Requests</span>
+              <span className="font-mono text-base font-bold text-[#2E6B44]">{restockDemand.fulfilledRequestsCount}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white border border-[#E5E5E2] p-6 text-xs">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -20,6 +20,7 @@ const payments_js_1 = __importDefault(require("./routes/payments.js"));
 const wishlist_js_1 = __importDefault(require("./routes/wishlist.js"));
 const reviews_js_1 = __importDefault(require("./routes/reviews.js"));
 const orders_js_1 = __importDefault(require("./routes/orders.js"));
+const restockRequests_js_1 = __importDefault(require("./routes/restockRequests.js"));
 const app = (0, express_1.default)();
 app.set("trust proxy", true);
 const PORT = process.env.PORT || 5000;
@@ -63,6 +64,7 @@ app.use("/api/checkout", checkout_js_1.default);
 app.use("/api/payments", payments_js_1.default);
 app.use("/api/wishlist", wishlist_js_1.default);
 app.use("/api/reviews", reviews_js_1.default);
+app.use("/api/restock-requests", restockRequests_js_1.default);
 // Wildcard products router (GET /api/products, GET /api/products/:slug) MUST COME AFTER CATEGORIES
 app.use("/api/products", products_js_1.default);
 // Health Check Endpoint

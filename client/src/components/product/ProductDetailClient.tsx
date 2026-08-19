@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { API_BASE, safeApiFetch } from "@/lib/api";
 import { ProductReviews } from "./ProductReviews";
 
 interface ProductDetailProps {
@@ -75,6 +76,14 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Restock Request State
+  const [hasRequestedRestock, setHasRequestedRestock] = useState(false);
+  const [requestedQuantity, setRequestedQuantity] = useState(1);
+  const [restockRequestId, setRestockRequestId] = useState<string | null>(null);
+  const [isRestockLoading, setIsRestockLoading] = useState(false);
+  const [restockNotice, setRestockNotice] = useState<string | null>(null);
+  const [restockErr, setRestockErr] = useState<string | null>(null);
+
   const currentVariant = product.variants[selectedVariantIndex] || product.variants[0];
   const currentPrice = currentVariant?.price || product.price;
   const currentCompareAt = currentVariant?.compareAtPrice || product.compareAtPrice;
@@ -82,6 +91,101 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const isLowStock = currentVariant && currentVariant.inventoryCount > 0 && currentVariant.inventoryCount <= 3;
 
   const currentImage = product.images[selectedImageIndex]?.url || product.images[0]?.url || "";
+
+  // Check if customer already has a pending restock request for this product
+  React.useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) return;
+
+    safeApiFetch<{ success: boolean; requests: any[] }>(`${API_BASE}/restock-requests/my`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((data) => {
+        if (data.success && Array.isArray(data.requests)) {
+          const existing = data.requests.find(
+            (r: any) => r.productId === product.id && r.status === "PENDING"
+          );
+          if (existing) {
+            setHasRequestedRestock(true);
+            setRequestedQuantity(existing.quantity);
+            setRestockRequestId(existing.id);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [product.id]);
+
+  const handleRequestRestock = async () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) {
+      router.push(`/login?redirect=/products/${product.slug}`);
+      return;
+    }
+
+    setIsRestockLoading(true);
+    setRestockErr(null);
+    setRestockNotice(null);
+
+    try {
+      const data = await safeApiFetch<{ success: boolean; message?: string; request?: any; error?: string }>(
+        `${API_BASE}/restock-requests`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            productId: product.id,
+            quantity,
+          }),
+        }
+      );
+
+      if (data.success && data.request) {
+        setHasRequestedRestock(true);
+        setRequestedQuantity(data.request.quantity);
+        setRestockRequestId(data.request.id);
+        setRestockNotice(data.message || "You're on the restock priority list!");
+      } else {
+        setRestockErr(data.error || "Unable to submit restock request. Please try again.");
+      }
+    } catch (err: any) {
+      setRestockErr(err.message || "Unable to submit restock request. Please try again.");
+    } finally {
+      setIsRestockLoading(false);
+    }
+  };
+
+  const handleUpdateRestockQuantity = async (newQty: number) => {
+    if (!restockRequestId) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) return;
+
+    setIsRestockLoading(true);
+    try {
+      const data = await safeApiFetch<{ success: boolean; request?: any }>(
+        `${API_BASE}/restock-requests/${restockRequestId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ quantity: newQty }),
+        }
+      );
+
+      if (data.success && data.request) {
+        setRequestedQuantity(data.request.quantity);
+        setRestockNotice("Requested quantity updated.");
+      }
+    } catch (err: any) {
+      setRestockErr(err.message || "Failed to update quantity.");
+    } finally {
+      setIsRestockLoading(false);
+    }
+  };
 
   const handleAddToCart = () => {
     if (!currentVariant || !inStock) return;
@@ -326,24 +430,83 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
               </div>
             </div>
 
-            {/* Mobile Stacked / Desktop Grid Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full max-w-full box-border">
-              <button
-                onClick={handleAddToCart}
-                disabled={!inStock}
-                className="w-full min-h-[48px] px-6 py-3.5 bg-white border-2 border-[#111111] text-[#111111] text-xs font-bold uppercase tracking-widest hover:bg-[#111111] hover:text-white transition-colors flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed max-w-full box-border"
-              >
-                <ShoppingBag className="w-4 h-4 mr-2 shrink-0" /> Add to Cart
-              </button>
+            {/* Action Buttons: Add to Cart & Buy Now (In Stock) vs Request Restock (Out of Stock) */}
+            {inStock ? (
+              <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full max-w-full box-border">
+                <button
+                  onClick={handleAddToCart}
+                  className="w-full min-h-[48px] px-6 py-3.5 bg-white border-2 border-[#111111] text-[#111111] text-xs font-bold uppercase tracking-widest hover:bg-[#111111] hover:text-white transition-colors flex items-center justify-center max-w-full box-border"
+                >
+                  <ShoppingBag className="w-4 h-4 mr-2 shrink-0" /> Add to Cart
+                </button>
 
-              <button
-                onClick={handleBuyNow}
-                disabled={!inStock}
-                className="w-full min-h-[48px] px-6 py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed max-w-full box-border"
-              >
-                Buy Now <ChevronRight className="w-4 h-4 ml-1 shrink-0" />
-              </button>
-            </div>
+                <button
+                  onClick={handleBuyNow}
+                  className="w-full min-h-[48px] px-6 py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors flex items-center justify-center max-w-full box-border"
+                >
+                  Buy Now <ChevronRight className="w-4 h-4 ml-1 shrink-0" />
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3 pt-2 w-full max-w-full box-border">
+                {restockNotice && (
+                  <div className="p-3 bg-[#E8F5E9] border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold">
+                    {restockNotice}
+                  </div>
+                )}
+                {restockErr && (
+                  <div className="p-3 bg-[#FFEBEE] border border-[#A83232] text-[#A83232] text-xs font-semibold">
+                    {restockErr}
+                  </div>
+                )}
+
+                {hasRequestedRestock ? (
+                  <div className="bg-[#FAF9F6] border border-[#E5E5E2] p-4 space-y-3">
+                    <div className="flex items-center justify-between text-xs font-semibold text-[#2E6B44]">
+                      <span className="flex items-center">
+                        <Check className="w-4 h-4 mr-1.5" /> RESTOCK REQUESTED
+                      </span>
+                      <span className="font-mono text-[#111111]">Requested Qty: {requestedQuantity}</span>
+                    </div>
+                    <p className="text-[11px] text-[#6B6B6B]">
+                      You're on the priority notification list! We will contact you when new stock arrives.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1 border-t border-[#E5E5E2]">
+                      <span className="text-[11px] font-semibold text-[#111111] uppercase tracking-wider">
+                        Update Quantity:
+                      </span>
+                      <div className="flex items-center border border-[#E5E5E2] bg-white">
+                        <button
+                          onClick={() => handleUpdateRestockQuantity(Math.max(1, requestedQuantity - 1))}
+                          disabled={isRestockLoading}
+                          className="px-2.5 py-1 text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] disabled:opacity-40"
+                        >
+                          -
+                        </button>
+                        <span className="px-2.5 font-mono text-xs font-semibold text-[#111111]">
+                          {requestedQuantity}
+                        </span>
+                        <button
+                          onClick={() => handleUpdateRestockQuantity(requestedQuantity + 1)}
+                          disabled={isRestockLoading}
+                          className="px-2.5 py-1 text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] disabled:opacity-40"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleRequestRestock}
+                    disabled={isRestockLoading}
+                    className="w-full min-h-[48px] px-6 py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed max-w-full box-border"
+                  >
+                    {isRestockLoading ? "REQUESTING..." : "NOTIFY ME WHEN RESTOCKED"}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Guarantees List */}

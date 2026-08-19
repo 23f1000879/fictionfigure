@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
-import { Plus, Loader2, ExternalLink, Edit, Copy, Trash2, CheckCircle2, AlertCircle, Package } from "lucide-react";
+import { Plus, Loader2, ExternalLink, Edit, Copy, Trash2, CheckCircle2, AlertCircle, Package, Bell } from "lucide-react";
 import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminProductsPage() {
@@ -184,9 +184,23 @@ export default function AdminProductsPage() {
                     <td className="p-4 font-mono font-semibold text-[#111111]">{formatPrice(p.price)}</td>
                     <td className="p-4 font-mono font-bold text-[#111111]">{stock} units</td>
                     <td className="p-4">
-                      <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 ${statusBadge}`}>
-                        {stock === 0 && p.status === "ACTIVE" ? "OUT OF STOCK" : p.status}
-                      </span>
+                      {stock === 0 ? (
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-[#A83232] text-white inline-block">
+                            OUT OF STOCK
+                          </span>
+                          <Link
+                            href="/admin/restock-requests"
+                            className="text-[10px] font-bold text-[#B86E00] hover:underline flex items-center"
+                          >
+                            <Bell className="w-3 h-3 mr-1" /> VIEW DEMAND
+                          </Link>
+                        </div>
+                      ) : (
+                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 ${statusBadge}`}>
+                          {p.status}
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end space-x-1.5">
