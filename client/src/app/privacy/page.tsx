@@ -1,17 +1,15 @@
+"use client";
+
 import React from "react";
-import { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-
-export const metadata: Metadata = {
-  title: "Privacy Policy | FictionFigure",
-  description:
-    "Read FictionFigure's Privacy Policy explaining how customer information, payments, third-party services, and delivery details are handled.",
-};
+import { useSettings } from "@/context/SettingsContext";
 
 export default function PrivacyPage() {
+  const { supportPhone, supportEmail } = useSettings();
+
   return (
     <>
       <Header />
@@ -115,10 +113,17 @@ export default function PrivacyPage() {
               6. Privacy Inquiries
             </h3>
             <p>
-              If you have questions regarding data privacy or wish to request profile updates, contact our support line at{" "}
-              <a href="tel:+919797494639" className="font-mono font-semibold text-[#111111] hover:underline">
-                +91 9797494639
-              </a>.
+              If you have questions regarding data privacy or wish to request profile updates, contact our support team:{" "}
+              {Boolean(supportPhone?.trim()) && (
+                <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-mono font-semibold text-[#111111] hover:underline">
+                  {supportPhone}
+                </a>
+              )}
+              {Boolean(supportEmail?.trim()) && (
+                <a href={`mailto:${supportEmail.trim()}`} className="font-mono font-semibold text-[#111111] hover:underline ml-2">
+                  {supportEmail}
+                </a>
+              )}.
             </p>
           </section>
         </div>

@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Award, Box, MapPin, Phone, Clock, Truck, ShieldCheck } from "lucide-react";
+import { Award, Box, MapPin, Phone, Clock, Truck, ShieldCheck, Mail } from "lucide-react";
 import { API_BASE } from "@/lib/api";
+import { useSettings } from "@/context/SettingsContext";
 
 interface Category {
   id: string;
@@ -14,6 +15,7 @@ interface Category {
 export function Footer() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const { supportPhone, supportEmail, supportHours, storeLocation, deliveryCoverage } = useSettings();
 
   useEffect(() => {
     let isMounted = true;
@@ -167,60 +169,86 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Column 4: Support & Contact Details (No Email / No Newsletter) */}
-          <div className="space-y-4">
-            <h4 className="text-xs uppercase font-semibold text-[#111111] tracking-widest mb-4 border-b border-[#E5E5E2] pb-2">
-              Support & Contact
-            </h4>
+          {/* Column 4: Support & Contact Details */}
+          {(Boolean(supportPhone?.trim()) || Boolean(supportEmail?.trim()) || Boolean(supportHours?.trim()) || Boolean(storeLocation?.trim()) || Boolean(deliveryCoverage?.trim())) && (
+            <div className="space-y-4">
+              <h4 className="text-xs uppercase font-semibold text-[#111111] tracking-widest mb-4 border-b border-[#E5E5E2] pb-2">
+                Support & Contact
+              </h4>
 
-            <div className="space-y-3.5 text-xs text-[#6B6B6B]">
-              <div className="flex items-start space-x-2.5">
-                <Phone className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
-                    Phone Support
-                  </span>
-                  <a
-                    href="tel:+919797494639"
-                    className="font-mono text-xs text-[#111111] hover:underline font-semibold block"
-                  >
-                    +91 9797494639
-                  </a>
-                </div>
-              </div>
+              <div className="space-y-3.5 text-xs text-[#6B6B6B]">
+                {Boolean(supportPhone?.trim()) && (
+                  <div className="flex items-start space-x-2.5">
+                    <Phone className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                        Phone Support
+                      </span>
+                      <a
+                        href={`tel:${supportPhone.replace(/\s+/g, "")}`}
+                        className="font-mono text-xs text-[#111111] hover:underline font-semibold block"
+                      >
+                        {supportPhone}
+                      </a>
+                    </div>
+                  </div>
+                )}
 
-              <div className="flex items-start space-x-2.5">
-                <Clock className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
-                    Support Hours
-                  </span>
-                  <span className="block">Monday – Saturday</span>
-                  <span className="block text-[11px]">10:00 AM – 7:00 PM IST</span>
-                </div>
-              </div>
+                {Boolean(supportEmail?.trim()) && (
+                  <div className="flex items-start space-x-2.5">
+                    <Mail className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                        Email Support
+                      </span>
+                      <a
+                        href={`mailto:${supportEmail.trim()}`}
+                        className="font-mono text-xs text-[#111111] hover:underline font-semibold block"
+                      >
+                        {supportEmail}
+                      </a>
+                    </div>
+                  </div>
+                )}
 
-              <div className="flex items-start space-x-2.5">
-                <MapPin className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
-                    Location
-                  </span>
-                  <span className="block text-[#111111]">Based in Bikaner, Rajasthan</span>
-                </div>
-              </div>
+                {Boolean(supportHours?.trim()) && (
+                  <div className="flex items-start space-x-2.5">
+                    <Clock className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                        Support Hours
+                      </span>
+                      <span className="block text-[#111111]">{supportHours}</span>
+                    </div>
+                  </div>
+                )}
 
-              <div className="flex items-start space-x-2.5 pt-1">
-                <Truck className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
-                    Coverage
-                  </span>
-                  <span className="block">Delivering across India</span>
-                </div>
+                {Boolean(storeLocation?.trim()) && (
+                  <div className="flex items-start space-x-2.5">
+                    <MapPin className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                        Location
+                      </span>
+                      <span className="block text-[#111111]">{storeLocation}</span>
+                    </div>
+                  </div>
+                )}
+
+                {Boolean(deliveryCoverage?.trim()) && (
+                  <div className="flex items-start space-x-2.5 pt-1">
+                    <Truck className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                        Coverage
+                      </span>
+                      <span className="block text-[#111111]">{deliveryCoverage}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer Bottom Bar */}

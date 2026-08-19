@@ -1,18 +1,16 @@
+"use client";
+
 import React from "react";
-import { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { Award, Box, ShieldCheck, MapPin, Truck, Phone } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "About FictionFigure | Collectible Figures & Statues",
-  description:
-    "FictionFigure is a curated online collectibles store based in Bikaner, Rajasthan, delivering authentic figures, statues, and character merchandise across India.",
-};
+import { MapPin, Phone, Award, ShieldCheck, Truck, Box } from "lucide-react";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function AboutPage() {
+  const { supportPhone, supportHours, storeLocation, deliveryCoverage } = useSettings();
+
   return (
     <>
       <Header />
@@ -20,68 +18,67 @@ export default function AboutPage() {
       <CartDrawer />
 
       <main className="editorial-container py-12 sm:py-16 space-y-12 text-[#111111]">
-        {/* Hero Header */}
-        <div className="border-b border-[#E5E5E2] pb-8 space-y-3">
+        {/* Page Header */}
+        <div className="border-b border-[#E5E5E2] pb-6 space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] block">
-            ABOUT FICTIONFIGURE
+            ABOUT OUR GALLERY
           </span>
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#111111] leading-tight">
-            Collect what means something.
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#111111]">
+            Curated Collectibles for Devoted Enthusiasts
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B6B6B] max-w-2xl leading-relaxed">
-            FictionFigure brings together curated figures, statues, and collectibles chosen for craftsmanship, character, and the stories behind them.
-          </p>
         </div>
 
-        {/* Brand Philosophy */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          <div className="space-y-4 text-xs sm:text-sm text-[#6B6B6B] leading-relaxed">
-            <h2 className="text-lg font-semibold text-[#111111] uppercase tracking-wider">
-              Our Story & Philosophy
-            </h2>
+        {/* Narrative & Location Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 items-start text-xs sm:text-sm text-[#444444] leading-relaxed">
+          <div className="space-y-4">
             <p>
-              We believe figures aren’t just plastic objects — they are tangible physical anchors to moments, stories, and characters that stayed with us.
+              FictionFigure was established with a singular mission: to bring authentic, high-grade figures, scale statues, and limited-edition collectibles directly to fans across India.
             </p>
             <p>
-              Operating from <strong className="text-[#111111]">Bikaner, Rajasthan</strong>, FictionFigure was built to serve collectors across India who appreciate quality presentation, reliable packaging, and clear customer support.
-            </p>
-            <p>
-              Whether you are adding your first scale piece or building an established gallery display, every item in our catalog is selected with care.
+              We partner directly with leading international brands and authorized distributors to guarantee 100% authenticity for every box that leaves our warehouse.
             </p>
           </div>
 
-          <div className="bg-[#F7F7F5] border border-[#E5E5E2] p-6 sm:p-8 space-y-6 text-xs">
-            <h3 className="font-semibold uppercase tracking-wider text-xs text-[#111111]">
-              FictionFigure At A Glance
+          <div className="bg-[#FAF9F6] border border-[#E5E5E2] p-6 sm:p-8 space-y-6">
+            <h3 className="text-xs uppercase font-bold text-[#111111] tracking-widest border-b border-[#E5E5E2] pb-2">
+              Store & Operations
             </h3>
 
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <MapPin className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-[#111111] block">Headquarters</span>
-                  <span className="text-[#6B6B6B]">Bikaner, Rajasthan, India</span>
+            <div className="space-y-4 text-xs">
+              {Boolean(storeLocation?.trim()) && (
+                <div className="flex items-start space-x-3">
+                  <MapPin className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-[#111111] block">Headquarters</span>
+                    <span className="text-[#6B6B6B]">{storeLocation}</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-start space-x-3">
-                <Truck className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-[#111111] block">Delivery Coverage</span>
-                  <span className="text-[#6B6B6B]">Pan-India shipping across all serviceable PIN codes</span>
+              {Boolean(deliveryCoverage?.trim()) && (
+                <div className="flex items-start space-x-3">
+                  <Truck className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-[#111111] block">Delivery Coverage</span>
+                    <span className="text-[#6B6B6B]">{deliveryCoverage}</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-start space-x-3">
-                <Phone className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-[#111111] block">Customer Support Phone</span>
-                  <a href="tel:+919797494639" className="font-mono text-[#111111] hover:underline font-semibold">
-                    +91 9797494639
-                  </a>
-                  <span className="block text-[11px] text-[#6B6B6B]">Mon – Sat (10:00 AM – 7:00 PM IST)</span>
+              {Boolean(supportPhone?.trim()) && (
+                <div className="flex items-start space-x-3">
+                  <Phone className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-[#111111] block">Customer Support Phone</span>
+                    <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-mono text-[#111111] hover:underline font-semibold">
+                      {supportPhone}
+                    </a>
+                    {Boolean(supportHours?.trim()) && (
+                      <span className="block text-[11px] text-[#6B6B6B]">{supportHours}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

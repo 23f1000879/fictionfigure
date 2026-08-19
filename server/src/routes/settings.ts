@@ -150,17 +150,21 @@ router.get("/", async (_req, res) => {
       }
     }
 
+    const resolveStringSetting = (key: string) => {
+      return settingsMap[key] !== undefined ? settingsMap[key] : ((DEFAULT_SETTINGS as any)[key] || "");
+    };
+
     cachedSettingsPayload = {
       success: true,
       settings: settingsMap,
-      storeName: settingsMap.store_name || DEFAULT_SETTINGS.store_name,
+      storeName: resolveStringSetting("store_name"),
       shippingFee,
       freeShippingThreshold,
-      storeLocation,
-      deliveryCoverage,
-      supportPhone: settingsMap.support_phone || DEFAULT_SETTINGS.support_phone,
-      supportEmail: settingsMap.support_email || DEFAULT_SETTINGS.support_email,
-      supportHours: settingsMap.support_hours || DEFAULT_SETTINGS.support_hours,
+      storeLocation: resolveStringSetting("store_location"),
+      deliveryCoverage: resolveStringSetting("delivery_coverage"),
+      supportPhone: resolveStringSetting("support_phone"),
+      supportEmail: resolveStringSetting("support_email"),
+      supportHours: resolveStringSetting("support_hours"),
       announcements: processedAnnouncements,
       featuredProduct,
     };

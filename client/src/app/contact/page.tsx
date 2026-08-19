@@ -1,23 +1,19 @@
+"use client";
+
 import React from "react";
-import { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
-import { CartDrawer } from "@/components/cart/CartDrawer";
-import { Phone, MapPin, Clock, Truck, ShieldCheck } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Contact FictionFigure | Support & Delivery",
-  description:
-    "Get in touch with FictionFigure customer support. Based in Bikaner, Rajasthan, delivering collectibles across India.",
-};
+import { Phone, Clock, MapPin, ShieldCheck, Mail } from "lucide-react";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function ContactPage() {
+  const { supportPhone, supportEmail, supportHours, storeLocation, deliveryCoverage } = useSettings();
+
   return (
     <>
       <Header />
       <SearchModal />
-      <CartDrawer />
 
       <main className="editorial-container py-12 sm:py-16 space-y-10 text-[#111111]">
         {/* Page Header */}
@@ -29,30 +25,37 @@ export default function ContactPage() {
             Contact FictionFigure
           </h1>
           <p className="text-xs sm:text-sm text-[#6B6B6B] max-w-2xl leading-relaxed">
-            Have questions about a figure, order dispatch status, or shipment delivery? Our team is available to assist you.
+            Have questions about a figure, order dispatch status, or shipment delivery? Our collector support team is here to assist you.
           </p>
         </div>
 
         {/* Contact Information Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-          {/* Card 1: Phone Support */}
+          {/* Card 1: Phone & Email Support */}
           <div className="bg-white border border-[#E5E5E2] p-6 sm:p-8 space-y-4">
             <div className="w-10 h-10 rounded-full bg-[#F7F7F5] border border-[#E5E5E2] flex items-center justify-center text-[#111111]">
               <Phone className="w-5 h-5" />
             </div>
             <div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block mb-1">
-                Support Phone
+                Customer Support
               </span>
-              <a
-                href="tel:+919797494639"
-                className="text-base font-semibold font-mono text-[#111111] hover:underline block"
-              >
-                +91 9797494639
-              </a>
-              <p className="text-[11px] text-[#6B6B6B] mt-1">
-                Tap to call directly on mobile devices.
-              </p>
+              {Boolean(supportPhone?.trim()) && (
+                <a
+                  href={`tel:${supportPhone.replace(/\s+/g, "")}`}
+                  className="text-base font-semibold font-mono text-[#111111] hover:underline block mb-1"
+                >
+                  {supportPhone}
+                </a>
+              )}
+              {Boolean(supportEmail?.trim()) && (
+                <a
+                  href={`mailto:${supportEmail.trim()}`}
+                  className="text-xs font-mono text-[#6B6B6B] hover:underline block"
+                >
+                  {supportEmail}
+                </a>
+              )}
             </div>
           </div>
 
@@ -65,8 +68,7 @@ export default function ContactPage() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block mb-1">
                 Working Hours
               </span>
-              <div className="text-sm font-semibold text-[#111111]">Monday – Saturday</div>
-              <div className="text-xs text-[#6B6B6B]">10:00 AM – 7:00 PM IST</div>
+              <div className="text-sm font-semibold text-[#111111]">{supportHours || "Monday – Saturday"}</div>
             </div>
           </div>
 
@@ -79,10 +81,8 @@ export default function ContactPage() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block mb-1">
                 Location & Coverage
               </span>
-              <div className="text-sm font-semibold text-[#111111]">Bikaner, Rajasthan, India</div>
-              <div className="text-xs text-[#6B6B6B] flex items-center mt-1">
-                <Truck className="w-3.5 h-3.5 mr-1" /> Delivering across India
-              </div>
+              <div className="text-sm font-semibold text-[#111111]">{storeLocation}</div>
+              <div className="text-xs text-[#6B6B6B] mt-0.5">{deliveryCoverage}</div>
             </div>
           </div>
         </div>

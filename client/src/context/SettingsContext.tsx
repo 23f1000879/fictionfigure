@@ -59,28 +59,28 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch(`${API_BASE}/settings`);
+      const res = await fetch(`${API_BASE}/settings`, { cache: "no-store" });
       const data = await res.json();
 
       if (data.shippingFee !== undefined) {
-        setShippingFee(Number(data.shippingFee) || 100);
+        setShippingFee(Number(data.shippingFee) || 0);
       }
       if (data.freeShippingThreshold !== undefined) {
-        setFreeShippingThreshold(Number(data.freeShippingThreshold) || 500);
+        setFreeShippingThreshold(Number(data.freeShippingThreshold) || 0);
       }
-      if (data.storeLocation) {
+      if (typeof data.storeLocation === "string") {
         setStoreLocation(data.storeLocation);
       }
-      if (data.deliveryCoverage) {
+      if (typeof data.deliveryCoverage === "string") {
         setDeliveryCoverage(data.deliveryCoverage);
       }
-      if (data.supportPhone) {
+      if (typeof data.supportPhone === "string") {
         setSupportPhone(data.supportPhone);
       }
-      if (data.supportEmail) {
+      if (typeof data.supportEmail === "string") {
         setSupportEmail(data.supportEmail);
       }
-      if (data.supportHours) {
+      if (typeof data.supportHours === "string") {
         setSupportHours(data.supportHours);
       }
       if (Array.isArray(data.announcements)) {

@@ -1,18 +1,15 @@
+"use client";
+
 import React from "react";
-import { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Truck, ShieldCheck, Box, Clock, Phone, MapPin } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Shipping Information | FictionFigure",
-  description:
-    "Learn about FictionFigure shipping standards, processing times, delivery across India, tracking updates, and transit safety.",
-};
+import { useSettings } from "@/context/SettingsContext";
 
 export default function ShippingPage() {
+  const { supportPhone, supportHours } = useSettings();
   return (
     <>
       <Header />
@@ -87,11 +84,15 @@ export default function ShippingPage() {
           <section className="space-y-2 border-t border-[#E5E5E2] pt-4 text-[#111111]">
             <h3 className="text-sm font-semibold uppercase tracking-wider">Need Shipping Assistance?</h3>
             <p className="text-xs text-[#6B6B6B]">
-              Call our support phone:{" "}
-              <a href="tel:+919797494639" className="font-mono font-semibold text-[#111111] hover:underline">
-                +91 9797494639
-              </a>{" "}
-              (Monday – Saturday, 10:00 AM – 7:00 PM IST).
+              Reach our support team directly:{" "}
+              {Boolean(supportPhone?.trim()) && (
+                <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-mono font-semibold text-[#111111] hover:underline">
+                  {supportPhone}
+                </a>
+              )}
+              {Boolean(supportHours?.trim()) && (
+                <span className="ml-1">({supportHours})</span>
+              )}.
             </p>
           </section>
         </div>

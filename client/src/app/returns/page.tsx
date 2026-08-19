@@ -1,18 +1,15 @@
+"use client";
+
 import React from "react";
-import { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { RotateCcw, ShieldCheck, AlertCircle, Phone } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Returns & Replacements | FictionFigure",
-  description:
-    "Review FictionFigure's policy for order cancellations, replacements for damaged or incorrect items, and customer support procedures.",
-};
+import { useSettings } from "@/context/SettingsContext";
 
 export default function ReturnsPage() {
+  const { supportPhone, supportEmail, supportHours, storeLocation } = useSettings();
+
   return (
     <>
       <Header />

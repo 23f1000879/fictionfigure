@@ -64,7 +64,7 @@ export function AIChatWidget() {
         sender: "ASSISTANT",
         content: products.length > 0 
           ? `Welcome to FictionFigure Sanctuary Concierge. Here are the finest curated collectibles matching "${query}":`
-          : `Greetings! I am the FictionFigure Editorial Concierge. You can explore our full catalog of authentic museum-grade scale statues and designer collectibles under the Shop section or contact support at +91 9797494639.`,
+          : `Greetings! I am the FictionFigure Editorial Concierge. You can explore our full catalog of authentic museum-grade scale statues and designer collectibles under the Shop section or contact our customer support team directly.`,
         type: products.length > 0 ? "PRODUCT_RECOMMENDATIONS" : "TEXT",
         products: products,
       };

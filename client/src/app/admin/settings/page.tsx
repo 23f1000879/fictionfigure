@@ -525,9 +525,9 @@ export default function AdminSettingsPage() {
                 </label>
                 <input
                   type="text"
-                  value={settings.store_location || "Bikaner, Rajasthan, India"}
+                  value={settings.store_location ?? ""}
                   onChange={(e) => setSettings({ ...settings, store_location: e.target.value })}
-                  placeholder="Bikaner, Rajasthan, India"
+                  placeholder="e.g. Bikaner, Rajasthan"
                   className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
                 />
               </div>
@@ -540,9 +540,9 @@ export default function AdminSettingsPage() {
                 </label>
                 <input
                   type="text"
-                  value={settings.delivery_coverage || "We deliver across India."}
+                  value={settings.delivery_coverage ?? ""}
                   onChange={(e) => setSettings({ ...settings, delivery_coverage: e.target.value })}
-                  placeholder="We deliver across India."
+                  placeholder="e.g. Delivering across India"
                   className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
                 />
               </div>
@@ -553,8 +553,9 @@ export default function AdminSettingsPage() {
                 </label>
                 <input
                   type="text"
-                  value={settings.support_phone || "+91 97974 94639"}
+                  value={settings.support_phone ?? ""}
                   onChange={(e) => setSettings({ ...settings, support_phone: e.target.value })}
+                  placeholder="e.g. +91 8952198699"
                   className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none"
                 />
               </div>
@@ -567,8 +568,9 @@ export default function AdminSettingsPage() {
                 </label>
                 <input
                   type="email"
-                  value={settings.support_email || "support@fictionfigure.in"}
+                  value={settings.support_email ?? ""}
                   onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
+                  placeholder="e.g. support@fictionfigure.in"
                   className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none"
                 />
               </div>
@@ -579,9 +581,9 @@ export default function AdminSettingsPage() {
                 </label>
                 <input
                   type="text"
-                  value={settings.support_hours || "Monday - Saturday, 10:00 AM - 7:00 PM"}
+                  value={settings.support_hours ?? ""}
                   onChange={(e) => setSettings({ ...settings, support_hours: e.target.value })}
-                  placeholder="Monday - Saturday, 10:00 AM - 7:00 PM"
+                  placeholder="e.g. Monday - Saturday, 10:00 AM - 7:00 PM"
                   className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
                 />
               </div>
