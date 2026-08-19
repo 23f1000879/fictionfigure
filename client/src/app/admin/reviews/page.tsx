@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Star, CheckCircle2, AlertCircle, Loader2, Search, Filter, ShieldCheck, Eye, EyeOff, Trash2, Package } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, adminFetch } from "@/lib/api";
 
 export default function AdminReviewsPage() {
   const router = useRouter();
@@ -18,28 +18,11 @@ export default function AdminReviewsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const getAuthToken = () => {
-    return typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") : null;
-  };
-
   const fetchReviews = async () => {
     try {
       setIsLoading(true);
-      const token = getAuthToken();
-      if (!token) {
-        router.push("/login?redirect=/admin/reviews");
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/reviews/admin/all`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const res = await adminFetch(`${API_BASE}/reviews/admin/all`);
       const data = await res.json();
-      if (res.status === 401 || res.status === 403) {
-        router.push("/login");
-        return;
-      }
 
       if (data.reviews) {
         setReviews(data.reviews);
@@ -64,13 +47,9 @@ export default function AdminReviewsPage() {
     setErrorMessage("");
 
     try {
-      const token = getAuthToken();
-      const res = await fetch(`${API_BASE}/reviews/admin/${reviewId}/status`, {
+      const res = await adminFetch(`${API_BASE}/reviews/admin/${reviewId}/status`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
 
@@ -96,10 +75,8 @@ export default function AdminReviewsPage() {
     setErrorMessage("");
 
     try {
-      const token = getAuthToken();
-      const res = await fetch(`${API_BASE}/reviews/${reviewId}`, {
+      const res = await adminFetch(`${API_BASE}/reviews/${reviewId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await res.json();

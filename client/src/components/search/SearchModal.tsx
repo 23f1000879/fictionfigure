@@ -43,7 +43,8 @@ export function SearchModal() {
   }, [setIsSearchOpen]);
 
   useEffect(() => {
-    if (!query.trim()) {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
       setResults([]);
       setIsLoading(false);
       return;
@@ -52,7 +53,7 @@ export function SearchModal() {
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/products?query=${encodeURIComponent(query)}&limit=8`);
+        const res = await fetch(`${API_BASE}/products?query=${encodeURIComponent(trimmed)}&limit=8`);
         const data = await res.json();
         setResults(data.products || []);
       } catch (err) {
@@ -60,7 +61,7 @@ export function SearchModal() {
       } finally {
         setIsLoading(false);
       }
-    }, 200);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [query]);

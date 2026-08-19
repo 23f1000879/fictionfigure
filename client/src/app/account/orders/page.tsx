@@ -28,13 +28,13 @@ export default function AccountOrdersPage() {
     setLoading(true);
     setError("");
 
-    fetch(`${API_BASE}/checkout/my-orders`, {
+    fetch(`${API_BASE}/orders/my-orders`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (res) => {
         if (res.status === 401) {
           localStorage.removeItem("fictionfigure_token");
-          router.push("/login");
+          router.push("/login?redirect=/account/orders");
           return;
         }
         const data = await res.json();
@@ -43,20 +43,7 @@ export default function AccountOrdersPage() {
         setOrders(data.orders || []);
       })
       .catch((err: any) => {
-        const token = localStorage.getItem("fictionfigure_token");
-        fetch(`${API_BASE}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-          .then((res) => res.json())
-          .then((meData) => {
-            if (meData.authenticated && meData.user && meData.user.orders) {
-              setOrders(meData.user.orders);
-              setError("");
-            } else {
-              setError(err.message || "Unable to connect to order server.");
-            }
-          })
-          .catch(() => setError(err.message || "Failed to load order history."));
+        setError(err.message || "Unable to load order history.");
       })
       .finally(() => setLoading(false));
   };

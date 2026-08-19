@@ -3,7 +3,7 @@ import { API_BASE } from "@/lib/api";
 
 export async function getCategories() {
   try {
-    const res = await fetch(`${API_BASE}/admin/categories`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_BASE}/products/categories`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
       return data.categories || [];
@@ -16,10 +16,11 @@ export async function getCategories() {
 
 export async function getCategoryBySlug(slug: string) {
   try {
-    const res = await fetch(`${API_BASE}/admin/categories/${slug}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_BASE}/products/categories`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
-      return data.category || null;
+      const cat = (data.categories || []).find((c: any) => c.slug === slug);
+      return cat || null;
     }
   } catch (e) {
     console.error("getCategoryBySlug error:", e);

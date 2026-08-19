@@ -17,7 +17,7 @@ export function Footer() {
 
   useEffect(() => {
     let isMounted = true;
-    fetch(`${API_BASE}/admin/categories`)
+    fetch(`${API_BASE}/products/categories`)
       .then((res) => res.json())
       .then((data) => {
         if (isMounted && data.categories && Array.isArray(data.categories)) {

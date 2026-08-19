@@ -10,6 +10,42 @@ const cleanUrl = rawUrl.replace(/\/$/, "");
 export const API_BASE = cleanUrl.endsWith("/api") ? cleanUrl : `${cleanUrl}/api`;
 
 /**
+ * Inflight request promise cache to prevent duplicate GET requests.
+ */
+const inflightRequests = new Map<string, Promise<Response>>();
+
+/**
+ * Deduplicated fetch helper for GET requests.
+ * Concurrently triggered requests to the same URL reuse a single HTTP Promise.
+ */
+export const dedupedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  const method = (options.method || "GET").toUpperCase();
+  if (method !== "GET") {
+    return fetch(url, options);
+  }
+
+  const key = `${url}_${JSON.stringify(options.headers || {})}`;
+  if (inflightRequests.has(key)) {
+    const existing = await inflightRequests.get(key)!;
+    return existing.clone();
+  }
+
+  const promise = fetch(url, options)
+    .then((res) => {
+      setTimeout(() => inflightRequests.delete(key), 500);
+      return res;
+    })
+    .catch((err) => {
+      inflightRequests.delete(key);
+      throw err;
+    });
+
+  inflightRequests.set(key, promise);
+  const result = await promise;
+  return result.clone();
+};
+
+/**
  * Retrieves stored admin bearer token from localStorage in browser environment.
  */
 export const getAdminAuthHeader = (): Record<string, string> => {

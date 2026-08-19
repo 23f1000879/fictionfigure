@@ -170,7 +170,26 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /api/categories — Public Endpoint for Active Categories with Product Counts
+// GET /api/products/categories — Public Endpoint for Active Categories with Product Counts
+router.get("/categories", async (_req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        _count: {
+          select: {
+            products: {
+              where: { status: "ACTIVE" },
+            },
+          },
+        },
+      },
+    });
+    res.json({ categories });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch active categories" });
+  }
+});
 router.get("/categories/public", async (_req, res) => {
   try {
     const categories = await prisma.category.findMany({
