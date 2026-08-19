@@ -37,6 +37,12 @@ export default function AccountOrdersPage() {
           router.push("/login?redirect=/account/orders");
           return;
         }
+
+        const isJson = res.headers.get("content-type")?.includes("application/json");
+        if (!isJson) {
+          throw new Error("Unable to connect to order server. Please try again.");
+        }
+
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to load order history.");
 

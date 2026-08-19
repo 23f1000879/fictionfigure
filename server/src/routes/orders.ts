@@ -147,13 +147,6 @@ export async function handleGetOrderDetails(req: any, res: any) {
 }
 
 /**
- * GET /api/orders/:id
- * GET /api/orders/order/:id
- */
-router.get("/:id", handleGetOrderDetails);
-router.get("/order/:id", handleGetOrderDetails);
-
-/**
  * GET /api/orders/my-orders
  * Authenticated Customer Order History
  */
@@ -234,5 +227,12 @@ router.get("/my-orders", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch order history." });
   }
 });
+
+/**
+ * GET /api/orders/:id
+ * GET /api/orders/order/:id
+ */
+router.get("/:id", handleGetOrderDetails);
+router.get("/order/:id", handleGetOrderDetails);
 
 export default router;

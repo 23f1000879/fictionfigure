@@ -56,6 +56,7 @@ console.log("MSG91_AUTH_KEY configured:", Boolean(process.env.MSG91_AUTH_KEY));
 
 // Express REST API Routers
 app.use("/api/products", productsRouter);
+app.use("/api/categories", productsRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/admin", adminRouter);
