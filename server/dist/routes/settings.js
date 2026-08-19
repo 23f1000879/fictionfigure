@@ -131,9 +131,9 @@ router.get("/", async (_req, res) => {
                 if (settingsMap.homepage_hero_featured_product_id) {
                     const prod = await db_js_1.prisma.product.findUnique({
                         where: { id: settingsMap.homepage_hero_featured_product_id },
-                        include: { images: true },
+                        include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } },
                     });
-                    if (prod) {
+                    if (prod && prod.status === "ACTIVE") {
                         featuredProduct = {
                             id: prod.id,
                             name: prod.name,
@@ -141,6 +141,16 @@ router.get("/", async (_req, res) => {
                             sku: prod.sku,
                             imageUrl: prod.images[0]?.url || "",
                         };
+                    }
+                    else {
+                        // Auto-clean stale reference to deleted/inactive product
+                        settingsMap.homepage_hero_featured_product_id = "";
+                        await db_js_1.prisma.storeSetting.upsert({
+                            where: { key: "homepage_hero_featured_product_id" },
+                            update: { value: "" },
+                            create: { key: "homepage_hero_featured_product_id", value: "" },
+                        }).catch(() => { });
+                        clearSettingsCache();
                     }
                 }
                 const resolveStringSetting = (key) => {

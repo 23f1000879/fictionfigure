@@ -597,6 +597,20 @@ router.post("/products/:id/duplicate", async (req, res) => {
 router.delete("/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Check if this product is currently set as featured product
+    const heroSetting = await prisma.storeSetting.findUnique({
+      where: { key: "homepage_hero_featured_product_id" },
+    });
+    if (heroSetting && heroSetting.value === id) {
+      await prisma.storeSetting.update({
+        where: { key: "homepage_hero_featured_product_id" },
+        data: { value: "" },
+      }).catch(() => {});
+      const { clearSettingsCache } = require("./settings.js");
+      if (typeof clearSettingsCache === "function") clearSettingsCache();
+    }
+
     const orderItemCount = await prisma.orderItem.count({ where: { productId: id } });
 
     if (orderItemCount > 0) {
@@ -1388,6 +1402,19 @@ router.get("/settings", async (_req, res) => {
       orderBy: { name: "asc" },
     });
 
+    // Auto-clean stale featured product reference if product no longer exists in DB
+    if (settingsMap.homepage_hero_featured_product_id) {
+      const exists = products.some((p) => p.id === settingsMap.homepage_hero_featured_product_id);
+      if (!exists) {
+        settingsMap.homepage_hero_featured_product_id = "";
+        await prisma.storeSetting.upsert({
+          where: { key: "homepage_hero_featured_product_id" },
+          update: { value: "" },
+          create: { key: "homepage_hero_featured_product_id", value: "" },
+        }).catch(() => {});
+      }
+    }
+
     res.json({ settings: settingsMap, products });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to fetch store settings" });
@@ -1401,13 +1428,15 @@ router.post("/settings", async (req, res) => {
       return res.status(400).json({ error: "Settings object is required" });
     }
 
-    // Validate Featured Product ID if provided
-    if (settings.homepage_hero_featured_product_id) {
+    // Gracefully handle Featured Product ID if provided
+    if (settings.homepage_hero_featured_product_id && String(settings.homepage_hero_featured_product_id).trim()) {
+      const featId = String(settings.homepage_hero_featured_product_id).trim();
       const prod = await prisma.product.findUnique({
-        where: { id: settings.homepage_hero_featured_product_id },
+        where: { id: featId },
       });
-      if (!prod) {
-        return res.status(400).json({ error: "Selected featured product does not exist." });
+      if (!prod || prod.status !== "ACTIVE") {
+        // Automatically clear stale or deleted product reference instead of failing with HTTP 400
+        settings.homepage_hero_featured_product_id = "";
       }
     }
 
@@ -1452,7 +1481,7 @@ router.get("/settings/homepage-hero", async (_req, res) => {
         where: { id: heroConfig.homepage_hero_featured_product_id },
         include: { images: true },
       });
-      if (prod) {
+      if (prod && prod.status === "ACTIVE") {
         featuredProduct = {
           id: prod.id,
           name: prod.name,
@@ -1460,6 +1489,13 @@ router.get("/settings/homepage-hero", async (_req, res) => {
           sku: prod.sku,
           imageUrl: prod.images[0]?.url || "",
         };
+      } else {
+        heroConfig.homepage_hero_featured_product_id = "";
+        await prisma.storeSetting.upsert({
+          where: { key: "homepage_hero_featured_product_id" },
+          update: { value: "" },
+          create: { key: "homepage_hero_featured_product_id", value: "" },
+        }).catch(() => {});
       }
     }
 
@@ -1495,13 +1531,14 @@ router.put("/settings/homepage-hero", async (req, res) => {
       return res.status(400).json({ error: "Hero Image URL must be a valid HTTP/HTTPS URL." });
     }
 
-    // Validate Featured Product ID if specified
-    if (homepage_hero_featured_product_id) {
+    // Gracefully handle Featured Product ID if specified
+    if (homepage_hero_featured_product_id && String(homepage_hero_featured_product_id).trim()) {
+      const featId = String(homepage_hero_featured_product_id).trim();
       const existingProd = await prisma.product.findUnique({
-        where: { id: homepage_hero_featured_product_id },
+        where: { id: featId },
       });
-      if (!existingProd) {
-        return res.status(400).json({ error: "Selected featured product does not exist in database." });
+      if (!existingProd || existingProd.status !== "ACTIVE") {
+        heroSettings.homepage_hero_featured_product_id = "";
       }
     }
 

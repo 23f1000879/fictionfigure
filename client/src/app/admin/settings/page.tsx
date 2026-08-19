@@ -786,6 +786,32 @@ export default function AdminSettingsPage() {
               />
             </div>
 
+            {/* Featured Masterpiece Overlay Product Selection */}
+            <div className="space-y-1 pt-2 border-t border-[#E5E5E2]">
+              <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                Featured Hero Masterpiece Product (Overlay Card)
+              </label>
+              <select
+                value={settings.homepage_hero_featured_product_id || ""}
+                onChange={(e) =>
+                  setSettings({ ...settings, homepage_hero_featured_product_id: e.target.value })
+                }
+                className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+              >
+                <option value="">-- No Featured Product Selected --</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sku}) — {formatPrice(p.price)}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-[#6B6B6B] mt-1">
+                {settings.homepage_hero_featured_product_id && selectedFeaturedProduct
+                  ? `Currently featured: ${selectedFeaturedProduct.name}`
+                  : "No featured product selected."}
+              </p>
+            </div>
+
             <div className="flex justify-end pt-3">
               <button
                 onClick={() =>
