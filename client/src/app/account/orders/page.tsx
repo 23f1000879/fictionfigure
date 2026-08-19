@@ -183,7 +183,7 @@ export default function AccountOrdersPage() {
                   <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-[#E5E5E2]">
                     <span className="font-mono font-bold text-sm text-[#111111]">{formatPrice(o.totalAmount)}</span>
                     <Link
-                      href={`/order/${o.id}`}
+                      href={`/order/${o.orderNumber || o.id}`}
                       className="min-h-[40px] px-3.5 py-2 border border-[#E5E5E2] hover:border-[#111111] text-[11px] font-semibold uppercase tracking-wider text-[#111111] transition-colors flex items-center shrink-0"
                     >
                       View Receipt <ArrowRight className="w-3.5 h-3.5 ml-1 inline" />
