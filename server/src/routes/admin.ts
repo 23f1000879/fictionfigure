@@ -5,6 +5,7 @@ import fs from "fs";
 import { v2 as cloudinary } from "cloudinary";
 import { requireAdmin } from "../middleware/auth.js";
 import { prisma } from "../db.js";
+import { DEFAULT_SETTINGS, clearSettingsCache } from "./settings.js";
 
 const router = Router();
 
@@ -1710,6 +1711,73 @@ router.delete("/users/:id", requireAdmin, async (req: any, res: any) => {
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || "Failed to delete customer account." });
+  }
+});
+
+/**
+ * GET /api/admin/settings
+ * Admin Store Settings Retrieval
+ */
+router.get("/settings", requireAdmin, async (_req: any, res: any) => {
+  try {
+    const dbSettings = await prisma.storeSetting.findMany();
+    const settingsMap: Record<string, string> = { ...DEFAULT_SETTINGS };
+
+    dbSettings.forEach((s) => {
+      settingsMap[s.key] = s.value;
+    });
+
+    const products = await prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        price: true,
+        images: { orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.json({
+      success: true,
+      settings: settingsMap,
+      products,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Failed to load store settings." });
+  }
+});
+
+/**
+ * POST /api/admin/settings
+ * Admin Store Settings Bulk Update
+ */
+router.post("/settings", requireAdmin, async (req: any, res: any) => {
+  try {
+    const { section, settings: newSettings } = req.body;
+
+    if (!newSettings || typeof newSettings !== "object") {
+      return res.status(400).json({ success: false, error: "Settings payload object required." });
+    }
+
+    const upsertPromises = Object.entries(newSettings).map(([key, val]) => {
+      const stringVal = String(val ?? "");
+      return prisma.storeSetting.upsert({
+        where: { key },
+        update: { value: stringVal },
+        create: { key, value: stringVal },
+      });
+    });
+
+    await Promise.all(upsertPromises);
+    clearSettingsCache();
+
+    res.json({
+      success: true,
+      message: `${section || "Settings"} updated successfully.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Failed to save store settings." });
   }
 });
 

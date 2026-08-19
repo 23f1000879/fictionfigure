@@ -5,12 +5,37 @@ const router = Router();
 const prisma = new PrismaClient();
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
-  hero_announcement: "⚡ COMPLIMENTARY EXPRESS SHIPPING ON ORDERS OVER ₹15,000 | AUTHENTIC IMPORTS DIRECT FROM TOKYO",
+  shipping_fee: "100",
+  free_shipping_threshold: "500",
+  store_name: "FictionFigure",
+  store_location: "Bikaner, Rajasthan, India",
+  delivery_coverage: "We deliver across India.",
+  support_phone: "+91 97974 94639",
+  support_email: "support@fictionfigure.com",
+  announcements_json: JSON.stringify([
+    {
+      id: "1",
+      text: "WELCOME TO FICTIONFIGURE — COLLECT WHAT YOU LOVE.",
+      enabled: true,
+      sortOrder: 1,
+    },
+    {
+      id: "2",
+      text: "FREE SHIPPING ON ORDERS OF ₹{{FREE_SHIPPING_THRESHOLD}} OR MORE.",
+      enabled: true,
+      sortOrder: 2,
+    },
+    {
+      id: "3",
+      text: "SUPPORT: +91 97974 94639",
+      enabled: true,
+      sortOrder: 3,
+    },
+  ]),
+  hero_announcement: "WELCOME TO FICTIONFIGURE — COLLECT WHAT YOU LOVE.",
   hero_title: "Figures worth collecting.",
   hero_subtitle: "Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.",
-  store_contact_email: "support@fictionfigure.com",
-  store_contact_phone: "+91 97974 94639",
-  free_shipping_min: "15000",
+  free_shipping_min: "500",
   tax_rate_percentage: "18",
   return_policy_days: "14",
   upi_id: process.env.UPI_ID || "fictionfigure@upi",
@@ -30,16 +55,46 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   homepage_hero_featured_product_id: "",
 };
 
-let cachedSettingsPayload: { settings: Record<string, string>; featuredProduct: any } | null = null;
+let cachedSettingsPayload: any = null;
 let lastCacheTime = 0;
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds memory cache
+const CACHE_TTL_MS = 30 * 1000; // 30 seconds memory cache
 
 export function clearSettingsCache() {
   cachedSettingsPayload = null;
   lastCacheTime = 0;
 }
 
-// 1. Fetch All Dynamic Store Settings & Featured Product Info
+export async function getStoreSettingsHelper() {
+  try {
+    const dbSettings = await prisma.storeSetting.findMany();
+    const settingsMap: Record<string, string> = { ...DEFAULT_SETTINGS };
+
+    dbSettings.forEach((s) => {
+      settingsMap[s.key] = s.value;
+    });
+
+    const shippingFee = Math.max(0, parseFloat(settingsMap.shipping_fee || "100") || 100);
+    const freeShippingThreshold = Math.max(0, parseFloat(settingsMap.free_shipping_threshold || "500") || 500);
+
+    return {
+      settingsMap,
+      shippingFee,
+      freeShippingThreshold,
+      storeLocation: settingsMap.store_location || "Bikaner, Rajasthan, India",
+      deliveryCoverage: settingsMap.delivery_coverage || "We deliver across India.",
+    };
+  } catch (e) {
+    return {
+      settingsMap: DEFAULT_SETTINGS,
+      shippingFee: 100,
+      freeShippingThreshold: 500,
+      storeLocation: "Bikaner, Rajasthan, India",
+      deliveryCoverage: "We deliver across India.",
+    };
+  }
+}
+
+// 1. Fetch All Dynamic Store Settings for Storefront
 router.get("/", async (_req, res) => {
   try {
     const now = Date.now();
@@ -47,12 +102,33 @@ router.get("/", async (_req, res) => {
       return res.json(cachedSettingsPayload);
     }
 
-    const dbSettings = await prisma.storeSetting.findMany();
-    const settingsMap: Record<string, string> = { ...DEFAULT_SETTINGS };
+    const { settingsMap, shippingFee, freeShippingThreshold, storeLocation, deliveryCoverage } = await getStoreSettingsHelper();
 
-    dbSettings.forEach((s) => {
-      settingsMap[s.key] = s.value;
-    });
+    // Parse and expand announcements
+    let rawAnnouncements: any[] = [];
+    try {
+      if (settingsMap.announcements_json) {
+        rawAnnouncements = JSON.parse(settingsMap.announcements_json);
+      }
+    } catch (e) {}
+
+    if (!Array.isArray(rawAnnouncements) || rawAnnouncements.length === 0) {
+      rawAnnouncements = JSON.parse(DEFAULT_SETTINGS.announcements_json);
+    }
+
+    const processedAnnouncements = rawAnnouncements
+      .filter((a: any) => a && a.enabled !== false)
+      .map((a: any) => {
+        let expandedText = a.text || "";
+        expandedText = expandedText.replace(/\{\{FREE_SHIPPING_THRESHOLD\}\}/g, freeShippingThreshold.toLocaleString("en-IN"));
+        return {
+          id: a.id || String(Math.random()),
+          text: expandedText,
+          enabled: true,
+          sortOrder: a.sortOrder || 0,
+        };
+      })
+      .sort((a, b) => a.sortOrder - b.sortOrder);
 
     let featuredProduct = null;
     if (settingsMap.homepage_hero_featured_product_id) {
@@ -71,16 +147,37 @@ router.get("/", async (_req, res) => {
       }
     }
 
-    cachedSettingsPayload = { settings: settingsMap, featuredProduct };
+    cachedSettingsPayload = {
+      success: true,
+      settings: settingsMap,
+      shippingFee,
+      freeShippingThreshold,
+      storeLocation,
+      deliveryCoverage,
+      announcements: processedAnnouncements,
+      featuredProduct,
+    };
     lastCacheTime = now;
 
     res.json(cachedSettingsPayload);
   } catch (err: any) {
-    res.json({ settings: DEFAULT_SETTINGS, featuredProduct: null });
+    res.json({
+      success: false,
+      settings: DEFAULT_SETTINGS,
+      shippingFee: 100,
+      freeShippingThreshold: 500,
+      storeLocation: "Bikaner, Rajasthan, India",
+      deliveryCoverage: "We deliver across India.",
+      announcements: [
+        { id: "1", text: "WELCOME TO FICTIONFIGURE — COLLECT WHAT YOU LOVE.", enabled: true, sortOrder: 1 },
+        { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
+      ],
+      featuredProduct: null,
+    });
   }
 });
 
-// 2. Update Dynamic Store Setting (Single Key-Value)
+// 2. Single Key Patch (Fallback)
 router.patch("/", async (req, res) => {
   try {
     const { key, value } = req.body;

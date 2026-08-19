@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useSettings } from "@/context/SettingsContext";
 import { formatPrice } from "@/lib/utils";
 import {
   Check,
@@ -31,6 +32,7 @@ export function CheckoutClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { cart, cartSubtotal, clearCart } = useCart();
+  const { shippingFee: configShippingFee, freeShippingThreshold: configThreshold } = useSettings();
 
   // State Management
   const [sessionToken, setSessionToken] = useState<string>("");
@@ -192,16 +194,16 @@ export function CheckoutClient() {
     }
   }, [cartSubtotal]);
 
-  // Exact Business Rules for Price Calculation:
-  // 1. FREE SHIPPING eligibility is based on the merchandise subtotal BEFORE coupon discount (cartSubtotal >= 500)
-  // 2. Shipping is ₹100 if cartSubtotal < 500, otherwise FREE (₹0)
-  // 3. COD handling fee is ₹100 if paymentMethod is COD, otherwise ₹0
+  // Exact Authoritative Business Rules for Price Calculation:
+  // 1. FREE SHIPPING eligibility is based on subtotal >= configThreshold
+  // 2. Shipping is configShippingFee if subtotal < configThreshold, otherwise FREE (₹0)
+  // 3. COD handling fee is REMOVED completely (₹0)
   const couponDiscount = appliedCoupon ? appliedCoupon.discountAmount : 0;
-  const shippingFee = cartSubtotal >= 500 || cartSubtotal === 0 ? 0 : 100;
-  const codFee = formData.paymentMethod === "COD" ? 100 : 0;
+  const shippingFee = cartSubtotal >= configThreshold || cartSubtotal === 0 ? 0 : configShippingFee;
+  const codFee = 0; // REMOVED
 
   const afterDiscount = Math.max(0, cartSubtotal - couponDiscount);
-  const grandTotal = Math.max(0, afterDiscount + shippingFee + codFee);
+  const grandTotal = Math.max(0, afterDiscount + shippingFee);
 
   // Form Input Change Handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -583,7 +585,7 @@ export function CheckoutClient() {
                 </div>
               )}
               <p className="text-[10px] text-[#6B6B6B] italic pt-1">
-                Free shipping on orders above ₹499.
+                Free shipping on orders of {formatPrice(configThreshold)} or more.
               </p>
             </div>
           </div>
@@ -1152,7 +1154,7 @@ export function CheckoutClient() {
                       <div className="space-y-0.5">
                         <span className="font-bold text-[#111111] block">Cash on Delivery (COD)</span>
                         <span className="text-[#6B6B6B] text-[11px]">
-                          Pay cash upon physical arrival at your doorstep (+₹100 COD handling fee).
+                          Pay cash upon physical arrival at your doorstep.
                         </span>
                       </div>
                     </label>
@@ -1301,7 +1303,7 @@ export function CheckoutClient() {
                 </div>
 
                 <p className="text-[10px] text-[#6B6B6B] italic pt-1 text-right">
-                  Free shipping on orders above ₹499.
+                  Free shipping on orders of {formatPrice(configThreshold)} or more.
                 </p>
               </div>
             </div>

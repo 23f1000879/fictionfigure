@@ -7,28 +7,30 @@ import Image from "next/image";
 import { Search, User, Heart, ShoppingBag, Menu, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { API_BASE } from "@/lib/api";
+import { useSettings } from "@/context/SettingsContext";
 
 export function Header() {
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
   const { wishlistCount } = useWishlist();
+  const { announcements } = useSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [announcement, setAnnouncement] = useState(
-    "⚡ COMPLIMENTARY EXPRESS SHIPPING ON ORDERS OVER ₹15,000 | AUTHENTIC IMPORTS DIRECT FROM TOKYO"
-  );
+  const [currentAnnouncementIdx, setCurrentAnnouncementIdx] = useState(0);
 
   useEffect(() => {
     setMounted(true);
-    fetch(`${API_BASE}/settings`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.settings?.hero_announcement) {
-          setAnnouncement(data.settings.hero_announcement);
-        }
-      })
-      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (announcements.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentAnnouncementIdx((prev) => (prev + 1) % announcements.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [announcements.length]);
+
+  const activeAnnouncement = announcements[currentAnnouncementIdx]?.text || "";
+  const showTopBar = announcements.length > 0 && activeAnnouncement.trim().length > 0;
 
   // Body scroll lock & ESC key listener for mobile menu
   useEffect(() => {
@@ -54,11 +56,13 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 bg-[#F7F7F5]/90 backdrop-blur-md border-b border-[#E5E5E2] transition-colors w-full max-w-full box-border">
       {/* Top Banner Announcement */}
-      <div className="bg-[#111111] text-white text-[10px] sm:text-[11px] font-medium tracking-widest text-center py-1.5 uppercase px-3 sm:px-4 w-full overflow-hidden whitespace-nowrap box-border">
-        <p className="truncate w-full max-w-full block font-sans">
-          {announcement}
-        </p>
-      </div>
+      {showTopBar && (
+        <div className="bg-[#111111] text-white text-[10px] sm:text-[11px] font-medium tracking-widest text-center py-1.5 uppercase px-3 sm:px-4 w-full overflow-hidden whitespace-nowrap box-border transition-all">
+          <p className="truncate w-full max-w-full block font-sans transition-opacity duration-300">
+            {activeAnnouncement}
+          </p>
+        </div>
+      )}
 
       {/* Main Header Container: [☰] [LOGO] <space> [SEARCH] [♡] [CART] */}
       <div className="w-full max-w-[1340px] mx-auto flex items-center justify-between h-14 sm:h-20 px-3 sm:px-6 box-border">

@@ -102,8 +102,8 @@ export default function AdminOrderDetailPage() {
   const subtotal = order?.subtotal || items.reduce((acc: number, item: any) => acc + (item.total || item.price * item.quantity), 0);
   const discountAmount = order?.discountAmount || 0;
   const shippingAmount = order?.shippingAmount || 0;
-  const codFee = isCod ? 100 : 0;
-  const grandTotal = order?.totalAmount || Math.max(0, subtotal - discountAmount + shippingAmount + codFee);
+  const codFee = 0; // COD Handling Fee REMOVED
+  const grandTotal = order?.totalAmount || Math.max(0, subtotal - discountAmount + shippingAmount);
 
   return (
     <div className="space-y-6 max-w-4xl text-[#111111] font-sans">
@@ -334,13 +334,6 @@ export default function AdminOrderDetailPage() {
                 {shippingAmount === 0 ? "FREE" : formatPrice(shippingAmount)}
               </span>
             </div>
-
-            {isCod && (
-              <div className="flex justify-between text-[#6B6B6B]">
-                <span>COD Handling Fee</span>
-                <span className="font-mono text-[#111111]">{formatPrice(codFee)}</span>
-              </div>
-            )}
 
             <div className="flex justify-between items-center pt-3 border-t border-[#E5E5E2] text-sm font-bold">
               <span className="uppercase text-xs tracking-wider">Total Amount</span>

@@ -2,6 +2,7 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { normalizeIndianPhone } from "../utils/phone.js";
 import { prisma } from "../db.js";
+import { getStoreSettingsHelper } from "./settings.js";
 
 const router = Router();
 
@@ -101,24 +102,25 @@ export async function calculateAuthoritativeTotals(
     }
   }
 
-  // Exact Business Rules for Shipping and COD Fees:
-  // 1. FREE SHIPPING eligibility is based on the merchandise subtotal BEFORE coupon discount (subtotal >= 500)
-  // 2. Shipping is ₹100 if subtotal < 500, otherwise FREE (₹0)
-  // 3. COD handling fee is ₹100 if paymentMethod is COD, otherwise ₹0
-  const shippingAmount = subtotal >= 500 || subtotal === 0 ? 0 : 100;
-  const codFee = isCOD ? 100 : 0;
+  // Admin-Controlled Dynamic Store Settings for Shipping & Zero COD Handling Fee
+  const { shippingFee: configShippingFee, freeShippingThreshold: configThreshold } = await getStoreSettingsHelper();
+
+  const shippingAmount = subtotal >= configThreshold || subtotal === 0 ? 0 : configShippingFee;
+  const codFee = 0; // COD Handling fee REMOVED completely per user requirements
 
   const afterDiscount = Math.max(0, subtotal - discountAmount);
-  const totalAmount = Math.max(0, afterDiscount + shippingAmount + codFee);
+  const totalAmount = Math.max(0, afterDiscount + shippingAmount);
 
   return {
     subtotal,
     discountAmount,
     shippingAmount,
-    codFee,
+    codFee: 0,
     totalAmount,
     verifiedItems,
     appliedCoupon,
+    shippingFeeSetting: configShippingFee,
+    freeShippingThresholdSetting: configThreshold,
   };
 }
 

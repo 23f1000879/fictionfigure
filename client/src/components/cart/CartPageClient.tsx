@@ -5,11 +5,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Plus, Minus, ArrowRight, ArrowLeft, Tag, ShoppingBag, Check } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useSettings } from "@/context/SettingsContext";
 import { formatPrice } from "@/lib/utils";
 import { API_BASE } from "@/lib/api";
 
 export function CartPageClient() {
   const { cart, removeItem, updateQuantity, cartSubtotal } = useCart();
+  const { shippingFee, freeShippingThreshold } = useSettings();
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string;
@@ -35,13 +37,15 @@ export function CartPageClient() {
 
       const data = await res.json();
       if (!res.ok || !data.valid) {
+        setAppliedCoupon(null);
         setCouponError(data.error || "Invalid coupon code");
       } else {
         setAppliedCoupon({
-          code: data.coupon?.code || couponCode,
+          code: data.coupon.code,
           discountAmount: data.discountAmount,
-          discountType: data.coupon?.discountType || "FIXED",
+          discountType: data.coupon.discountType,
         });
+        setCouponError("");
         setCouponCode("");
       }
     } catch (err) {
@@ -52,7 +56,7 @@ export function CartPageClient() {
   };
 
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
-  const shippingAmount = cartSubtotal > 10000 || cartSubtotal === 0 ? 0 : 350;
+  const shippingAmount = cartSubtotal >= freeShippingThreshold || cartSubtotal === 0 ? 0 : shippingFee;
   const finalTotal = Math.max(0, cartSubtotal - discountAmount + shippingAmount);
 
   if (cart.length === 0) {
