@@ -838,6 +838,19 @@ router.patch("/inventory", async (req, res) => {
 // ==========================================
 // 6. CUSTOMER DIRECTORY & DETAIL
 // ==========================================
+// CANCELLED ORDER REVENUE EXCLUSION CONSTANTS & HELPERS
+// ==========================================
+export const CANCELLED_ORDER_STATUS = "CANCELLED";
+export const REVENUE_ELIGIBLE_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
+
+export function isRevenueEligibleOrder(status: string): boolean {
+  const s = String(status || "").toUpperCase().trim();
+  return s !== CANCELLED_ORDER_STATUS && REVENUE_ELIGIBLE_STATUSES.includes(s);
+}
+
+export const REVENUE_ELIGIBLE_ORDER_WHERE = {
+  status: { notIn: [CANCELLED_ORDER_STATUS] },
+};
 
 router.get("/customers", async (_req, res) => {
   try {
@@ -853,7 +866,7 @@ router.get("/customers", async (_req, res) => {
     });
 
     const formatted = customers.map((c) => {
-      const validOrders = c.orders.filter((o) => o.status !== "CANCELLED");
+      const validOrders = c.orders.filter((o) => isRevenueEligibleOrder(o.status));
       const totalSpent = validOrders.reduce((sum, o) => sum + o.totalAmount, 0);
       const lastOrder = c.orders[0]?.createdAt || null;
 
@@ -894,7 +907,7 @@ router.get("/customers/:id", async (req, res) => {
     if (!customer) return res.status(404).json({ error: "Customer not found" });
 
     const totalSpent = customer.orders
-      .filter((o) => o.status !== "CANCELLED")
+      .filter((o) => isRevenueEligibleOrder(o.status))
       .reduce((sum, o) => sum + o.totalAmount, 0);
 
     res.json({ customer, totalSpent });
@@ -1205,8 +1218,8 @@ router.get("/analytics", async (req, res) => {
       include: { items: { include: { variant: { include: { product: { include: { category: true } } } } } } },
     });
 
-    const validOrders = orders.filter((o) => o.status !== "CANCELLED");
-    const cancelledOrders = orders.filter((o) => o.status === "CANCELLED").length;
+    const validOrders = orders.filter((o) => isRevenueEligibleOrder(o.status));
+    const cancelledOrders = orders.filter((o) => o.status === CANCELLED_ORDER_STATUS).length;
     const pendingOrders = orders.filter((o) => o.status === "PENDING").length;
 
     const totalRevenue = validOrders.reduce((sum, o) => sum + o.totalAmount, 0);
@@ -1232,7 +1245,7 @@ router.get("/analytics", async (req, res) => {
     const couponAgg = await prisma.coupon.aggregate({ _sum: { usedCount: true } });
     const couponUsage = couponAgg._sum.usedCount || 0;
 
-    // Revenue Timeline for Chart
+    // Revenue Timeline for Chart (Calculated EXCLUSIVELY from validOrders)
     const revenueTimelineMap: Record<string, { date: string; revenue: number; orders: number }> = {};
     for (const o of validOrders) {
       const dayKey = new Date(o.createdAt).toISOString().split("T")[0];
@@ -1245,7 +1258,7 @@ router.get("/analytics", async (req, res) => {
 
     const revenueTimeline = Object.values(revenueTimelineMap).sort((a, b) => a.date.localeCompare(b.date));
 
-    // Top Selling Products
+    // Top Selling Products (Calculated EXCLUSIVELY from validOrders)
     const productSalesMap: Record<string, { id: string; name: string; units: number; revenue: number }> = {};
     for (const o of validOrders) {
       for (const item of o.items) {
@@ -1259,7 +1272,7 @@ router.get("/analytics", async (req, res) => {
 
     const topSellingProducts = Object.values(productSalesMap).sort((a, b) => b.units - a.units).slice(0, 5);
 
-    // Category Performance
+    // Category Performance (Calculated EXCLUSIVELY from validOrders)
     const categoryMap: Record<string, { name: string; units: number; revenue: number }> = {};
     for (const o of validOrders) {
       for (const item of o.items) {
@@ -1299,11 +1312,14 @@ router.get("/analytics", async (req, res) => {
 // Executive Summary / Dashboard Stats
 router.get("/stats", async (_req, res) => {
   try {
-    const totalOrders = await prisma.order.count();
+    const totalOrders = await prisma.order.count({
+      where: REVENUE_ELIGIBLE_ORDER_WHERE,
+    });
     const pendingOrders = await prisma.order.count({ where: { status: "PENDING" } });
     const totalProducts = await prisma.product.count({ where: { status: "ACTIVE" } });
 
     const revenueAgg = await prisma.order.aggregate({
+      where: REVENUE_ELIGIBLE_ORDER_WHERE,
       _sum: { totalAmount: true },
     });
     const totalRevenue = revenueAgg._sum.totalAmount || 0;
