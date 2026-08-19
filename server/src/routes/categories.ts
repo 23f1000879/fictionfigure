@@ -3,28 +3,35 @@ import { prisma } from "../db.js";
 
 const router = Router();
 
-/**
- * GET /api/products/categories
- * GET /api/categories
- * Public Endpoint for Active Categories with Product Counts
- */
 export async function handleGetCategories(_req: any, res: any) {
   try {
     const categories = await prisma.category.findMany({
-      orderBy: { name: "asc" },
+      orderBy: {
+        name: "asc",
+      },
       include: {
         _count: {
           select: {
             products: {
-              where: { status: "ACTIVE" },
+              where: {
+                status: "ACTIVE",
+              },
             },
           },
         },
       },
     });
-    res.json({ categories });
-  } catch (err: any) {
-    res.status(500).json({ error: "Failed to fetch active categories" });
+
+    return res.status(200).json({
+      categories,
+    });
+  } catch (error: any) {
+    console.error("[CATEGORIES]", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Failed to fetch active categories",
+    });
   }
 }
 
