@@ -7,11 +7,14 @@ const prisma = new PrismaClient();
 export const DEFAULT_SETTINGS: Record<string, string> = {
   shipping_fee: "100",
   free_shipping_threshold: "500",
+  cod_enabled: "true",
+  cod_fee: "0",
   store_name: "FictionFigure",
-  store_location: "Bikaner, Rajasthan, India",
-  delivery_coverage: "We deliver across India.",
+  store_location: "Bikaner, Rajasthan",
+  delivery_coverage: "Delivering across India",
   support_phone: "+91 97974 94639",
-  support_email: "support@fictionfigure.com",
+  support_email: "support@fictionfigure.in",
+  support_hours: "Monday - Saturday, 10:00 AM - 7:00 PM",
   announcements_json: JSON.stringify([
     {
       id: "1",
@@ -27,7 +30,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
     },
     {
       id: "3",
-      text: "SUPPORT: +91 97974 94639",
+      text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.",
       enabled: true,
       sortOrder: 3,
     },

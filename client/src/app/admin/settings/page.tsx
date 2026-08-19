@@ -560,16 +560,31 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
-                Support Email
-              </label>
-              <input
-                type="email"
-                value={settings.support_email || "support@fictionfigure.com"}
-                onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
-                className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                  Support Email
+                </label>
+                <input
+                  type="email"
+                  value={settings.support_email || "support@fictionfigure.in"}
+                  onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
+                  className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                  Support Hours
+                </label>
+                <input
+                  type="text"
+                  value={settings.support_hours || "Monday - Saturday, 10:00 AM - 7:00 PM"}
+                  onChange={(e) => setSettings({ ...settings, support_hours: e.target.value })}
+                  placeholder="Monday - Saturday, 10:00 AM - 7:00 PM"
+                  className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end pt-2">
@@ -581,6 +596,7 @@ export default function AdminSettingsPage() {
                     "delivery_coverage",
                     "support_phone",
                     "support_email",
+                    "support_hours",
                   ])
                 }
                 disabled={savingSection === "Store Information"}
