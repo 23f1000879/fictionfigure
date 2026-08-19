@@ -296,7 +296,7 @@ router.post("/calculate", async (req, res) => {
         res.status(400).json({ error: err.message || "Failed to calculate totals." });
     }
 });
-// 4. Submit Manual UPI QR Order with 12-Digit UTR
+// 4. Submit Manual UPI QR Order
 router.post("/submit-upi-payment", async (req, res) => {
     try {
         const { cartItems, couponCode, shippingAddress, utr } = req.body;
@@ -323,11 +323,7 @@ router.post("/submit-upi-payment", async (req, res) => {
         if (verifiedUser.isBlocked) {
             return res.status(403).json({ error: "Your account has been blocked. Please contact support." });
         }
-        // 2. Validate UTR Reference Number
-        if (!utr || typeof utr !== "string" || utr.trim().length < 6) {
-            return res.status(400).json({ error: "Please enter a valid Transaction / UTR reference number (minimum 6 characters)." });
-        }
-        // 3. Validate Address Fields & PIN Code Format
+        // 2. Validate Address Fields & PIN Code Format
         if (!shippingAddress ||
             !shippingAddress.fullName ||
             !shippingAddress.streetAddress ||
@@ -340,7 +336,7 @@ router.post("/submit-upi-payment", async (req, res) => {
         if (!/^\d{6}$/.test(cleanPin)) {
             return res.status(400).json({ error: "Please enter a valid 6-digit Indian PIN code." });
         }
-        // 4. Authoritative Server-Side Calculation & Inventory Check (isCOD = false)
+        // 3. Authoritative Server-Side Calculation & Inventory Check (isCOD = false)
         let totals;
         try {
             totals = await calculateAuthoritativeTotals(cartItems, couponCode, userId || undefined, false);
@@ -383,7 +379,7 @@ router.post("/submit-upi-payment", async (req, res) => {
                     paymentMethod: "UPI",
                     status: "PENDING",
                     amount: totals.totalAmount,
-                    transactionRef: utr.trim(),
+                    transactionRef: utr ? String(utr).trim() : null,
                 },
             },
         };

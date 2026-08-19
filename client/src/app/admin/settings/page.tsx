@@ -18,6 +18,8 @@ import {
   Megaphone,
   Store,
   Info,
+  QrCode,
+  CreditCard,
 } from "lucide-react";
 import { API_BASE, adminFetch } from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
@@ -50,6 +52,10 @@ export default function AdminSettingsPage() {
     hero_title: "Figures worth collecting.",
     hero_subtitle: "Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.",
 
+    // UPI Payment Defaults
+    upi_id: "fictionfigure@upi",
+    upi_qr_url: "",
+
     // Homepage Hero Defaults
     homepage_hero_enabled: "true",
     homepage_hero_image_url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80",
@@ -74,6 +80,7 @@ export default function AdminSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingQr, setUploadingQr] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -137,6 +144,37 @@ export default function AdminSettingsPage() {
       setError(err.message || "Failed to upload image.");
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingQr(true);
+    setError("");
+    setMessage("");
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await adminFetch(`${API_BASE}/admin/uploads/product-image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to upload QR image.");
+
+      if (data.url) {
+        setSettings((prev) => ({ ...prev, upi_qr_url: data.url }));
+        setMessage("UPI QR Code uploaded to Cloudinary successfully.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to upload QR image.");
+    } finally {
+      setUploadingQr(false);
     }
   };
 
@@ -775,6 +813,122 @@ export default function AdminSettingsPage() {
                 )}
                 <span>SAVE HOMEPAGE HERO</span>
               </button>
+            </div>
+          </div>
+
+          {/* 5. UPI PAYMENT SETTINGS */}
+          <div className="bg-white border border-[#E5E5E2] p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-[#F7F7F5] rounded border border-[#E5E5E2]">
+                  <CreditCard className="w-5 h-5 text-[#111111]" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold uppercase tracking-wider text-[#111111]">
+                    5. UPI PAYMENT SETTINGS
+                  </h2>
+                  <p className="text-xs text-[#6B6B6B]">
+                    Configure UPI ID and QR code image dynamically displayed at customer checkout
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-1">
+                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                  UPI ID (VPA)
+                </label>
+                <input
+                  type="text"
+                  value={settings.upi_id || ""}
+                  onChange={(e) => setSettings({ ...settings, upi_id: e.target.value })}
+                  placeholder="fictionfigure@upi"
+                  className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs font-mono"
+                />
+                <p className="text-[11px] text-[#6B6B6B]">
+                  This UPI VPA ID will be shown to customers at checkout for direct UPI payments.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+                  UPI QR CODE IMAGE
+                </label>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6 bg-[#F7F7F5] p-4 border border-[#E5E5E2]">
+                  <div className="relative w-36 h-36 border border-[#E5E5E2] bg-white flex items-center justify-center overflow-hidden shrink-0">
+                    {settings.upi_qr_url ? (
+                      <Image
+                        src={settings.upi_qr_url}
+                        alt="UPI QR Code Preview"
+                        fill
+                        className="object-contain p-2"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="text-center p-2 text-[#6B6B6B]">
+                        <QrCode className="w-8 h-8 mx-auto text-[#111111] mb-1" />
+                        <span className="text-[10px] uppercase block font-mono">No QR Image</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-xs text-[#6B6B6B]">
+                      Upload a clear QR code image generated from your UPI merchant app (GPay, PhonePe, Paytm).
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <label className="px-4 py-2 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black cursor-pointer flex items-center">
+                        {uploadingQr ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5 mr-1.5" />
+                        )}
+                        <span>{settings.upi_qr_url ? "CHANGE QR CODE" : "UPLOAD QR CODE"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleQrUpload}
+                          disabled={uploadingQr}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {settings.upi_qr_url && (
+                        <button
+                          type="button"
+                          onClick={() => setSettings({ ...settings, upi_qr_url: "" })}
+                          className="px-4 py-2 bg-white border border-[#E5E5E2] text-[#111111] text-xs font-semibold uppercase tracking-wider hover:bg-[#F7F7F5] flex items-center"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1.5 text-red-600" />
+                          <span>REMOVE QR</span>
+                        </button>
+                      )}
+                    </div>
+                    {settings.upi_qr_url && (
+                      <p className="text-[11px] text-[#6B6B6B] truncate max-w-md">
+                        URL: {settings.upi_qr_url}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-3">
+                <button
+                  onClick={() => handleSaveSection("UPI Payment Settings", ["upi_id", "upi_qr_url"])}
+                  disabled={savingSection === "UPI Payment Settings"}
+                  className="px-5 py-2.5 bg-[#111111] text-white font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50 flex items-center"
+                >
+                  {savingSection === "UPI Payment Settings" ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  <span>SAVE UPI SETTINGS</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

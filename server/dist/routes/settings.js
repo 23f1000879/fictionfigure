@@ -159,6 +159,8 @@ router.get("/", async (_req, res) => {
                     supportHours: resolveStringSetting("support_hours"),
                     announcements: processedAnnouncements,
                     featuredProduct,
+                    upiId: resolveStringSetting("upi_id"),
+                    upiQrUrl: resolveStringSetting("upi_qr_url"),
                 };
                 cachedSettingsPayload = payload;
                 lastCacheTime = Date.now();
@@ -187,6 +189,8 @@ router.get("/", async (_req, res) => {
                 { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
             ],
             featuredProduct: null,
+            upiId: exports.DEFAULT_SETTINGS.upi_id || "fictionfigure@upi",
+            upiQrUrl: exports.DEFAULT_SETTINGS.upi_qr_url || "",
         });
     }
 });

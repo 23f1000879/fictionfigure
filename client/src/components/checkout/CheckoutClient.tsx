@@ -80,19 +80,18 @@ export function CheckoutClient() {
     upiId: "fictionfigure@upi",
     upiQrUrl: "",
   });
-  const [utrNumber, setUtrNumber] = useState("");
+
+  const { upiId: contextUpiId, upiQrUrl: contextUpiQrUrl } = useSettings();
 
   // 1. Fetch Store Settings for UPI QR on Mount
   useEffect(() => {
     fetch(`${API_BASE}/settings`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.settings) {
-          setUpiSettings({
-            upiId: data.settings.upi_id || "fictionfigure@upi",
-            upiQrUrl: data.settings.upi_qr_url || "",
-          });
-        }
+        setUpiSettings({
+          upiId: data.upiId || data.settings?.upi_id || "fictionfigure@upi",
+          upiQrUrl: data.upiQrUrl || data.settings?.upi_qr_url || "",
+        });
       })
       .catch(() => {});
   }, []);
@@ -336,11 +335,6 @@ export function CheckoutClient() {
       return;
     }
 
-    if (formData.paymentMethod === "UPI" && (!utrNumber || utrNumber.trim().length < 6)) {
-      setErrorMessage("Please enter a valid 12-digit UTR / Transaction Reference Number for your UPI payment.");
-      return;
-    }
-
     setErrorMessage("");
     setIsReviewStep(true);
     if (typeof window !== "undefined") {
@@ -368,12 +362,6 @@ export function CheckoutClient() {
     // 2. Address validation
     if (!validateAddressForm()) {
       setErrorMessage("Please complete all required delivery address fields with a valid PIN code.");
-      return;
-    }
-
-    // 3. Payment method details check
-    if (formData.paymentMethod === "UPI" && (!utrNumber || utrNumber.trim().length < 6)) {
-      setErrorMessage("Please enter a valid 12-digit UTR / Transaction Reference Number for your UPI payment.");
       return;
     }
 
@@ -411,10 +399,6 @@ export function CheckoutClient() {
           email: formData.email,
         },
       };
-
-      if (formData.paymentMethod === "UPI") {
-        bodyPayload.utr = utrNumber.trim();
-      }
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -720,15 +704,13 @@ export function CheckoutClient() {
 
                     {formData.paymentMethod === "UPI" ? (
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block">UTR / Transaction Reference</span>
-                        <span className="font-mono font-bold text-[#111111] bg-white px-2.5 py-1 border border-[#E5E5E2] inline-block mt-0.5">
-                          {utrNumber}
-                        </span>
+                        <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block">Payment Terms</span>
+                        <span className="text-[#111111]">Instant UPI QR Payment</span>
                       </div>
                     ) : (
                       <div>
                         <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block">Payment Terms</span>
-                        <span className="text-[#111111]">Cash on Delivery (+₹100 COD handling fee)</span>
+                        <span className="text-[#111111]">Cash on Delivery</span>
                       </div>
                     )}
                   </div>
@@ -1160,7 +1142,7 @@ export function CheckoutClient() {
                     </label>
                   </div>
 
-                  {/* UPI Sub-Section (Responsive QR & UTR input) */}
+                  {/* UPI Sub-Section (Responsive Dynamic QR & UPI ID Display) */}
                   {formData.paymentMethod === "UPI" && (
                     <div className="p-4 sm:p-6 bg-[#F7F7F5] border border-[#E5E5E2] space-y-5 text-center text-xs">
                       <h4 className="font-bold uppercase tracking-wider text-[#111111]">
@@ -1168,19 +1150,20 @@ export function CheckoutClient() {
                       </h4>
 
                       <div className="flex flex-col items-center justify-center space-y-3">
-                        <div className="relative w-40 h-40 max-w-full bg-white border-2 border-[#111111] p-2 flex items-center justify-center mx-auto">
-                          {upiSettings.upiQrUrl ? (
+                        <div className="relative w-44 h-44 max-w-full bg-white border-2 border-[#111111] p-2 flex items-center justify-center mx-auto shadow-sm">
+                          {(upiSettings.upiQrUrl || contextUpiQrUrl) ? (
                             <Image
-                              src={upiSettings.upiQrUrl}
+                              src={upiSettings.upiQrUrl || contextUpiQrUrl}
                               alt="FictionFigure UPI QR Code"
-                              width={160}
-                              height={160}
+                              width={176}
+                              height={176}
                               className="object-contain max-w-full h-auto"
+                              unoptimized
                             />
                           ) : (
                             <div className="text-center space-y-2 text-[#6B6B6B]">
                               <QrCode className="w-12 h-12 mx-auto text-[#111111]" />
-                              <p className="text-[10px] uppercase font-mono">Scan QR via GPay / PhonePe</p>
+                              <p className="text-[10px] uppercase font-mono">Scan QR via GPay / PhonePe / Paytm</p>
                             </div>
                           )}
                         </div>
@@ -1188,25 +1171,9 @@ export function CheckoutClient() {
                         <div className="space-y-1 max-w-full overflow-hidden">
                           <span className="text-[11px] text-[#6B6B6B] block">Official UPI ID:</span>
                           <span className="font-mono font-bold text-xs sm:text-sm text-[#111111] bg-white px-3 py-1 border border-[#E5E5E2] inline-block truncate max-w-full">
-                            {upiSettings.upiId}
+                            {upiSettings.upiId || contextUpiId || "fictionfigure@upi"}
                           </span>
                         </div>
-                      </div>
-
-                      <div className="space-y-2 max-w-md mx-auto text-left pt-2">
-                        <label className="font-bold uppercase text-[#111111] text-[11px]">
-                          12-Digit UTR / Transaction Reference Number *
-                        </label>
-                        <input
-                          type="text"
-                          value={utrNumber}
-                          onChange={(e) => setUtrNumber(e.target.value)}
-                          placeholder="e.g. 423456789012"
-                          className="w-full p-3 min-h-[44px] bg-white border border-[#E5E5E2] font-mono text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
-                        />
-                        <span className="text-[10px] text-[#6B6B6B] block">
-                          Enter the 12-digit UTR or Reference ID from your UPI app receipt after making payment.
-                        </span>
                       </div>
                     </div>
                   )}

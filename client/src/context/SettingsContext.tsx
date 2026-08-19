@@ -19,6 +19,8 @@ export interface StoreSettingsContextType {
   supportEmail: string;
   supportHours: string;
   announcements: AnnouncementItem[];
+  upiId: string;
+  upiQrUrl: string;
   isLoading: boolean;
   refetchSettings: () => Promise<void>;
 }
@@ -36,6 +38,8 @@ const DEFAULT_CONTEXT: StoreSettingsContextType = {
     { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
     { id: "3", text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.", enabled: true, sortOrder: 3 },
   ],
+  upiId: "fictionfigure@upi",
+  upiQrUrl: "",
   isLoading: true,
   refetchSettings: async () => {},
 };
@@ -55,6 +59,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
     { id: "3", text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.", enabled: true, sortOrder: 3 },
   ]);
+  const [upiId, setUpiId] = useState<string>("fictionfigure@upi");
+  const [upiQrUrl, setUpiQrUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchSettings = async () => {
@@ -86,6 +92,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       if (Array.isArray(data.announcements)) {
         setAnnouncements(data.announcements);
       }
+      if (typeof data.upiId === "string") {
+        setUpiId(data.upiId);
+      } else if (data.settings && typeof data.settings.upi_id === "string") {
+        setUpiId(data.settings.upi_id);
+      }
+      if (typeof data.upiQrUrl === "string") {
+        setUpiQrUrl(data.upiQrUrl);
+      } else if (data.settings && typeof data.settings.upi_qr_url === "string") {
+        setUpiQrUrl(data.settings.upi_qr_url);
+      }
     } catch (err) {
       console.warn("Could not load dynamic store settings, using defaults.", err);
     } finally {
@@ -108,6 +124,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         supportEmail,
         supportHours,
         announcements,
+        upiId,
+        upiQrUrl,
         isLoading,
         refetchSettings: fetchSettings,
       }}
