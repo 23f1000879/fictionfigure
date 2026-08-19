@@ -7,9 +7,6 @@
 # Node dependencies
 node_modules/
 
-# Build outputs
-dist/
-
 # Database files
 *.db
 *.db-journal

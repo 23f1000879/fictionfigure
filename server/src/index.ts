@@ -76,6 +76,36 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK", server: "FictionFigure Express Server", port: PORT });
 });
 
+// Production Service & Version Verification Endpoint
+app.get("/api/version", (req, res) => {
+  const commitSha =
+    process.env.RENDER_GIT_COMMIT ||
+    process.env.COMMIT_REF ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.RAILWAY_GIT_COMMIT_SHA ||
+    "f1613cc";
+
+  res.json({
+    success: true,
+    service: "fictionfigure-api",
+    commit: commitSha,
+    environment: process.env.NODE_ENV || "production",
+    timestamp: new Date().toISOString(),
+    routes: [
+      "/api/version",
+      "/api/health",
+      "/api/products/categories",
+      "/api/categories",
+      "/api/orders/my-orders",
+      "/api/orders/my",
+      "/api/orders/:id",
+      "/api/reviews/admin/all",
+      "/api/admin/reviews",
+      "/api/settings",
+    ],
+  });
+});
+
 // Catch-All Middleware for unmatched /api/* routes (Guarantees JSON response instead of Express HTML 404)
 app.use("/api/*", (req, res) => {
   res.status(404).json({
@@ -100,4 +130,15 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 app.listen(PORT, () => {
   console.log(`FictionFigure Express API Server running at http://localhost:${PORT}`);
+  console.log("Registered Production API Route Groups:");
+  console.log("- GET /api/version");
+  console.log("- GET /api/health");
+  console.log("- GET /api/products/categories");
+  console.log("- GET /api/categories");
+  console.log("- GET /api/orders/my-orders");
+  console.log("- GET /api/orders/my");
+  console.log("- GET /api/orders/:id");
+  console.log("- GET /api/reviews/admin/all");
+  console.log("- GET /api/admin/reviews");
+  console.log("- GET /api/settings");
 });
