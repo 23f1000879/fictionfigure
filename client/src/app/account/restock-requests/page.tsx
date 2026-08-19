@@ -20,8 +20,13 @@ export default function MyRestockRequestsPage() {
   const [user, setUser] = useState<any>(null);
   const [actionErr, setActionErr] = useState<string | null>(null);
 
+  const getAuthToken = () => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("fictionfigure_token") || localStorage.getItem("token");
+  };
+
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getAuthToken();
 
     if (!token) {
       router.push("/login");
@@ -56,7 +61,7 @@ export default function MyRestockRequestsPage() {
   }, [router]);
 
   const handleUpdateQty = async (id: string, newQty: number) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getAuthToken();
     if (!token) return;
 
     try {
@@ -80,7 +85,7 @@ export default function MyRestockRequestsPage() {
   };
 
   const handleCancelRequest = async (id: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getAuthToken();
     if (!token) return;
 
     try {

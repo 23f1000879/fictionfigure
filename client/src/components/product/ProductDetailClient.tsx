@@ -76,13 +76,22 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Helper to retrieve token from all supported localStorage keys
+  const getAuthToken = () => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("fictionfigure_token") || localStorage.getItem("token");
+  };
+
   // Restock Request State
   const [hasRequestedRestock, setHasRequestedRestock] = useState(false);
   const [requestedQuantity, setRequestedQuantity] = useState(1);
+  const [desiredRestockQty, setDesiredRestockQty] = useState(1);
   const [restockRequestId, setRestockRequestId] = useState<string | null>(null);
   const [isRestockLoading, setIsRestockLoading] = useState(false);
   const [restockNotice, setRestockNotice] = useState<string | null>(null);
   const [restockErr, setRestockErr] = useState<string | null>(null);
+  const [showRestockModal, setShowRestockModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const currentVariant = product.variants[selectedVariantIndex] || product.variants[0];
   const currentPrice = currentVariant?.price || product.price;
@@ -94,7 +103,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
   // Check if customer already has a pending restock request for this product
   React.useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getAuthToken();
     if (!token) return;
 
     safeApiFetch<{ success: boolean; requests: any[] }>(`${API_BASE}/restock-requests/my`, {
@@ -115,10 +124,21 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
       .catch(() => {});
   }, [product.id]);
 
-  const handleRequestRestock = async () => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const handleRestockButtonClick = () => {
+    const token = getAuthToken();
     if (!token) {
-      router.push(`/login?redirect=/products/${product.slug}`);
+      setShowAuthModal(true);
+      return;
+    }
+    setDesiredRestockQty(1);
+    setShowRestockModal(true);
+  };
+
+  const handleConfirmRestockRequest = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      setShowAuthModal(true);
+      setShowRestockModal(false);
       return;
     }
 
@@ -137,7 +157,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
           },
           body: JSON.stringify({
             productId: product.id,
-            quantity,
+            quantity: desiredRestockQty,
           }),
         }
       );
@@ -147,6 +167,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
         setRequestedQuantity(data.request.quantity);
         setRestockRequestId(data.request.id);
         setRestockNotice(data.message || "You're on the restock priority list!");
+        setShowRestockModal(false);
       } else {
         setRestockErr(data.error || "Unable to submit restock request. Please try again.");
       }
@@ -159,7 +180,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
   const handleUpdateRestockQuantity = async (newQty: number) => {
     if (!restockRequestId) return;
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getAuthToken();
     if (!token) return;
 
     setIsRestockLoading(true);
@@ -172,7 +193,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ quantity: newQty }),
+          body: JSON.stringify({ quantity: Math.max(1, newQty) }),
         }
       );
 
@@ -498,7 +519,8 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                   </div>
                 ) : (
                   <button
-                    onClick={handleRequestRestock}
+                    type="button"
+                    onClick={handleRestockButtonClick}
                     disabled={isRestockLoading}
                     className="w-full min-h-[48px] px-6 py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed max-w-full box-border"
                   >
@@ -508,6 +530,106 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
               </div>
             )}
           </div>
+
+          {/* QUANTITY SELECTOR MODAL */}
+          {showRestockModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+              <div className="bg-white border border-[#E5E5E2] p-6 max-w-md w-full space-y-5 text-[#111111] text-xs shadow-2xl">
+                <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-3">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block">
+                      Priority Restock Alert
+                    </span>
+                    <h3 className="font-extrabold text-sm uppercase tracking-wider text-[#111111]">
+                      Request Restock
+                    </h3>
+                  </div>
+                  <button onClick={() => setShowRestockModal(false)} className="text-[#6B6B6B] hover:text-[#111111]">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs text-[#6B6B6B]">
+                    How many units of <strong>"{product.name}"</strong> would you like to request?
+                  </p>
+                  <div className="flex items-center space-x-3 pt-2">
+                    <span className="font-semibold text-xs text-[#111111] uppercase tracking-wider">Quantity:</span>
+                    <div className="flex items-center border border-[#E5E5E2] bg-[#FAF9F6]">
+                      <button
+                        type="button"
+                        onClick={() => setDesiredRestockQty(Math.max(1, desiredRestockQty - 1))}
+                        className="px-3 py-1.5 text-sm font-bold text-[#6B6B6B] hover:text-[#111111]"
+                      >
+                        -
+                      </button>
+                      <span className="px-4 font-mono text-sm font-bold text-[#111111]">{desiredRestockQty}</span>
+                      <button
+                        type="button"
+                        onClick={() => setDesiredRestockQty(desiredRestockQty + 1)}
+                        className="px-3 py-1.5 text-sm font-bold text-[#6B6B6B] hover:text-[#111111]"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-[#E5E5E2]">
+                  <button
+                    type="button"
+                    onClick={() => setShowRestockModal(false)}
+                    className="px-4 py-2.5 border border-[#E5E5E2] font-semibold text-xs uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmRestockRequest}
+                    disabled={isRestockLoading}
+                    className="px-6 py-2.5 bg-[#111111] text-white font-bold text-xs uppercase tracking-widest hover:bg-black disabled:opacity-50"
+                  >
+                    {isRestockLoading ? "SUBMITTING..." : "REQUEST RESTOCK"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AUTHENTICATION REQUIRED PROMPT MODAL */}
+          {showAuthModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+              <div className="bg-white border border-[#E5E5E2] p-6 max-w-sm w-full space-y-4 text-center text-[#111111] text-xs shadow-2xl">
+                <div className="w-10 h-10 rounded-full bg-[#FAF9F6] border border-[#E5E5E2] flex items-center justify-center mx-auto text-[#111111]">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-extrabold text-sm uppercase tracking-wider text-[#111111]">
+                    Sign In Required
+                  </h3>
+                  <p className="text-xs text-[#6B6B6B] leading-relaxed">
+                    Please sign in to request a restock notification for this collectible.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/login?redirect=/products/${product.slug}`)}
+                    className="w-full py-3 bg-[#111111] text-white font-bold text-xs uppercase tracking-widest hover:bg-black"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthModal(false)}
+                    className="w-full py-2.5 border border-[#E5E5E2] text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Guarantees List */}
           <div className="grid grid-cols-3 gap-2 py-4 border-y border-[#E5E5E2] text-[10px] sm:text-[11px] text-[#6B6B6B] w-full max-w-full box-border">
