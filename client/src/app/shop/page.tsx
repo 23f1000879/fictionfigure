@@ -8,7 +8,8 @@ import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartProvider } from "@/context/CartContext";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ProductSortSelector } from "@/components/product/ProductSortSelector";
 
 export const revalidate = 60; // 60s Vercel Edge ISR Cache for Catalog
 
@@ -30,7 +31,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     maxPrice: resolvedParams.maxPrice ? Number(resolvedParams.maxPrice) : undefined,
     inStockOnly: resolvedParams.inStockOnly === "true",
     featuredOnly: resolvedParams.featuredOnly === "true",
-    sortBy: (resolvedParams.sortBy as any) || "featured",
+    sortBy: (resolvedParams.sortBy as any) || "newest",
     page: resolvedParams.page ? Number(resolvedParams.page) : 1,
     limit: 12,
   };
@@ -73,29 +74,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
             <span className="text-[#6B6B6B] font-mono font-semibold">{formattedCountText}</span>
 
             {/* Sort Controls */}
-            <div className="flex items-center space-x-2 bg-white border border-[#E5E5E2] px-3 py-1.5">
-              <ArrowUpDown className="w-3.5 h-3.5 text-[#6B6B6B]" />
-              <span className="text-[#6B6B6B] uppercase font-semibold text-[10px]">Sort:</span>
-              <form action="/shop" method="GET" className="inline">
-                {filters.category && <input type="hidden" name="category" value={filters.category} />}
-                {filters.brand && <input type="hidden" name="brand" value={filters.brand} />}
-                {filters.franchise && <input type="hidden" name="franchise" value={filters.franchise} />}
-                {filters.inStockOnly && <input type="hidden" name="inStockOnly" value="true" />}
-                {filters.minPrice && <input type="hidden" name="minPrice" value={filters.minPrice} />}
-                {filters.maxPrice && <input type="hidden" name="maxPrice" value={filters.maxPrice} />}
-                <select
-                  name="sortBy"
-                  defaultValue={filters.sortBy}
-                  className="bg-transparent font-semibold text-[#111111] focus:outline-none cursor-pointer text-xs"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="newest">Newest</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                  <option value="name_asc">Name: A-Z</option>
-                </select>
-              </form>
-            </div>
+            <ProductSortSelector currentSort={filters.sortBy} />
           </div>
         </div>
 

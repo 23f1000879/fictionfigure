@@ -100,15 +100,17 @@ router.get("/", async (req, res) => {
 
     // 7. Sorting Logic
     let orderBy: any = { createdAt: "desc" }; // default: newest
-    if (sortBy === "featured") {
+    const sortVal = String(sortBy || "").toLowerCase().trim();
+
+    if (sortVal === "featured") {
       orderBy = [{ featured: "desc" }, { createdAt: "desc" }];
-    } else if (sortBy === "price_asc") {
+    } else if (sortVal === "price-asc" || sortVal === "price_asc") {
       orderBy = { price: "asc" };
-    } else if (sortBy === "price_desc") {
+    } else if (sortVal === "price-desc" || sortVal === "price_desc") {
       orderBy = { price: "desc" };
-    } else if (sortBy === "name_asc") {
+    } else if (sortVal === "name-asc" || sortVal === "name_asc" || sortVal === "name") {
       orderBy = { name: "asc" };
-    } else if (sortBy === "newest") {
+    } else if (sortVal === "newest") {
       orderBy = { createdAt: "desc" };
     }
 
