@@ -14,6 +14,7 @@ import checkoutRouter from "./routes/checkout.js";
 import paymentsRouter from "./routes/payments.js";
 import wishlistRouter from "./routes/wishlist.js";
 import reviewsRouter from "./routes/reviews.js";
+import ordersRouter from "./routes/orders.js";
 
 const app = express();
 app.set("trust proxy", true);
@@ -60,6 +61,7 @@ app.use("/api/settings", settingsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/coupons", couponsRouter);
 app.use("/api/checkout", checkoutRouter);
+app.use("/api/orders", ordersRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/reviews", reviewsRouter);

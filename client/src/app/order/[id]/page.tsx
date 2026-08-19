@@ -14,6 +14,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [httpStatus, setHttpStatus] = useState<number | null>(null);
 
   const getAuthHeader = () => {
     const token = typeof window !== "undefined" ? localStorage.getItem("fictionfigure_token") : null;
@@ -24,15 +25,32 @@ export default function OrderDetailPage() {
     if (!orderId) return;
 
     setLoading(true);
-    fetch(`${API_BASE}/checkout/order/${orderId}`, {
-      headers: getAuthHeader(),
-    })
-      .then((res) => res.json())
+    setError("");
+    setHttpStatus(null);
+
+    const headers = getAuthHeader();
+
+    // Primary lookup: GET /api/orders/:id, Fallback: GET /api/checkout/order/:id
+    fetch(`${API_BASE}/orders/${orderId}`, { headers })
+      .then(async (res) => {
+        if (res.ok) return res.json();
+        if (res.status === 404) {
+          // Fallback fetch to checkout endpoint
+          const res2 = await fetch(`${API_BASE}/checkout/order/${orderId}`, { headers });
+          if (res2.ok) return res2.json();
+          setHttpStatus(res2.status);
+          const data2 = await res2.json().catch(() => ({}));
+          throw new Error(data2.error || "Order not found.");
+        }
+        setHttpStatus(res.status);
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Order access restricted.");
+      })
       .then((data) => {
         if (data.order) setOrder(data.order);
         else setError(data.error || "Order not found.");
       })
-      .catch(() => setError("Failed to load order receipt."))
+      .catch((err: any) => setError(err.message || "Failed to load order receipt."))
       .finally(() => setLoading(false));
   }, [orderId]);
 
@@ -46,17 +64,39 @@ export default function OrderDetailPage() {
   }
 
   if (error || !order) {
+    const isUnauth = httpStatus === 401;
+    const isForbidden = httpStatus === 403;
+
     return (
-      <div className="max-w-md mx-auto my-12 sm:my-20 p-6 sm:p-8 bg-white border border-[#E5E5E2] text-center space-y-4">
+      <div className="max-w-md mx-auto my-12 sm:my-20 p-6 sm:p-8 bg-white border border-[#E5E5E2] text-center space-y-4 shadow-sm">
         <AlertCircle className="w-8 h-8 text-[#A83232] mx-auto" />
-        <h2 className="text-base font-semibold text-[#111111]">Order Not Found</h2>
-        <p className="text-xs text-[#6B6B6B]">{error || "The requested order could not be located or you do not have permission to view it."}</p>
-        <Link
-          href="/shop"
-          className="inline-block px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider"
-        >
-          Return to Shop
-        </Link>
+        <h2 className="text-base font-bold text-[#111111] uppercase tracking-wider">
+          {isUnauth ? "Authentication Required" : isForbidden ? "Access Restricted" : "Order Not Found"}
+        </h2>
+        <p className="text-xs text-[#6B6B6B] leading-relaxed">
+          {isUnauth
+            ? "Please sign in to view the confirmation receipt for this order."
+            : isForbidden
+            ? `Order #${orderId} belongs to a different customer account. Please sign in with the correct account.`
+            : error || `Order #${orderId} could not be located in our system.`}
+        </p>
+        <div className="pt-2 flex justify-center space-x-3">
+          {isUnauth ? (
+            <Link
+              href={`/login?redirect=/order/${orderId}`}
+              className="px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors"
+            >
+              Sign In to Account
+            </Link>
+          ) : (
+            <Link
+              href="/shop"
+              className="px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors"
+            >
+              Return to Shop
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
