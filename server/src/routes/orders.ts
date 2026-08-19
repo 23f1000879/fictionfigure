@@ -146,11 +146,7 @@ export async function handleGetOrderDetails(req: any, res: any) {
   }
 }
 
-/**
- * GET /api/orders/my-orders
- * Authenticated Customer Order History
- */
-router.get("/my-orders", async (req, res) => {
+export async function handleGetMyOrders(req: any, res: any) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -226,7 +222,15 @@ router.get("/my-orders", async (req, res) => {
     console.error("GET /my-orders error:", err);
     res.status(500).json({ error: "Failed to fetch order history." });
   }
-});
+}
+
+/**
+ * GET /api/orders/my-orders
+ * GET /api/orders/my
+ * Authenticated Customer Order History
+ */
+router.get("/my-orders", handleGetMyOrders);
+router.get("/my", handleGetMyOrders);
 
 /**
  * GET /api/orders/:id
