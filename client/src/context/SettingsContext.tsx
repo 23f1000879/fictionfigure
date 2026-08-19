@@ -15,6 +15,9 @@ export interface StoreSettingsContextType {
   freeShippingThreshold: number;
   storeLocation: string;
   deliveryCoverage: string;
+  supportPhone: string;
+  supportEmail: string;
+  supportHours: string;
   announcements: AnnouncementItem[];
   isLoading: boolean;
   refetchSettings: () => Promise<void>;
@@ -23,11 +26,15 @@ export interface StoreSettingsContextType {
 const DEFAULT_CONTEXT: StoreSettingsContextType = {
   shippingFee: 100,
   freeShippingThreshold: 500,
-  storeLocation: "Bikaner, Rajasthan, India",
-  deliveryCoverage: "We deliver across India.",
+  storeLocation: "Bikaner, Rajasthan",
+  deliveryCoverage: "Delivering across India",
+  supportPhone: "+91 97974 94639",
+  supportEmail: "support@fictionfigure.in",
+  supportHours: "Monday - Saturday, 10:00 AM - 7:00 PM",
   announcements: [
     { id: "1", text: "WELCOME TO FICTIONFIGURE — COLLECT WHAT YOU LOVE.", enabled: true, sortOrder: 1 },
     { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
+    { id: "3", text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.", enabled: true, sortOrder: 3 },
   ],
   isLoading: true,
   refetchSettings: async () => {},
@@ -38,11 +45,15 @@ const SettingsContext = createContext<StoreSettingsContextType>(DEFAULT_CONTEXT)
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [shippingFee, setShippingFee] = useState<number>(100);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(500);
-  const [storeLocation, setStoreLocation] = useState<string>("Bikaner, Rajasthan, India");
-  const [deliveryCoverage, setDeliveryCoverage] = useState<string>("We deliver across India.");
+  const [storeLocation, setStoreLocation] = useState<string>("Bikaner, Rajasthan");
+  const [deliveryCoverage, setDeliveryCoverage] = useState<string>("Delivering across India");
+  const [supportPhone, setSupportPhone] = useState<string>("+91 97974 94639");
+  const [supportEmail, setSupportEmail] = useState<string>("support@fictionfigure.in");
+  const [supportHours, setSupportHours] = useState<string>("Monday - Saturday, 10:00 AM - 7:00 PM");
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([
     { id: "1", text: "WELCOME TO FICTIONFIGURE — COLLECT WHAT YOU LOVE.", enabled: true, sortOrder: 1 },
     { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
+    { id: "3", text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.", enabled: true, sortOrder: 3 },
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -62,6 +73,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       }
       if (data.deliveryCoverage) {
         setDeliveryCoverage(data.deliveryCoverage);
+      }
+      if (data.supportPhone) {
+        setSupportPhone(data.supportPhone);
+      }
+      if (data.supportEmail) {
+        setSupportEmail(data.supportEmail);
+      }
+      if (data.supportHours) {
+        setSupportHours(data.supportHours);
       }
       if (Array.isArray(data.announcements)) {
         setAnnouncements(data.announcements);
@@ -84,6 +104,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         freeShippingThreshold,
         storeLocation,
         deliveryCoverage,
+        supportPhone,
+        supportEmail,
+        supportHours,
         announcements,
         isLoading,
         refetchSettings: fetchSettings,

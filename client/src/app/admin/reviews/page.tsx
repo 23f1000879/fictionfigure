@@ -21,14 +21,26 @@ export default function AdminReviewsPage() {
   const fetchReviews = async () => {
     try {
       setIsLoading(true);
+      setErrorMessage("");
       const res = await adminFetch(`${API_BASE}/reviews/admin/all`);
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
 
-      if (data.reviews) {
-        setReviews(data.reviews);
-      } else {
-        setErrorMessage(data.error || "Failed to load customer reviews.");
+      if (!res.ok) {
+        let errorData: any = null;
+        if (contentType.includes("application/json")) {
+          try {
+            errorData = await res.json();
+          } catch (e) {}
+        }
+        throw new Error(errorData?.error || `Unable to load admin reviews (HTTP ${res.status}).`);
       }
+
+      if (!contentType.includes("application/json")) {
+        throw new Error("Unable to load reviews: Server returned non-JSON response.");
+      }
+
+      const data = await res.json();
+      setReviews(data.reviews || []);
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to load reviews.");
     } finally {

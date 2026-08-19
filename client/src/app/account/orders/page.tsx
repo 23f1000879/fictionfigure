@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Package, ArrowLeft, Loader2, AlertCircle, ShoppingBag, ArrowRight, RefreshCw } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, safeApiFetch } from "@/lib/api";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
@@ -18,7 +18,7 @@ export default function AccountOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchOrders = () => {
+  const fetchOrders = async () => {
     const token = localStorage.getItem("fictionfigure_token");
     if (!token) {
       router.push("/login?redirect=/account/orders");
@@ -28,30 +28,21 @@ export default function AccountOrdersPage() {
     setLoading(true);
     setError("");
 
-    fetch(`${API_BASE}/orders/my-orders`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(async (res) => {
-        if (res.status === 401) {
-          localStorage.removeItem("fictionfigure_token");
-          router.push("/login?redirect=/account/orders");
-          return;
-        }
-
-        const isJson = res.headers.get("content-type")?.includes("application/json");
-        if (!isJson) {
-          throw new Error("Unable to connect to order server. Please try again.");
-        }
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to load order history.");
-
-        setOrders(data.orders || []);
-      })
-      .catch((err: any) => {
-        setError(err.message || "Unable to load order history.");
-      })
-      .finally(() => setLoading(false));
+    try {
+      const data = await safeApiFetch<{ success: boolean; orders: any[] }>(`${API_BASE}/orders/my-orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setOrders(data.orders || []);
+    } catch (err: any) {
+      if (err.status === 401) {
+        localStorage.removeItem("fictionfigure_token");
+        router.push("/login?redirect=/account/orders");
+        return;
+      }
+      setError(err.message || "Unable to load order history.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -94,7 +85,7 @@ export default function AccountOrdersPage() {
               Collector Vault
             </span>
             <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-[#111111] truncate">
-              Order History ({orders.length})
+              Order History {error ? "" : `(${orders.length})`}
             </h1>
           </div>
         </div>

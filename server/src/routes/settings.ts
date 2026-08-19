@@ -153,10 +153,14 @@ router.get("/", async (_req, res) => {
     cachedSettingsPayload = {
       success: true,
       settings: settingsMap,
+      storeName: settingsMap.store_name || DEFAULT_SETTINGS.store_name,
       shippingFee,
       freeShippingThreshold,
       storeLocation,
       deliveryCoverage,
+      supportPhone: settingsMap.support_phone || DEFAULT_SETTINGS.support_phone,
+      supportEmail: settingsMap.support_email || DEFAULT_SETTINGS.support_email,
+      supportHours: settingsMap.support_hours || DEFAULT_SETTINGS.support_hours,
       announcements: processedAnnouncements,
       featuredProduct,
     };
@@ -167,10 +171,14 @@ router.get("/", async (_req, res) => {
     res.json({
       success: false,
       settings: DEFAULT_SETTINGS,
+      storeName: "FictionFigure",
       shippingFee: 100,
       freeShippingThreshold: 500,
-      storeLocation: "Bikaner, Rajasthan, India",
-      deliveryCoverage: "We deliver across India.",
+      storeLocation: "Bikaner, Rajasthan",
+      deliveryCoverage: "Delivering across India",
+      supportPhone: "+91 97974 94639",
+      supportEmail: "support@fictionfigure.in",
+      supportHours: "Monday - Saturday, 10:00 AM - 7:00 PM",
       announcements: [
         { id: "1", text: "WELCOME TO FICTIONFIGURE — COLLECT WHAT YOU LOVE.", enabled: true, sortOrder: 1 },
         { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },

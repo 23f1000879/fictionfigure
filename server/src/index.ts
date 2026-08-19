@@ -76,6 +76,28 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK", server: "FictionFigure Express Server", port: PORT });
 });
 
+// Catch-All Middleware for unmatched /api/* routes (Guarantees JSON response instead of Express HTML 404)
+app.use("/api/*", (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: "API route not found",
+    path: req.originalUrl,
+  });
+});
+
+// Centralized API Error Handler Middleware (Guarantees JSON error response for unhandled exceptions)
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error("Global API Error Handler caught:", err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || "An unexpected internal server error occurred.",
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`FictionFigure Express API Server running at http://localhost:${PORT}`);
 });

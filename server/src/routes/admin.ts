@@ -1781,4 +1781,12 @@ router.post("/settings", requireAdmin, async (req: any, res: any) => {
   }
 });
 
+import { handleGetAdminReviews } from "./reviews.js";
+
+/**
+ * GET /api/admin/reviews
+ * Admin endpoint to list all customer reviews across the store.
+ */
+router.get("/reviews", requireAdmin, handleGetAdminReviews);
+
 export default router;

@@ -79,3 +79,49 @@ export const adminFetch = async (url: string, options: RequestInit = {}): Promis
 
   return response;
 };
+
+/**
+ * Safe API response wrapper class for detailed error context.
+ */
+export class ApiError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data?: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
+}
+
+/**
+ * Reusable Safe API Fetcher for Client Applications.
+ * Guarantees:
+ * 1. Checks res.ok (HTTP status 200-299)
+ * 2. Checks Content-Type for application/json before calling res.json()
+ * 3. Never throws "Unexpected token '<', '<!DOCTYPE ...' is not valid JSON"
+ * 4. Returns parsed JSON or throws structured ApiError
+ */
+export async function safeApiFetch<T = any>(url: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get("content-type") || "";
+
+  if (!res.ok) {
+    let errorData: any = null;
+    if (contentType.includes("application/json")) {
+      try {
+        errorData = await res.json();
+      } catch (e) {}
+    }
+    const message = errorData?.error || errorData?.message || `HTTP ${res.status} ${res.statusText}`;
+    throw new ApiError(message, res.status, errorData);
+  }
+
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+    throw new ApiError(`Expected JSON response from server, but received non-JSON (${contentType || "HTML"}).`, res.status, text);
+  }
+
+  return (await res.json()) as T;
+}

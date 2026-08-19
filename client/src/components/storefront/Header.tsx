@@ -12,7 +12,7 @@ import { useSettings } from "@/context/SettingsContext";
 export function Header() {
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
   const { wishlistCount } = useWishlist();
-  const { announcements } = useSettings();
+  const { announcements, freeShippingThreshold } = useSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [currentAnnouncementIdx, setCurrentAnnouncementIdx] = useState(0);
@@ -29,7 +29,8 @@ export function Header() {
     return () => clearInterval(interval);
   }, [announcements.length]);
 
-  const activeAnnouncement = announcements[currentAnnouncementIdx]?.text || "";
+  const rawAnnouncement = announcements[currentAnnouncementIdx]?.text || "";
+  const activeAnnouncement = rawAnnouncement.replace(/\{\{FREE_SHIPPING_THRESHOLD\}\}/g, String(freeShippingThreshold));
   const showTopBar = announcements.length > 0 && activeAnnouncement.trim().length > 0;
 
   // Body scroll lock & ESC key listener for mobile menu

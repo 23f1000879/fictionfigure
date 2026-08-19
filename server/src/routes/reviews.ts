@@ -429,10 +429,11 @@ router.delete("/:reviewId", requireAuth, async (req: any, res) => {
 });
 
 /**
- * GET /api/admin/reviews
+ * GET /api/reviews/admin/all
+ * GET /api/reviews/admin
  * Admin endpoint to list all customer reviews across the store.
  */
-router.get("/admin/all", requireAdmin, async (req, res) => {
+export async function handleGetAdminReviews(req: any, res: any) {
   try {
     const reviews = await prisma.review.findMany({
       orderBy: { createdAt: "desc" },
@@ -459,12 +460,15 @@ router.get("/admin/all", requireAdmin, async (req, res) => {
       createdAt: r.createdAt,
     }));
 
-    res.json({ reviews: formatted });
+    res.json({ success: true, reviews: formatted });
   } catch (err: any) {
     console.error("GET /api/reviews/admin/all error:", err);
     res.status(500).json({ error: "Failed to fetch admin reviews." });
   }
-});
+}
+
+router.get("/admin/all", requireAdmin, handleGetAdminReviews);
+router.get("/admin", requireAdmin, handleGetAdminReviews);
 
 /**
  * PATCH /api/reviews/admin/:reviewId/status
