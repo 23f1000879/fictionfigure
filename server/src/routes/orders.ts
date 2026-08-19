@@ -61,17 +61,24 @@ export async function handleGetOrderDetails(req: any, res: any) {
     }
 
     // STRICT CUSTOMER OWNERSHIP SECURITY CHECK
-    // If order has an owner (userId or customer phone), verify that the requesting user owns this order.
-    const isOrderOwner =
-      (!order.userId && !order.user?.phone) || // Guest order
+    const isGuestOrder = !order.userId && !order.user?.phone;
+    const isAuthenticated = Boolean(authenticatedUserId || authenticatedUserPhone);
+
+    const isMatchingOwner =
+      isGuestOrder ||
       (authenticatedUserId && order.userId === authenticatedUserId) ||
       (authenticatedUserPhone && order.user?.phone === authenticatedUserPhone) ||
       (authenticatedUserPhone && order.shippingAddressJson?.includes(authenticatedUserPhone)) ||
       (authenticatedUserPhone && order.shippingAddressJson?.includes(authenticatedUserPhone.replace("+91", "")));
 
-    if (!isOrderOwner) {
-      return res.status(403).json({
-        error: "Order not found or access forbidden.",
+    if (!isMatchingOwner) {
+      if (!isAuthenticated) {
+        return res.status(401).json({
+          error: "Authentication required. Please sign in to view this order receipt.",
+        });
+      }
+      return res.status(404).json({
+        error: "Order not found.",
       });
     }
 

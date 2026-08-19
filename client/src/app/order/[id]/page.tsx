@@ -30,25 +30,16 @@ export default function OrderDetailPage() {
 
     const headers = getAuthHeader();
 
-    // Primary lookup: GET /api/orders/:id, Fallback: GET /api/checkout/order/:id
+    // Single Authoritative Order Receipt Request
     fetch(`${API_BASE}/orders/${orderId}`, { headers })
       .then(async (res) => {
-        if (res.ok) return res.json();
-        if (res.status === 404) {
-          // Fallback fetch to checkout endpoint
-          const res2 = await fetch(`${API_BASE}/checkout/order/${orderId}`, { headers });
-          if (res2.ok) return res2.json();
-          setHttpStatus(res2.status);
-          const data2 = await res2.json().catch(() => ({}));
-          throw new Error(data2.error || "Order not found.");
-        }
         setHttpStatus(res.status);
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Order access restricted.");
-      })
-      .then((data) => {
-        if (data.order) setOrder(data.order);
-        else setError(data.error || "Order not found.");
+        if (res.ok && data.order) {
+          setOrder(data.order);
+        } else {
+          throw new Error(data.error || "Order not found.");
+        }
       })
       .catch((err: any) => setError(err.message || "Failed to load order receipt."))
       .finally(() => setLoading(false));
