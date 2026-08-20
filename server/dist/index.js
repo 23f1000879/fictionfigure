@@ -29,20 +29,65 @@ const uploadsDir = path_1.default.join(process.cwd(), "uploads", "products");
 if (!fs_1.default.existsSync(uploadsDir)) {
     fs_1.default.mkdirSync(uploadsDir, { recursive: true });
 }
-const allowedOrigins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+const defaultAllowedOrigins = [
     "https://www.fictionfigures.in",
     "https://fictionfigures.in",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "https://fictionfigure.vercel.app",
-    ...(process.env.CLIENT_ORIGIN
-        ? process.env.CLIENT_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
-        : []),
 ];
-app.use((0, cors_1.default)({
-    origin: allowedOrigins,
+function getAllowedOrigins() {
+    const envVars = [
+        process.env.CLIENT_ORIGIN,
+        process.env.CLIENT_URL,
+        process.env.FRONTEND_URL,
+        process.env.CORS_ORIGIN,
+        process.env.ALLOWED_ORIGINS,
+    ];
+    const envOrigins = [];
+    for (const v of envVars) {
+        if (v) {
+            v.split(",").forEach((o) => {
+                const trimmed = o.trim();
+                if (trimmed)
+                    envOrigins.push(trimmed);
+            });
+        }
+    }
+    const combined = [...defaultAllowedOrigins, ...envOrigins];
+    return Array.from(new Set(combined.map((o) => o.replace(/\/+$/, "").toLowerCase())));
+}
+const allowedOriginsSet = new Set(getAllowedOrigins());
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin) {
+            return callback(null, true);
+        }
+        const normalizedOrigin = origin.replace(/\/+$/, "").toLowerCase();
+        if (allowedOriginsSet.has(normalizedOrigin)) {
+            return callback(null, true);
+        }
+        if (normalizedOrigin.endsWith(".fictionfigures.in") ||
+            normalizedOrigin.endsWith(".vercel.app")) {
+            return callback(null, true);
+        }
+        return callback(new Error(`CORS policy error: Origin ${origin} not allowed.`));
+    },
     credentials: true,
-}));
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
+    optionsSuccessStatus: 200,
+};
+app.use((0, cors_1.default)(corsOptions));
+app.options("*", (0, cors_1.default)(corsOptions));
 // RAW BODY PARSER FOR RAZORPAY WEBHOOK SIGNATURE VERIFICATION (MUST COME BEFORE express.json())
 app.use("/api/payments/razorpay/webhook", express_1.default.raw({ type: "application/json" }));
 app.use(express_1.default.json());
@@ -78,7 +123,7 @@ app.get("/api/version", (req, res) => {
         process.env.COMMIT_REF ||
         process.env.VERCEL_GIT_COMMIT_SHA ||
         process.env.RAILWAY_GIT_COMMIT_SHA ||
-        "6dc2262";
+        "6de99da";
     res.json({
         success: true,
         service: "fictionfigure-api",
