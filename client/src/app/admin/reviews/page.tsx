@@ -202,7 +202,8 @@ export default function AdminReviewsPage() {
           <p>No customer reviews match your search filter.</p>
         </div>
       ) : (
-        <div className="bg-white border border-[#E5E5E2] overflow-x-auto">
+        <>
+        <div className="hidden md:block bg-white border border-[#E5E5E2] overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#E5E5E2] bg-[#F7F7F5] text-[10px] font-bold uppercase tracking-wider text-[#6B6B6B]">
@@ -314,6 +315,99 @@ export default function AdminReviewsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
+          {filteredReviews.map((r) => (
+            <div key={r.id} className="bg-white border border-[#E5E5E2] p-4 space-y-3 text-xs">
+              <div className="flex items-start space-x-3">
+                <div className="relative w-12 h-12 bg-[#F7F7F5] border border-[#E5E5E2] shrink-0 overflow-hidden">
+                  {r.productImage ? (
+                    <Image src={r.productImage} alt={r.productName} fill className="object-contain p-0.5" />
+                  ) : (
+                    <Package className="w-5 h-5 text-[#6B6B6B] mx-auto mt-3 opacity-40" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  {r.productSlug ? (
+                    <Link href={`/products/${r.productSlug}`} target="_blank" className="font-bold text-xs text-[#111111] hover:underline line-clamp-2 leading-snug">
+                      {r.productName}
+                    </Link>
+                  ) : (
+                    <span className="font-bold text-xs text-[#111111] leading-snug">{r.productName}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t border-[#F7F7F5] pt-2">
+                <div className="flex items-center space-x-2">
+                  {renderStars(r.rating)}
+                  <span className="font-mono font-bold text-[#111111]">{r.rating}/5</span>
+                  {r.isVerifiedPurchase && (
+                    <span className="text-[9px] font-bold text-[#2E6B44] uppercase tracking-wider flex items-center">
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-0.5" /> Verified
+                    </span>
+                  )}
+                </div>
+
+                {r.title && <h5 className="font-bold text-[#111111]">{r.title}</h5>}
+                {r.comment && <p className="text-[#6B6B6B] leading-relaxed break-words">{r.comment}</p>}
+                <span className="text-[9px] font-mono text-[#6B6B6B] block pt-1">{formatDate(r.createdAt)}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 py-2 border-y border-[#F7F7F5] text-[11px]">
+                <div>
+                  <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Customer</span>
+                  <span className="font-bold text-[#111111] block">{r.customerName}</span>
+                  <span className="font-mono text-[#6B6B6B] block">{r.customerPhone}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Order Ref</span>
+                  {r.orderId ? (
+                    <Link
+                      href={`/admin/orders/${r.orderId}`}
+                      className="font-mono text-[10px] font-bold text-[#111111] hover:underline bg-[#F7F7F5] border border-[#E5E5E2] px-1.5 py-0.5 inline-block"
+                    >
+                      Order Link
+                    </Link>
+                  ) : (
+                    <span className="text-[#6B6B6B] font-mono block">N/A</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-1">
+                <span
+                  className={`inline-block px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ${
+                    r.status === "APPROVED" ? "bg-[#2E6B44] text-white" : "bg-[#A83232] text-white"
+                  }`}
+                >
+                  {r.status}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleToggleStatus(r.id, r.status)}
+                    disabled={updatingId === r.id}
+                    className="p-2 border border-[#E5E5E2] hover:border-[#111111] text-[#111111] transition-colors inline-flex items-center min-h-[38px] sm:min-h-[44px] min-w-[38px] justify-center"
+                    title={r.status === "APPROVED" ? "Hide Review" : "Approve Review"}
+                  >
+                    {r.status === "APPROVED" ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteReview(r.id)}
+                    disabled={updatingId === r.id}
+                    className="p-2 border border-[#E5E5E2] hover:border-[#A83232] hover:bg-[#A83232] hover:text-white text-[#A83232] transition-colors inline-flex items-center min-h-[38px] sm:min-h-[44px] min-w-[38px] justify-center"
+                    title="Delete Review"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );

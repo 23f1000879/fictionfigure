@@ -2,14 +2,16 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { ShieldAlert, Loader2, LogOut } from "lucide-react";
+import { ShieldAlert, Loader2, LogOut, Menu } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [adminUser, setAdminUser] = useState<any>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("fictionfigure_token");
@@ -75,35 +77,60 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] flex text-[#111111] font-sans">
-      <AdminSidebar />
+    <div className="min-h-screen bg-[#F7F7F5] flex flex-col lg:flex-row text-[#111111] font-sans">
+      <AdminSidebar isDrawerOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile Top Header */}
+        <header className="lg:hidden bg-[#111111] text-white px-4 py-3.5 flex justify-between items-center z-40 shrink-0">
+          <div className="flex items-center space-x-2.5">
+            <button
+              onClick={() => setIsDrawerOpen(true)}
+              className="p-1.5 hover:bg-[#1E1E1E] text-white focus:outline-none"
+              title="Open Navigation"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <Image
+              src="/fictionfigure-icon.svg"
+              alt="FictionFigure Icon"
+              width={20}
+              height={20}
+              className="h-5 w-auto object-contain"
+            />
+            <span className="font-mono text-xs font-bold tracking-tight">FICTIONFIGURE</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2E6B44] animate-pulse"></span>
+            <span className="text-[10px] font-mono text-[#6B6B6B]">ADMIN</span>
+          </div>
+        </header>
+
         {/* Top Header */}
-        <header className="bg-white border-b border-[#E5E5E2] px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2 text-xs font-mono text-[#6B6B6B]">
-            <span>Console</span>
-            <span>/</span>
-            <span className="text-[#111111] font-semibold">{adminUser?.email || "Admin"}</span>
+        <header className="bg-white border-b border-[#E5E5E2] px-4 lg:px-8 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2 text-xs font-mono text-[#6B6B6B] min-w-0">
+            <span className="hidden sm:inline">Console</span>
+            <span className="hidden sm:inline">/</span>
+            <span className="text-[#111111] font-semibold truncate">{adminUser?.email || "Admin"}</span>
           </div>
 
-          <div className="flex items-center space-x-4 text-xs">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 sm:space-x-4 text-xs shrink-0">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
               <span className="w-2 h-2 rounded-full bg-[#2E6B44] animate-pulse"></span>
-              <span className="font-mono text-[#111111] font-semibold">Strict Admin Mode</span>
+              <span className="font-mono text-[#111111] font-semibold text-[10px] sm:text-xs">Strict Admin Mode</span>
             </div>
 
             <button
               onClick={handleLogout}
-              className="px-3 py-1.5 border border-[#E5E5E2] hover:border-[#111111] font-semibold uppercase text-[10px] tracking-wider flex items-center space-x-1"
+              className="px-2 py-1 sm:px-3 sm:py-1.5 border border-[#E5E5E2] hover:border-[#111111] font-semibold uppercase text-[9px] sm:text-[10px] tracking-wider flex items-center space-x-1"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Admin Logout</span>
+              <span className="hidden sm:inline">Admin Logout</span>
             </button>
           </div>
         </header>
 
         {/* Content Body */}
-        <main className="p-8 flex-1 overflow-y-auto">{children}</main>
+        <main className="p-4 lg:p-8 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

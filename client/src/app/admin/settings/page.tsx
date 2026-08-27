@@ -933,7 +933,7 @@ export default function AdminSettingsPage() {
                       )}
                     </div>
                     {settings.upi_qr_url && (
-                      <p className="text-[11px] text-[#6B6B6B] truncate max-w-md">
+                      <p className="text-[11px] text-[#6B6B6B] break-all w-full">
                         URL: {settings.upi_qr_url}
                       </p>
                     )}

@@ -140,7 +140,8 @@ export default function AdminCustomersPage() {
           <p className="text-[#6B6B6B]">No registered customers found in database.</p>
         </div>
       ) : (
-        <div className="bg-white border border-[#E5E5E2] overflow-x-auto">
+        <>
+        <div className="hidden md:block bg-white border border-[#E5E5E2] overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-[#F7F7F5] border-b border-[#E5E5E2] uppercase font-semibold text-[#6B6B6B]">
@@ -220,6 +221,70 @@ export default function AdminCustomersPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
+          {customers.map((c) => (
+            <div key={c.id} className="bg-white border border-[#E5E5E2] p-4 space-y-3 text-xs">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-2 font-semibold text-xs text-[#111111]">
+                  <Users className="w-3.5 h-3.5 text-[#6B6B6B]" />
+                  <span>{c.name || "Anonymous Collector"}</span>
+                </div>
+                {c.isBlocked ? (
+                  <span className="bg-[#A83232] text-white text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 inline-flex items-center">
+                    BLOCKED
+                  </span>
+                ) : (
+                  <span className="bg-[#2E6B44] text-white text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 inline-flex items-center">
+                    VERIFIED
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 py-2 border-y border-[#F7F7F5] text-[11px]">
+                <div>
+                  <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Contact</span>
+                  <span className="font-mono text-[#111111] block">{c.phone || "No Mobile"}</span>
+                  <span className="text-[10px] text-[#6B6B6B] block truncate">{c.email || "No Email"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Activity</span>
+                  <span className="font-mono text-[#111111] block">{c.orderCount} order(s)</span>
+                  <span className="font-mono font-bold text-[#111111] block">{formatPrice(c.totalSpent)} spent</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-1">
+                <Link
+                  href={`/admin/customers/${c.id}`}
+                  className="px-2.5 py-1.5 border border-[#E5E5E2] hover:border-[#111111] text-[11px] font-semibold uppercase tracking-wider inline-flex items-center min-h-[38px] sm:min-h-[44px]"
+                >
+                  Profile <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+                </Link>
+                <button
+                  onClick={() => handleToggleBlock(c)}
+                  disabled={actionId === c.id}
+                  className={`px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider border transition-colors min-h-[38px] sm:min-h-[44px] ${
+                    c.isBlocked
+                      ? 'bg-[#2E6B44] text-white border-[#2E6B44] hover:bg-[#235434]'
+                      : 'bg-[#A83232]/10 border-[#A83232] text-[#A83232] hover:bg-[#A83232] hover:text-white'
+                  }`}
+                >
+                  {actionId === c.id ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : c.isBlocked ? "UNBLOCK" : "BLOCK"}
+                </button>
+                <button
+                  onClick={() => handleDeleteCustomer(c)}
+                  disabled={actionId === c.id}
+                  className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider border border-[#E5E5E2] text-[#6B6B6B] hover:border-[#A83232] hover:text-[#A83232] transition-colors min-h-[38px] sm:min-h-[44px]"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );

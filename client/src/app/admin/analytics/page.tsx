@@ -37,7 +37,7 @@ export default function AdminAnalyticsPage() {
   }, [period]);
 
   return (
-    <div className="space-y-8 text-[#111111]">
+    <div className="space-y-8 text-[#111111] p-1 sm:p-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-[#E5E5E2] pb-4">
         <div>
           <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] block">
@@ -267,7 +267,8 @@ export default function AdminAnalyticsPage() {
                   No active customer restock demand records found.
                 </div>
               ) : (
-                <div className="border border-[#E5E5E2] overflow-hidden">
+                <>
+                <div className="hidden md:block border border-[#E5E5E2] overflow-hidden">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-[#FAF9F6] border-b border-[#E5E5E2] uppercase text-[10px] font-bold text-[#6B6B6B]">
                       <tr>
@@ -309,6 +310,45 @@ export default function AdminAnalyticsPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden space-y-4">
+                  {restockAnalytics.topDemandProducts.map((p: any, idx: number) => (
+                    <div key={p.id} className="bg-white border border-[#E5E5E2] p-4 space-y-3 text-xs">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="font-semibold text-xs text-[#111111] block">
+                            #{idx + 1} {p.name}
+                          </span>
+                          <span className="text-[10px] text-[#6B6B6B] block">SKU: <span className="font-mono">{p.sku}</span></span>
+                        </div>
+                        <span
+                          className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 ${
+                            p.priority === "HIGH"
+                              ? "bg-[#A83232] text-white"
+                              : p.priority === "MEDIUM"
+                              ? "bg-[#B86E00] text-white"
+                              : "bg-[#F7F7F5] border border-[#E5E5E2] text-[#6B6B6B]"
+                          }`}
+                        >
+                          {p.priority} DEMAND
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 py-2 border-y border-[#F7F7F5] text-[11px]">
+                        <div>
+                          <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Customers</span>
+                          <span className="font-mono font-bold text-[#111111]">{p.uniqueCustomers}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Units Requested</span>
+                          <span className="font-mono font-bold text-[#B86E00]">{p.totalRequestedUnits}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                </>
               )}
             </div>
           </div>

@@ -123,7 +123,7 @@ export default function AdminRestockRequestsPage() {
   };
 
   return (
-    <div className="p-8 space-[#111111] space-y-8 font-sans max-w-7xl mx-auto">
+    <div className="p-4 sm:p-8 space-[#111111] space-y-8 font-sans max-w-7xl mx-auto">
       {/* Top Title & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E5E2] pb-6">
         <div>
@@ -265,7 +265,8 @@ export default function AdminRestockRequestsPage() {
             <p className="text-xs text-[#6B6B6B]">No customers are currently waiting for out-of-stock products.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#FAF9F6] border-b border-[#E5E5E2] uppercase text-[10px] font-bold text-[#6B6B6B] tracking-wider">
                 <tr>
@@ -360,6 +361,85 @@ export default function AdminRestockRequestsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile view */}
+          <div className="md:hidden space-y-4">
+            {products.map((item) => (
+              <div key={item.productId} className="bg-white border border-[#E5E5E2] p-4 space-y-3 text-xs">
+                <div className="flex items-start space-x-3">
+                  <div className="w-12 h-12 relative bg-[#FAF9F6] border border-[#E5E5E2] shrink-0 overflow-hidden">
+                    {item.productImage ? (
+                      <Image
+                        src={item.productImage}
+                        alt={item.productName}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <Box className="w-6 h-6 text-[#6B6B6B] absolute inset-0 m-auto" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      href={`/admin/products/${item.productId}/edit`}
+                      className="font-semibold text-xs text-[#111111] hover:underline block break-words"
+                    >
+                      {item.productName}
+                    </Link>
+                    <span className="text-[10px] font-mono text-[#6B6B6B] block">
+                      SKU: {item.productSku}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 py-2 border-y border-[#F7F7F5] text-[11px]">
+                  <div>
+                    <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Stock Status</span>
+                    {item.currentStock > 0 ? (
+                      <span className="px-2 py-0.5 bg-[#E8F5E9] text-[#2E6B44] text-[9px] font-bold uppercase inline-block">
+                        In Stock ({item.currentStock})
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-[#FFEBEE] text-[#A83232] text-[9px] font-bold uppercase inline-block">
+                        OUT OF STOCK
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Customers</span>
+                    <span className="font-mono font-bold text-[#111111]">{item.uniqueCustomers}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Requested Qty</span>
+                    <span className="font-mono font-bold text-[#B86E00]">{item.totalRequestedUnits} units</span>
+                  </div>
+                  <div>
+                    <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Pending Requests</span>
+                    <span className="font-mono text-[#111111]">{item.pendingRequestsCount} pending</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-1">
+                  <button
+                    onClick={() => handleOpenProductDetail(item.productId)}
+                    className="px-3 py-1.5 bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider hover:bg-black transition-colors min-h-[38px] sm:min-h-[44px]"
+                  >
+                    View Demand
+                  </button>
+
+                  {item.pendingRequestsCount > 0 && (
+                    <button
+                      onClick={() => handleFulfillRequests(item.productId)}
+                      className="px-3 py-1.5 bg-[#2E6B44] text-white text-[10px] font-bold uppercase tracking-wider hover:bg-[#235334] transition-colors min-h-[38px] sm:min-h-[44px]"
+                    >
+                      Fulfill Pending
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          </>
         )}
       </div>
 
@@ -443,8 +523,8 @@ export default function AdminRestockRequestsPage() {
                   )}
 
                   {/* Customer Requests Table */}
-                  <div className="border border-[#E5E5E2] overflow-hidden">
-                    <table className="w-full text-left text-xs">
+                  <div className="border border-[#E5E5E2] overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[600px]">
                       <thead className="bg-[#FAF9F6] border-b border-[#E5E5E2] uppercase text-[10px] font-bold text-[#6B6B6B] tracking-wider">
                         <tr>
                           <th className="px-4 py-3">Customer Name</th>

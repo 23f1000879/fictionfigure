@@ -192,7 +192,8 @@ export default function AdminDiscountsPage() {
           <p className="text-[#6B6B6B]">No active or historical coupon codes found.</p>
         </div>
       ) : (
-        <div className="bg-white border border-[#E5E5E2] overflow-x-auto">
+        <>
+        <div className="hidden md:block bg-white border border-[#E5E5E2] overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-[#F7F7F5] border-b border-[#E5E5E2] uppercase font-semibold text-[#6B6B6B]">
@@ -256,6 +257,68 @@ export default function AdminDiscountsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
+          {coupons.map((c) => (
+            <div key={c.id} className="bg-white border border-[#E5E5E2] p-4 space-y-3 text-xs">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-2 font-mono font-bold text-xs text-[#111111]">
+                  <Tag className="w-3.5 h-3.5 text-[#2E6B44]" />
+                  <span>{c.code}</span>
+                </div>
+                <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 ${c.isActive ? 'bg-[#2E6B44] text-white' : 'bg-[#6B6B6B] text-white'}`}>
+                  {c.isActive ? "ACTIVE" : "INACTIVE"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 py-2 border-y border-[#F7F7F5] text-[11px]">
+                <div>
+                  <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Type</span>
+                  <span className="uppercase text-[#111111]">{c.discountType}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Discount</span>
+                  <span className="font-mono font-semibold text-[#111111]">
+                    {c.discountType === "PERCENTAGE" ? `${c.discountValue}% OFF` : formatPrice(c.discountValue)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Min Order</span>
+                  <span className="font-mono text-[#111111]">{formatPrice(c.minOrderValue)}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Usage</span>
+                  <span className="font-mono font-semibold text-[#111111]">{c.usedCount} / {c.maxUsage}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1 justify-end">
+                <button
+                  onClick={() => handleToggleActive(c)}
+                  className="px-2.5 py-1.5 border border-[#E5E5E2] hover:border-[#111111] text-[11px] font-semibold uppercase tracking-wider inline-flex items-center min-h-[38px] sm:min-h-[44px]"
+                  title={c.isActive ? "Deactivate Coupon" : "Activate Coupon"}
+                >
+                  <Power className="w-3.5 h-3.5 mr-1" />
+                  <span>{c.isActive ? "Deactivate" : "Activate"}</span>
+                </button>
+                <button
+                  onClick={() => openEditModal(c)}
+                  className="px-2.5 py-1.5 border border-[#E5E5E2] hover:border-[#111111] text-[11px] font-semibold uppercase tracking-wider inline-flex items-center min-h-[38px] sm:min-h-[44px]"
+                >
+                  <Edit2 className="w-3.5 h-3.5 mr-1" /> Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(c)}
+                  className="px-2.5 py-1.5 border border-[#A83232]/30 hover:border-[#A83232] text-[#A83232] text-[11px] font-semibold uppercase tracking-wider inline-flex items-center min-h-[38px] sm:min-h-[44px]"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
 
       {/* CREATE / EDIT COUPON MODAL */}

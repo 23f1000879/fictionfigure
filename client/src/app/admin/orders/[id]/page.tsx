@@ -177,8 +177,8 @@ export default function AdminOrderDetailPage() {
             </div>
 
             {primaryPayment?.transactionRef && (
-              <div className="bg-[#F7F7F5] border border-[#E5E5E2] px-3 py-1.5 font-mono text-xs text-[#111111] shrink-0 self-start sm:self-auto">
-                UTR: <strong>{primaryPayment.transactionRef}</strong>
+              <div className="bg-[#F7F7F5] border border-[#E5E5E2] px-3 py-1.5 font-mono text-xs text-[#111111] shrink-0 self-start sm:self-auto max-w-full overflow-hidden">
+                UTR: <strong className="break-all">{primaryPayment.transactionRef}</strong>
               </div>
             )}
           </div>

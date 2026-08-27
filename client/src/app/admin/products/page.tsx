@@ -147,7 +147,8 @@ export default function AdminProductsPage() {
           <p className="text-[#6B6B6B]">No products found in catalog.</p>
         </div>
       ) : (
-        <div className="bg-white border border-[#E5E5E2] overflow-x-auto">
+        <>
+        <div className="hidden md:block bg-white border border-[#E5E5E2] overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-[#F7F7F5] border-b border-[#E5E5E2] uppercase font-semibold text-[#6B6B6B]">
@@ -243,6 +244,102 @@ export default function AdminProductsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Grid/List Card View */}
+        <div className="md:hidden space-y-4">
+          {filteredProducts.map((p) => {
+            const stock = p.variants?.[0]?.inventoryCount ?? 0;
+            let statusBadge = "bg-[#2E6B44] text-white";
+            if (p.status === "DRAFT") statusBadge = "bg-[#6B6B6B] text-white";
+            else if (p.status === "ARCHIVED") statusBadge = "bg-black text-white";
+            else if (stock === 0) statusBadge = "bg-[#A83232] text-white";
+
+            return (
+              <div key={p.id} className="bg-white border border-[#E5E5E2] p-4 space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="relative w-12 h-12 bg-[#F0F0ED] shrink-0 border border-[#E5E5E2] overflow-hidden">
+                    {p.images?.[0]?.url && <Image src={p.images[0].url} alt={p.name} fill className="object-cover" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] uppercase font-bold text-[#6B6B6B] block">{p.brand || "FictionFigure"}</span>
+                    <h4 className="font-semibold text-xs text-[#111111] break-words">{p.name}</h4>
+                    <span className="text-[10px] text-[#6B6B6B] block">SKU: <span className="font-mono">{p.sku}</span></span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 py-2 border-y border-[#F7F7F5] text-[11px]">
+                  <div>
+                    <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Category</span>
+                    <span className="text-[#111111]">{p.category?.name || "Uncategorized"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Price</span>
+                    <span className="font-mono font-semibold text-[#111111]">{formatPrice(p.price)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Stock</span>
+                    <span className="font-mono font-bold text-[#111111]">{stock} units</span>
+                  </div>
+                  <div>
+                    <span className="text-[#6B6B6B] block text-[9px] uppercase font-semibold">Status</span>
+                    {stock === 0 ? (
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-[#A83232] text-white inline-block">
+                          OUT OF STOCK
+                        </span>
+                        <Link
+                          href="/admin/restock-requests"
+                          className="text-[9px] font-bold text-[#B86E00] hover:underline flex items-center"
+                        >
+                          <Bell className="w-2.5 h-2.5 mr-1" /> VIEW DEMAND
+                        </Link>
+                      </div>
+                    ) : (
+                      <span className={`text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 ${statusBadge}`}>
+                        {p.status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1 justify-end">
+                  <Link
+                    href={`/admin/products/${p.id}/edit`}
+                    className="px-2.5 py-1.5 border border-[#E5E5E2] hover:border-[#111111] text-[#6B6B6B] hover:text-[#111111] inline-flex items-center space-x-1 text-[11px] font-semibold uppercase min-h-[38px] sm:min-h-[44px]"
+                    title="Edit Product"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </Link>
+                  <button
+                    onClick={() => handleDuplicate(p)}
+                    className="px-2.5 py-1.5 border border-[#E5E5E2] hover:border-[#111111] text-[#6B6B6B] hover:text-[#111111] inline-flex items-center space-x-1 text-[11px] font-semibold uppercase min-h-[38px] sm:min-h-[44px]"
+                    title="Duplicate Product"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Duplicate</span>
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(p)}
+                    className="px-2.5 py-1.5 border border-[#A83232]/30 hover:border-[#A83232] text-[#A83232] inline-flex items-center space-x-1 text-[11px] font-semibold uppercase min-h-[38px] sm:min-h-[44px]"
+                    title="Delete Product"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                  <Link
+                    href={`/products/${p.slug}`}
+                    target="_blank"
+                    className="p-2 border border-[#E5E5E2] hover:border-[#111111] text-[#6B6B6B] hover:text-[#111111] inline-flex items-center justify-center min-h-[38px] sm:min-h-[44px] w-10"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        </>
       )}
 
       {/* DELETE CONFIRMATION MODAL */}
