@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -15,6 +16,51 @@ export const revalidate = 60; // 60s Vercel Edge ISR Cache for Catalog
 
 interface ShopPageProps {
   searchParams?: any;
+}
+
+export async function generateMetadata({ searchParams }: ShopPageProps): Promise<Metadata> {
+  const resolvedParams = ((await searchParams) || {}) as Record<string, string | undefined>;
+  const categorySlug = resolvedParams.category;
+  const franchiseName = resolvedParams.franchise;
+  const brandName = resolvedParams.brand;
+
+  let title = "All Figures & Collectibles | Shop | FictionFigure";
+  let desc = "Browse our full catalog of curated premium collectibles, scale anime statues, articulated action figures, and keychains.";
+
+  let isIndexable = true;
+  let canonical = "https://www.fictionfigures.in/shop";
+
+  if (categorySlug) {
+    const { categories } = await getProducts({ category: categorySlug, limit: 1 });
+    const cat = categories.find((c: any) => c.slug === categorySlug);
+    if (cat) {
+      title = `${cat.name} Collectibles | Shop | FictionFigure`;
+      desc = cat.description || `Browse our premium collection of ${cat.name} action figures, statues, and keychains.`;
+      canonical = `https://www.fictionfigures.in/shop?category=${categorySlug}`;
+    }
+  } else if (franchiseName) {
+    title = `${franchiseName} Figures & Statues | Shop | FictionFigure`;
+    desc = `Browse our premium collection of ${franchiseName} scale figures and collectibles.`;
+    isIndexable = false;
+  } else if (brandName) {
+    title = `${brandName} Collectibles | Shop | FictionFigure`;
+    desc = `Explore premium designer figures and collectibles from ${brandName}.`;
+    isIndexable = false;
+  } else {
+    const hasOtherFilters = Object.keys(resolvedParams).some(k => k !== 'page' && k !== 'sortBy');
+    if (hasOtherFilters) {
+      isIndexable = false;
+    }
+  }
+
+  return {
+    title,
+    description: desc,
+    alternates: {
+      canonical,
+    },
+    robots: isIndexable ? { index: true, follow: true } : { index: false, follow: true }
+  };
 }
 
 export default async function ShopPage({ searchParams }: ShopPageProps) {
@@ -43,9 +89,43 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const formattedCountText =
     totalCount === 1 ? "1 Product" : totalCount === 0 ? "No Products" : `${totalCount} Products`;
 
+  const breadcrumbElements = [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.fictionfigures.in"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Shop",
+      "item": "https://www.fictionfigures.in/shop"
+    }
+  ];
+
+  if (activeCategoryObj) {
+    breadcrumbElements.push({
+      "@type": "ListItem",
+      "position": 3,
+      "name": activeCategoryObj.name,
+      "item": `https://www.fictionfigures.in/shop?category=${activeCategoryObj.slug}`
+    });
+  }
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": breadcrumbElements
+  };
+
   return (
     <>
       <Header />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <SearchModal />
       <CartDrawer />
 

@@ -13,11 +13,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "FictionFigure — Premium Collectibles & Scale Figures",
+    default: "FictionFigure - Premium Collectibles & Scale Figures",
     template: "%s | FictionFigure",
   },
   description: "Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.",
-  keywords: ["anime figures", "collectible statues", "designer toys", "character figures", "limited edition collectibles"],
+  keywords: ["anime figures", "collectible figures", "anime collectibles", "action figures", "anime merchandise", "figures in India", "collectibles in India"],
   icons: {
     icon: "/fictionfigure-icon.svg",
     shortcut: "/fictionfigure-icon.svg",

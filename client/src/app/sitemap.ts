@@ -56,11 +56,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Dynamically fetch public products with graceful fallback, deduplication & null safety
+  // Dynamically fetch public products and categories with graceful fallback
   let productPages: MetadataRoute.Sitemap = [];
+  let categoryPages: MetadataRoute.Sitemap = [];
   try {
     const result = await getProducts({ limit: 100, inStockOnly: false });
     const products = result?.products;
+    const categories = result?.categories || [];
+
+    if (Array.isArray(categories)) {
+      for (const cat of categories) {
+        if (!cat || !cat.slug) continue;
+        categoryPages.push({
+          url: `${baseUrl}/shop?category=${cat.slug}`,
+          lastModified: new Date(),
+          changeFrequency: "weekly",
+          priority: 0.8,
+        });
+      }
+    }
 
     if (Array.isArray(products)) {
       const seenSlugs = new Set<string>();
@@ -99,5 +113,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[SITEMAP] Backend fetch failed, falling back to static pages:", e);
   }
 
-  return [...staticPages, ...productPages];
+  return [...staticPages, ...categoryPages, ...productPages];
 }

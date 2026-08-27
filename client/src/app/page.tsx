@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -12,6 +13,36 @@ import Image from "next/image";
 import { ArrowRight, ShieldCheck, Truck, Award, FolderTree } from "lucide-react";
 
 export const revalidate = 60; // 60s Vercel Edge ISR Cache
+
+export const metadata: Metadata = {
+  title: "FictionFigure | Authentic Anime Figures & Collectibles India",
+  description: "Explore FictionFigure for premium collectible figures, scale anime statues, designer keychains, and action figures in India. Sourced directly from global studios with protective outer boxes.",
+  alternates: {
+    canonical: "https://www.fictionfigures.in",
+  },
+  openGraph: {
+    title: "FictionFigure | Authentic Anime Figures & Collectibles India",
+    description: "Explore FictionFigure for premium collectible figures, scale anime statues, designer keychains, and action figures in India.",
+    url: "https://www.fictionfigures.in",
+    siteName: "FictionFigure",
+    images: [
+      {
+        url: "https://www.fictionfigures.in/fictionfigure-icon.svg",
+        width: 800,
+        height: 800,
+        alt: "FictionFigure Logo",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FictionFigure | Authentic Anime Figures & Collectibles India",
+    description: "Explore FictionFigure for premium collectible figures, scale anime statues, designer keychains, and action figures in India.",
+    images: ["https://www.fictionfigures.in/fictionfigure-icon.svg"],
+  },
+};
 
 async function getHeroSettings() {
   try {
@@ -50,9 +81,44 @@ export default async function HomePage() {
   const secondaryLabel = settings.homepage_hero_secondary_label || "EXPLORE NEW ARRIVALS";
   const secondaryUrl = settings.homepage_hero_secondary_url || "/shop?sortBy=newest";
 
+  const storeName = settings.store_name || "FictionFigure";
+  const supportPhone = settings.support_phone || "+91 97974 94639";
+  const supportEmail = settings.support_email || "support@fictionfigure.in";
+  const supportHours = settings.support_hours || "Monday - Saturday, 10:00 AM - 7:00 PM";
+
+  const orgSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": storeName,
+    "url": "https://www.fictionfigures.in",
+    "logo": "https://www.fictionfigures.in/fictionfigure-icon.svg",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": supportPhone,
+      "contactType": "customer service",
+      "email": supportEmail,
+      "hoursAvailable": supportHours
+    }
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": storeName,
+    "url": "https://www.fictionfigures.in"
+  };
+
   return (
     <>
       <Header />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
       <SearchModal />
       <CartDrawer />
 
