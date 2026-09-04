@@ -93,7 +93,31 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const isClothing = Boolean((product as any).isClothing || product.category?.slug === "clothing" || product.category?.name?.toLowerCase() === "clothing" || product.variants?.some((v) => ["S", "M", "L", "XL", "XXL"].includes(v.title.toUpperCase())));
+  const isClothingCategory = Boolean(
+    product.category?.slug === "clothing" ||
+    product.category?.slug === "tshirt" ||
+    product.category?.slug === "t-shirt" ||
+    product.category?.slug === "tshirts" ||
+    product.category?.slug === "t-shirts" ||
+    product.category?.name?.toLowerCase()?.includes("clothing") ||
+    product.category?.name?.toLowerCase()?.includes("tshirt") ||
+    product.category?.name?.toLowerCase()?.includes("t shirt") ||
+    product.category?.name?.toLowerCase()?.includes("t-shirt")
+  );
+
+  const hasSizeVariants = Boolean(
+    product.variants?.some((v) =>
+      ["S", "M", "L", "XL", "XXL", "XS", "3XL"].includes(v.title.toUpperCase()) ||
+      (v.title !== "Standard Edition" && v.title !== "Standard" && v.title !== "Default Title")
+    )
+  );
+
+  const isClothing = Boolean(
+    (product as any).isClothing ||
+    isClothingCategory ||
+    hasSizeVariants
+  );
+
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
 
