@@ -121,6 +121,7 @@ async function handleGetOrderDetails(req, res) {
                     productId: item.productId || item.variant?.productId || "",
                     productSlug: item.variant?.product?.slug || "",
                     title: item.title,
+                    variantTitle: item.variant?.title || "",
                     sku: item.sku,
                     price: item.price,
                     quantity: item.quantity,

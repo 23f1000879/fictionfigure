@@ -39,6 +39,24 @@ export default function AdminEditProductPage() {
 
   const [restockDemand, setRestockDemand] = useState<any>(null);
 
+  const [isClothing, setIsClothing] = useState(false);
+  const [sizeConfig, setSizeConfig] = useState([
+    { size: "S", enabled: true, stock: 0 },
+    { size: "M", enabled: true, stock: 0 },
+    { size: "L", enabled: true, stock: 0 },
+    { size: "XL", enabled: true, stock: 0 },
+    { size: "XXL", enabled: true, stock: 0 },
+  ]);
+  const [customSizeInput, setCustomSizeInput] = useState("");
+
+  const handleAddCustomSize = () => {
+    const val = customSizeInput.trim().toUpperCase();
+    if (!val) return;
+    if (sizeConfig.some((s) => s.size === val)) return;
+    setSizeConfig((prev) => [...prev, { size: val, enabled: true, stock: 0 }]);
+    setCustomSizeInput("");
+  };
+
   useEffect(() => {
     if (productId) {
       adminFetch(`${API_BASE}/products?limit=100`)
@@ -46,6 +64,33 @@ export default function AdminEditProductPage() {
         .then((data) => {
           const found = (data.products || []).find((p: any) => p.id === productId || p.slug === productId);
           if (found) {
+            const clothingDetected = Boolean(found.isClothing || found.variants?.some((v: any) => v.title !== "Standard Edition" && v.title !== "Standard"));
+            setIsClothing(clothingDetected);
+
+            if (Array.isArray(found.variants) && found.variants.length > 0) {
+              const defaultSizes = ["S", "M", "L", "XL", "XXL"];
+              const variantMap = new Map(found.variants.map((v: any) => [v.title, v.inventoryCount || 0]));
+
+              const mergedConfig = defaultSizes.map((s) => ({
+                size: s,
+                enabled: variantMap.has(s) ? (variantMap.get(s) as number) > 0 : true,
+                stock: (variantMap.get(s) as number) || 0,
+              }));
+
+              // Add non-standard custom size variants if present
+              for (const v of found.variants) {
+                if (v.title !== "Standard Edition" && v.title !== "Standard" && !defaultSizes.includes(v.title)) {
+                  mergedConfig.push({
+                    size: v.title,
+                    enabled: (v.inventoryCount || 0) > 0,
+                    stock: v.inventoryCount || 0,
+                  });
+                }
+              }
+
+              setSizeConfig(mergedConfig);
+            }
+
             setForm({
               name: found.name || "",
               brand: found.brand || "",
@@ -86,11 +131,24 @@ export default function AdminEditProductPage() {
     setMessage("");
 
     try {
+      const activeSizeVariants = isClothing
+        ? sizeConfig
+            .filter((s) => s.enabled)
+            .map((s) => ({ size: s.size, stock: Math.max(0, Number(s.stock) || 0) }))
+        : [];
+
+      const totalStock = isClothing
+        ? activeSizeVariants.reduce((acc, curr) => acc + curr.stock, 0)
+        : Number(form.stockQuantity) || 0;
+
       const res = await adminFetch(`${API_BASE}/admin/products/${productId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          stockQuantity: totalStock,
+          isClothing,
+          sizeVariants: activeSizeVariants,
           images: form.images.filter(Boolean),
         }),
       });
@@ -215,7 +273,36 @@ export default function AdminEditProductPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="space-y-2 bg-[#F7F7F5] border border-[#E5E5E2] p-4">
+          <label className="font-semibold uppercase text-[#6B6B6B] block">Product Type Selection *</label>
+          <div className="flex items-center space-x-4">
+            <button
+              type="button"
+              onClick={() => setIsClothing(false)}
+              className={`px-4 py-2.5 text-xs font-semibold uppercase tracking-wider border transition-all ${
+                !isClothing
+                  ? "bg-[#111111] text-white border-[#111111]"
+                  : "bg-white text-[#6B6B6B] border-[#E5E5E2] hover:border-[#111111]"
+              }`}
+            >
+              Standard Product
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsClothing(true)}
+              className={`px-4 py-2.5 text-xs font-semibold uppercase tracking-wider border transition-all ${
+                isClothing
+                  ? "bg-[#111111] text-white border-[#111111]"
+                  : "bg-white text-[#6B6B6B] border-[#E5E5E2] hover:border-[#111111]"
+              }`}
+            >
+              Clothing / Size Variants
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="font-semibold uppercase text-[#6B6B6B]">Selling Price (₹) *</label>
             <input
@@ -236,8 +323,91 @@ export default function AdminEditProductPage() {
               className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-[#111111] focus:border-[#111111] focus:outline-none"
             />
           </div>
+        </div>
 
-          <div className="space-y-1">
+        {/* Conditional Inventory Configuration */}
+        {isClothing ? (
+          <div className="space-y-4 bg-white border border-[#E5E5E2] p-5">
+            <div>
+              <h4 className="font-bold uppercase tracking-wider text-[#111111] text-xs">
+                Clothing Size Inventory Breakdown
+              </h4>
+              <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+                Configure available sizes and stock per size variant. Total stock will be automatically calculated.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              {sizeConfig.map((item, idx) => (
+                <div
+                  key={item.size}
+                  className={`p-3 border space-y-2 transition-all ${
+                    item.enabled ? "bg-white border-[#111111]" : "bg-[#F7F7F5] border-[#E5E5E2] opacity-60"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold font-mono text-sm text-[#111111] flex items-center space-x-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={item.enabled}
+                        onChange={(e) => {
+                          const updated = [...sizeConfig];
+                          updated[idx].enabled = e.target.checked;
+                          setSizeConfig(updated);
+                        }}
+                        className="accent-[#111111]"
+                      />
+                      <span>{item.size}</span>
+                    </label>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] uppercase font-semibold text-[#6B6B6B] block">Stock</span>
+                    <input
+                      type="number"
+                      min={0}
+                      disabled={!item.enabled}
+                      value={item.stock}
+                      onChange={(e) => {
+                        const updated = [...sizeConfig];
+                        updated[idx].stock = Math.max(0, Number(e.target.value) || 0);
+                        setSizeConfig(updated);
+                      }}
+                      className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-xs focus:border-[#111111] focus:outline-none disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Custom Size Addition */}
+            <div className="pt-3 border-t border-[#E5E5E2] flex items-center space-x-3">
+              <input
+                type="text"
+                value={customSizeInput}
+                onChange={(e) => setCustomSizeInput(e.target.value)}
+                placeholder="Custom size label (e.g. 3XL)"
+                className="p-2 border border-[#E5E5E2] font-mono text-xs uppercase focus:border-[#111111] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomSize}
+                className="px-4 py-2 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black"
+              >
+                + Add Size
+              </button>
+            </div>
+
+            <div className="pt-2 text-xs font-mono font-semibold text-[#111111]">
+              Total Calculated Stock:{" "}
+              <span className="text-base font-bold">
+                {sizeConfig.filter((s) => s.enabled).reduce((acc, curr) => acc + (Number(curr.stock) || 0), 0)}
+              </span>{" "}
+              units
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1 sm:w-1/3">
             <label className="font-semibold uppercase text-[#6B6B6B]">Available Inventory Stock *</label>
             <input
               type="number"
@@ -247,7 +417,7 @@ export default function AdminEditProductPage() {
               className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-[#111111] focus:border-[#111111] focus:outline-none font-bold"
             />
           </div>
-        </div>
+        )}
 
         <div className="space-y-1">
           <label className="font-semibold uppercase text-[#6B6B6B]">Short Description</label>

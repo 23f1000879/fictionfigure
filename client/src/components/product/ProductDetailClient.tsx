@@ -93,6 +93,10 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  const isClothing = Boolean((product as any).isClothing || product.category?.slug === "clothing" || product.category?.name?.toLowerCase() === "clothing" || product.variants?.some((v) => ["S", "M", "L", "XL", "XXL"].includes(v.title.toUpperCase())));
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [sizeError, setSizeError] = useState<string | null>(null);
+
   const currentVariant = product.variants[selectedVariantIndex] || product.variants[0];
   const currentPrice = currentVariant?.price || product.price;
   const currentCompareAt = currentVariant?.compareAtPrice || product.compareAtPrice;
@@ -209,6 +213,10 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   };
 
   const handleAddToCart = () => {
+    if (isClothing && !selectedSize) {
+      setSizeError("Please select a size.");
+      return;
+    }
     if (!currentVariant || !inStock) return;
     addItem({
       variantId: currentVariant.id,
@@ -224,6 +232,11 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   };
 
   const handleBuyNow = () => {
+    if (isClothing && !selectedSize) {
+      setSizeError("Please select a size.");
+      return;
+    }
+    if (!currentVariant || !inStock) return;
     handleAddToCart();
     router.push("/checkout");
   };
@@ -371,31 +384,72 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
             </div>
           </div>
 
-          {/* Variant Selector */}
-          {product.variants.length > 1 && (
+          {/* Variant / Size Selector */}
+          {isClothing ? (
             <div className="space-y-3 w-full max-w-full">
               <label className="text-xs font-semibold uppercase tracking-widest text-[#111111] block">
-                Select Edition / Scale:
+                SELECT SIZE
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-full">
-                {product.variants.map((v, idx) => (
-                  <button
-                    key={v.id}
-                    onClick={() => setSelectedVariantIndex(idx)}
-                    className={`p-3 text-left border transition-all text-xs w-full ${
-                      selectedVariantIndex === idx
-                        ? "border-[#111111] bg-white font-semibold text-[#111111]"
-                        : "border-[#E5E5E2] bg-[#F7F7F5] text-[#6B6B6B] hover:border-[#111111]"
-                    }`}
-                  >
-                    <span className="block font-medium truncate">{v.title}</span>
-                    <span className="font-mono text-[11px] block mt-0.5 text-[#111111]">
-                      {formatPrice(v.price)}
-                    </span>
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-2.5 w-full max-w-full">
+                {product.variants.map((v, idx) => {
+                  const isSelected = selectedSize === v.title;
+                  const isOutOfStock = v.inventoryCount <= 0;
+
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      disabled={isOutOfStock}
+                      onClick={() => {
+                        setSelectedSize(v.title);
+                        setSizeError(null);
+                        setSelectedVariantIndex(idx);
+                      }}
+                      className={`min-w-[48px] h-12 px-3 border text-xs font-bold font-mono transition-all flex items-center justify-center relative ${
+                        isSelected
+                          ? "border-[#111111] bg-[#111111] text-white shadow-sm"
+                          : isOutOfStock
+                          ? "border-[#E5E5E2] bg-[#F7F7F5] text-[#A0A0A0] cursor-not-allowed opacity-50 line-through"
+                          : "border-[#E5E5E2] bg-white text-[#111111] hover:border-[#111111]"
+                      }`}
+                    >
+                      {v.title}
+                    </button>
+                  );
+                })}
               </div>
+              {sizeError && (
+                <div className="p-3 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold">
+                  {sizeError}
+                </div>
+              )}
             </div>
+          ) : (
+            product.variants.length > 1 && (
+              <div className="space-y-3 w-full max-w-full">
+                <label className="text-xs font-semibold uppercase tracking-widest text-[#111111] block">
+                  Select Edition / Scale:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-full">
+                  {product.variants.map((v, idx) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedVariantIndex(idx)}
+                      className={`p-3 text-left border transition-all text-xs w-full ${
+                        selectedVariantIndex === idx
+                          ? "border-[#111111] bg-white font-semibold text-[#111111]"
+                          : "border-[#E5E5E2] bg-[#F7F7F5] text-[#6B6B6B] hover:border-[#111111]"
+                      }`}
+                    >
+                      <span className="block font-medium truncate">{v.title}</span>
+                      <span className="font-mono text-[11px] block mt-0.5 text-[#111111]">
+                        {formatPrice(v.price)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
           )}
 
           {/* Quantity Controls & Action Buttons */}

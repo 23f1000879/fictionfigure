@@ -92,6 +92,7 @@ model Product {
   scale            String?
   franchise        String?
   whatsIncluded    String?
+  isClothing       Boolean         @default(false)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 

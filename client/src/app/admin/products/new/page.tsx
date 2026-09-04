@@ -35,6 +35,24 @@ export default function AdminNewProductPage() {
     images: ["", ""],
   });
 
+  const [isClothing, setIsClothing] = useState(false);
+  const [sizeConfig, setSizeConfig] = useState([
+    { size: "S", enabled: true, stock: 5 },
+    { size: "M", enabled: true, stock: 8 },
+    { size: "L", enabled: true, stock: 12 },
+    { size: "XL", enabled: true, stock: 6 },
+    { size: "XXL", enabled: true, stock: 2 },
+  ]);
+  const [customSizeInput, setCustomSizeInput] = useState("");
+
+  const handleAddCustomSize = () => {
+    const val = customSizeInput.trim().toUpperCase();
+    if (!val) return;
+    if (sizeConfig.some((s) => s.size === val)) return;
+    setSizeConfig((prev) => [...prev, { size: val, enabled: true, stock: 0 }]);
+    setCustomSizeInput("");
+  };
+
   useEffect(() => {
     adminFetch(`${API_BASE}/admin/categories`)
       .then((res) => res.json())
@@ -91,11 +109,24 @@ export default function AdminNewProductPage() {
         throw new Error("Please upload or provide at least one Primary Product Image.");
       }
 
+      const activeSizeVariants = isClothing
+        ? sizeConfig
+            .filter((s) => s.enabled)
+            .map((s) => ({ size: s.size, stock: Math.max(0, Number(s.stock) || 0) }))
+        : [];
+
+      const totalStock = isClothing
+        ? activeSizeVariants.reduce((acc, curr) => acc + curr.stock, 0)
+        : Number(form.stockQuantity) || 0;
+
       const res = await adminFetch(`${API_BASE}/admin/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          stockQuantity: totalStock,
+          isClothing,
+          sizeVariants: activeSizeVariants,
           images: validImages,
         }),
       });
@@ -294,10 +325,39 @@ export default function AdminNewProductPage() {
 
         <div className="space-y-4 pt-4 border-t border-[#E5E5E2]">
           <h3 className="font-semibold uppercase tracking-wider text-[#111111] border-b border-[#E5E5E2] pb-2">
-            2. Pricing, SKU & Inventory
+            2. Pricing, SKU & Product Type
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="space-y-2 bg-[#F7F7F5] border border-[#E5E5E2] p-4">
+            <label className="font-semibold uppercase text-[#6B6B6B] block">Product Type Selection *</label>
+            <div className="flex items-center space-x-4">
+              <button
+                type="button"
+                onClick={() => setIsClothing(false)}
+                className={`px-4 py-2.5 text-xs font-semibold uppercase tracking-wider border transition-all ${
+                  !isClothing
+                    ? "bg-[#111111] text-white border-[#111111]"
+                    : "bg-white text-[#6B6B6B] border-[#E5E5E2] hover:border-[#111111]"
+                }`}
+              >
+                Standard Product
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsClothing(true)}
+                className={`px-4 py-2.5 text-xs font-semibold uppercase tracking-wider border transition-all ${
+                  isClothing
+                    ? "bg-[#111111] text-white border-[#111111]"
+                    : "bg-white text-[#6B6B6B] border-[#E5E5E2] hover:border-[#111111]"
+                }`}
+              >
+                Clothing / Size Variants
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
               <label className="font-semibold uppercase text-[#6B6B6B]">Selling Price (₹) *</label>
               <input
@@ -324,20 +384,7 @@ export default function AdminNewProductPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="font-semibold uppercase text-[#6B6B6B]">Stock Quantity *</label>
-              <input
-                type="number"
-                required
-                min={0}
-                value={form.stockQuantity || ""}
-                onChange={(e) => setForm({ ...form, stockQuantity: Number(e.target.value) })}
-                placeholder="0"
-                className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-semibold uppercase text-[#6B6B6B]">SKU Code *</label>
+              <label className="font-semibold uppercase text-[#6B6B6B]">Master SKU Code *</label>
               <input
                 type="text"
                 required
@@ -348,6 +395,102 @@ export default function AdminNewProductPage() {
               />
             </div>
           </div>
+
+          {/* Conditional Inventory Configuration */}
+          {isClothing ? (
+            <div className="space-y-4 bg-white border border-[#E5E5E2] p-5">
+              <div>
+                <h4 className="font-bold uppercase tracking-wider text-[#111111] text-xs">
+                  Clothing Size Inventory Breakdown
+                </h4>
+                <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+                  Configure available sizes and stock per size variant. Total stock will be automatically calculated.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                {sizeConfig.map((item, idx) => (
+                  <div
+                    key={item.size}
+                    className={`p-3 border space-y-2 transition-all ${
+                      item.enabled ? "bg-white border-[#111111]" : "bg-[#F7F7F5] border-[#E5E5E2] opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold font-mono text-sm text-[#111111] flex items-center space-x-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={item.enabled}
+                          onChange={(e) => {
+                            const updated = [...sizeConfig];
+                            updated[idx].enabled = e.target.checked;
+                            setSizeConfig(updated);
+                          }}
+                          className="accent-[#111111]"
+                        />
+                        <span>{item.size}</span>
+                      </label>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <span className="text-[9px] uppercase font-semibold text-[#6B6B6B] block">Stock</span>
+                      <input
+                        type="number"
+                        min={0}
+                        disabled={!item.enabled}
+                        value={item.stock}
+                        onChange={(e) => {
+                          const updated = [...sizeConfig];
+                          updated[idx].stock = Math.max(0, Number(e.target.value) || 0);
+                          setSizeConfig(updated);
+                        }}
+                        className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-xs focus:border-[#111111] focus:outline-none disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Custom Size Addition */}
+              <div className="pt-3 border-t border-[#E5E5E2] flex items-center space-x-3">
+                <input
+                  type="text"
+                  value={customSizeInput}
+                  onChange={(e) => setCustomSizeInput(e.target.value)}
+                  placeholder="Custom size label (e.g. 3XL)"
+                  className="p-2 border border-[#E5E5E2] font-mono text-xs uppercase focus:border-[#111111] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomSize}
+                  className="px-4 py-2 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black"
+                >
+                  + Add Size
+                </button>
+              </div>
+
+              <div className="pt-2 text-xs font-mono font-semibold text-[#111111]">
+                Total Calculated Stock:{" "}
+                <span className="text-base font-bold">
+                  {sizeConfig.filter((s) => s.enabled).reduce((acc, curr) => acc + (Number(curr.stock) || 0), 0)}
+                </span>{" "}
+                units
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1 sm:w-1/3">
+              <label className="font-semibold uppercase text-[#6B6B6B]">Standard Product Inventory Stock *</label>
+              <input
+                type="number"
+                required
+                min={0}
+                value={form.stockQuantity || ""}
+                onChange={(e) => setForm({ ...form, stockQuantity: Number(e.target.value) })}
+                placeholder="0"
+                className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none font-bold"
+              />
+            </div>
+          )}
         </div>
 
         {/* 3. PRODUCT IMAGES UPLOAD SECTION */}

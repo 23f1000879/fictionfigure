@@ -351,6 +351,8 @@ router.post("/products", async (req, res) => {
       whatsIncluded,
       images,
       stockQuantity,
+      isClothing,
+      sizeVariants,
     } = req.body;
 
     if (!name || !price || !sku) {
@@ -360,6 +362,7 @@ router.post("/products", async (req, res) => {
     const generatedSlug = (slug || name).toLowerCase().trim().replace(/[^\w ]+/g, "").replace(/ +/g, "-");
     const stock = typeof stockQuantity === "number" ? stockQuantity : Number(stockQuantity) || 0;
     const imgArray = Array.isArray(images) && images.length > 0 ? images.filter(Boolean) : [];
+    const isClothingProduct = Boolean(isClothing);
 
     let cat = categoryId;
     if (!cat) {
@@ -369,6 +372,49 @@ router.post("/products", async (req, res) => {
 
     if (!cat) {
       return res.status(400).json({ error: "A category selection is required to publish a product." });
+    }
+
+    let variantsToCreate: any[] = [];
+
+    if (isClothingProduct && Array.isArray(sizeVariants) && sizeVariants.length > 0) {
+      variantsToCreate = sizeVariants.map((sv: any) => {
+        const sizeTitle = String(sv.size || sv.title).trim();
+        const sizeStock = Math.max(0, Number(sv.stock !== undefined ? sv.stock : sv.inventoryCount) || 0);
+        return {
+          title: sizeTitle,
+          sku: `${sku}-${sizeTitle.toUpperCase()}`,
+          price: Number(price),
+          inventoryCount: sizeStock,
+          imageUrl: imgArray[0] || null,
+          options: {
+            create: [{ name: "Size", value: sizeTitle }],
+          },
+          inventory: {
+            create: {
+              quantity: sizeStock,
+              reservedQuantity: 0,
+              lowStockThreshold: 3,
+            },
+          },
+        };
+      });
+    } else {
+      variantsToCreate = [
+        {
+          title: "Standard Edition",
+          sku: `${sku}-STD`,
+          price: Number(price),
+          inventoryCount: stock,
+          imageUrl: imgArray[0] || null,
+          inventory: {
+            create: {
+              quantity: stock,
+              reservedQuantity: 0,
+              lowStockThreshold: 3,
+            },
+          },
+        },
+      ];
     }
 
     const product = await prisma.product.create({
@@ -388,6 +434,7 @@ router.post("/products", async (req, res) => {
         scale: scale || null,
         franchise: franchise || null,
         whatsIncluded: whatsIncluded || null,
+        isClothing: isClothingProduct,
         images: {
           create: imgArray.map((url: string, idx: number) => ({
             url,
@@ -397,27 +444,14 @@ router.post("/products", async (req, res) => {
           })),
         },
         variants: {
-          create: [
-            {
-              title: "Standard Edition",
-              sku: `${sku}-STD`,
-              price: Number(price),
-              inventoryCount: stock,
-              imageUrl: imgArray[0] || null,
-              inventory: {
-                create: {
-                  quantity: stock,
-                  reservedQuantity: 0,
-                  lowStockThreshold: 3,
-                },
-              },
-            },
-          ],
+          create: variantsToCreate,
         },
       },
       include: {
         images: true,
-        variants: true,
+        variants: {
+          include: { inventory: true, options: true },
+        },
       },
     });
 
@@ -471,11 +505,13 @@ router.patch("/products/:id", async (req, res) => {
       whatsIncluded,
       stockQuantity,
       images,
+      isClothing,
+      sizeVariants,
     } = req.body;
 
     const existingProduct = await prisma.product.findUnique({
       where: { id },
-      include: { variants: true },
+      include: { variants: { include: { inventory: true } } },
     });
 
     if (!existingProduct) return res.status(404).json({ error: "Product not found" });
@@ -495,14 +531,95 @@ router.patch("/products/:id", async (req, res) => {
         ...(scale !== undefined && { scale: scale || null }),
         ...(franchise !== undefined && { franchise: franchise || null }),
         ...(whatsIncluded !== undefined && { whatsIncluded: whatsIncluded || null }),
+        ...(isClothing !== undefined && { isClothing: Boolean(isClothing) }),
       },
     });
 
-    if (stockQuantity !== undefined && existingProduct.variants[0]) {
+    const isClothingProduct = isClothing !== undefined ? Boolean(isClothing) : existingProduct.isClothing;
+
+    if (isClothingProduct && Array.isArray(sizeVariants)) {
+      const activeSizeTitles = new Set<string>();
+
+      for (const sv of sizeVariants) {
+        const sizeTitle = String(sv.size || sv.title).trim();
+        if (!sizeTitle) continue;
+        activeSizeTitles.add(sizeTitle);
+
+        const sizeStock = Math.max(0, Number(sv.stock !== undefined ? sv.stock : sv.inventoryCount) || 0);
+        const existingVariant = existingProduct.variants.find((v) => v.title === sizeTitle);
+
+        if (existingVariant) {
+          await prisma.productVariant.update({
+            where: { id: existingVariant.id },
+            data: {
+              inventoryCount: sizeStock,
+              ...(price !== undefined && { price: Number(price) }),
+            },
+          });
+          if (existingVariant.inventory) {
+            await prisma.inventory.update({
+              where: { variantId: existingVariant.id },
+              data: { quantity: sizeStock },
+            });
+          } else {
+            await prisma.inventory.create({
+              data: {
+                variantId: existingVariant.id,
+                quantity: sizeStock,
+                reservedQuantity: 0,
+                lowStockThreshold: 3,
+              },
+            });
+          }
+        } else {
+          await prisma.productVariant.create({
+            data: {
+              productId: id,
+              title: sizeTitle,
+              sku: `${existingProduct.sku}-${sizeTitle.toUpperCase()}`,
+              price: Number(price !== undefined ? price : existingProduct.price),
+              inventoryCount: sizeStock,
+              options: {
+                create: [{ name: "Size", value: sizeTitle }],
+              },
+              inventory: {
+                create: {
+                  quantity: sizeStock,
+                  reservedQuantity: 0,
+                  lowStockThreshold: 3,
+                },
+              },
+            },
+          });
+        }
+      }
+
+      // Set stock to 0 for any size variants that were omitted/disabled by admin
+      for (const v of existingProduct.variants) {
+        if (v.title !== "Standard Edition" && !activeSizeTitles.has(v.title)) {
+          await prisma.productVariant.update({
+            where: { id: v.id },
+            data: { inventoryCount: 0 },
+          });
+          if (v.inventory) {
+            await prisma.inventory.update({
+              where: { variantId: v.id },
+              data: { quantity: 0 },
+            });
+          }
+        }
+      }
+    } else if (stockQuantity !== undefined && existingProduct.variants[0]) {
       await prisma.productVariant.update({
         where: { id: existingProduct.variants[0].id },
         data: { inventoryCount: Number(stockQuantity) },
       });
+      if (existingProduct.variants[0].inventory) {
+        await prisma.inventory.update({
+          where: { variantId: existingProduct.variants[0].id },
+          data: { quantity: Number(stockQuantity) },
+        });
+      }
     }
 
     if (Array.isArray(images)) {

@@ -282,6 +282,11 @@ export default function OrderDetailPage() {
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
                     <h5 className="font-semibold text-[#111111] leading-snug break-words">{item.title}</h5>
+                    {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
+                      <p className="text-[11px] font-medium text-[#111111]">
+                        Size: <strong className="font-mono">{item.variantTitle}</strong>
+                      </p>
+                    )}
                     <p className="text-[10px] text-[#6B6B6B] font-mono">SKU: {item.sku}</p>
                     <p className="text-[11px] text-[#6B6B6B]">Qty: {item.quantity} × {formatPrice(item.price)}</p>
                   </div>
