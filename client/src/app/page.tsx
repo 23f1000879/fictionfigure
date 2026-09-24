@@ -2,15 +2,16 @@ import React from "react";
 import type { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
-import { ProductCard } from "@/components/product/ProductCard";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { CartProvider } from "@/context/CartContext";
 import { getProducts, getCategories } from "@/lib/services/productService";
 import { API_BASE } from "@/lib/api";
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, ShieldCheck, Truck, Award, FolderTree } from "lucide-react";
+import { HeroCarousel, CarouselSlide } from "@/components/home/HeroCarousel";
+import { CategoryShowcase } from "@/components/home/CategoryShowcase";
+import { ProductSection } from "@/components/home/ProductSection";
+import { FeaturedCollection } from "@/components/home/FeaturedCollection";
+import { PromoBanner } from "@/components/home/PromoBanner";
+import { TrustStrip } from "@/components/home/TrustStrip";
 
 export const revalidate = 60; // 60s Vercel Edge ISR Cache
 
@@ -56,30 +57,58 @@ async function getHeroSettings() {
 }
 
 export default async function HomePage() {
-  const [{ products: featuredProducts }, categories, heroData] = await Promise.all([
-    getProducts({ featuredOnly: true, limit: 4 }),
+  const [newArrivalsRes, popularRes, categories, heroData] = await Promise.all([
+    getProducts({ sortBy: "newest", limit: 8 }),
+    getProducts({ limit: 8 }),
     getCategories(),
     getHeroSettings(),
   ]);
 
-  const settings = heroData?.settings || {};
-  const featuredProduct = heroData?.featuredProduct || null;
+  const newArrivals = newArrivalsRes?.products || [];
+  const popularProducts = popularRes?.products || [];
 
-  // Fallback defaults matching current homepage
+  const settings = heroData?.settings || {};
   const heroEnabled = settings.homepage_hero_enabled !== "false";
-  const heroImageUrl =
-    settings.homepage_hero_image_url ||
-    "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80";
-  const eyebrow = settings.homepage_hero_eyebrow || "CURATED COLLECTOR GALLERY";
-  const title = settings.homepage_hero_title || "Figures worth collecting.";
-  const titleAccent = settings.homepage_hero_title_accent || "Stories worth keeping.";
-  const description =
-    settings.homepage_hero_description ||
-    "Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.";
-  const primaryLabel = settings.homepage_hero_primary_label || "SHOP COLLECTION";
-  const primaryUrl = settings.homepage_hero_primary_url || "/shop";
-  const secondaryLabel = settings.homepage_hero_secondary_label || "EXPLORE NEW ARRIVALS";
-  const secondaryUrl = settings.homepage_hero_secondary_url || "/shop?sortBy=newest";
+
+  // Carousel slides from backend API or dynamic fallback using existing category assets
+  const slides: CarouselSlide[] =
+    heroData?.carouselSlides && heroData.carouselSlides.length > 0
+      ? heroData.carouselSlides
+      : [
+          {
+            id: "1",
+            image:
+              settings.homepage_hero_image_url ||
+              "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80",
+            eyebrow: settings.homepage_hero_eyebrow || "CURATED COLLECTOR GALLERY",
+            title: settings.homepage_hero_title || "Figures worth collecting.",
+            titleAccent: settings.homepage_hero_title_accent || "Stories worth keeping.",
+            description:
+              settings.homepage_hero_description ||
+              "Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.",
+            primaryLabel: settings.homepage_hero_primary_label || "SHOP COLLECTION",
+            primaryUrl: settings.homepage_hero_primary_url || "/shop",
+            enabled: true,
+          },
+          ...(categories || [])
+            .filter((c: any) => c.imageUrl || c.image)
+            .slice(0, 3)
+            .map((c: any, i: number) => ({
+              id: `cat-${c.id || i}`,
+              image: c.imageUrl || c.image,
+              eyebrow: "FEATURED COLLECTION",
+              title: c.name,
+              description: c.description || `Explore authentic figures and items in the ${c.name} collection.`,
+              primaryLabel: "EXPLORE COLLECTION",
+              primaryUrl: `/shop?category=${c.slug}`,
+              enabled: true,
+            })),
+        ];
+
+  // Select real categories with images for featured & promo banners
+  const categoriesWithImages = (categories || []).filter((c: any) => c.imageUrl || c.image);
+  const featuredCat = categoriesWithImages[0] || null;
+  const promoCat = categoriesWithImages[1] || categoriesWithImages[0] || null;
 
   const storeName = settings.store_name || "FictionFigure";
   const supportPhone = settings.support_phone || "+91 97974 94639";
@@ -97,15 +126,15 @@ export default async function HomePage() {
       "telephone": supportPhone,
       "contactType": "customer service",
       "email": supportEmail,
-      "hoursAvailable": supportHours
-    }
+      "hoursAvailable": supportHours,
+    },
   };
 
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": storeName,
-    "url": "https://www.fictionfigures.in"
+    "url": "https://www.fictionfigures.in",
   };
 
   return (
@@ -122,212 +151,58 @@ export default async function HomePage() {
       <SearchModal />
       <CartDrawer />
 
-      <main className="space-y-16 sm:space-y-24 pb-12">
-        {/* Dynamic Admin-Managed Homepage Hero Section */}
-        {heroEnabled && (
-          <section className="relative bg-[#F0F0ED] border-b border-[#E5E5E2] overflow-hidden">
-            <div className="editorial-container py-12 sm:py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-              <div className="space-y-6 max-w-xl">
-                <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] block">
-                  {eyebrow}
-                </span>
+      <main className="flex-1 flex flex-col min-h-0 p-0 m-0 bg-[#F7F7F5]">
+        {/* Phase 2 Finished Hero Carousel */}
+        {heroEnabled && <HeroCarousel slides={slides} />}
 
-                <h1 className="text-3xl sm:text-5xl font-semibold text-[#111111] leading-[1.1] tracking-tight break-words">
-                  {title} <br />
-                  {titleAccent && <span className="text-[#6B6B6B]">{titleAccent}</span>}
-                </h1>
+        {/* Below-The-Hero Editorial Merchandising Sections */}
+        <div className="space-y-10 sm:space-y-14 py-8 sm:py-12">
+          {/* Section 1: Shop By Category */}
+          <CategoryShowcase categories={categories} />
 
-                <p className="text-sm sm:text-base text-[#6B6B6B] leading-relaxed break-words">
-                  {description}
-                </p>
+          {/* Section 2: New Arrivals Product Grid */}
+          <ProductSection
+            eyebrow="FRESHLY ADDED TO COLLECTION"
+            title="NEW ARRIVALS"
+            viewAllUrl="/shop?sortBy=newest"
+            viewAllText="VIEW ALL NEW"
+            products={newArrivals}
+          />
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-                  <Link
-                    href={primaryUrl}
-                    className="px-8 py-3.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors text-center"
-                  >
-                    {primaryLabel}
-                  </Link>
-                  <Link
-                    href={secondaryUrl}
-                    className="px-8 py-3.5 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-semibold uppercase tracking-widest hover:border-[#111111] transition-colors text-center"
-                  >
-                    {secondaryLabel}
-                  </Link>
-                </div>
-              </div>
+          {/* Section 3: Featured Collection Spotlight Banner */}
+          {featuredCat && (
+            <FeaturedCollection
+              title={featuredCat.name}
+              subtitle="SPOTLIGHT COLLECTION"
+              description={featuredCat.description || "Authentic collectible figures and merchandise directly from global studios."}
+              imageUrl={featuredCat.imageUrl || featuredCat.image || undefined}
+              shopUrl={`/shop?category=${featuredCat.slug}`}
+              buttonLabel={`EXPLORE ${featuredCat.name}`}
+            />
+          )}
 
-              {/* Dynamic Hero Image Block */}
-              <div className="relative aspect-[3/4] w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto lg:ml-auto lg:mr-0 border border-[#E5E5E2] overflow-hidden shadow-sm">
-                <Image
-                  src={heroImageUrl}
-                  alt={title}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 45vw"
-                  className="object-contain"
-                />
-                {featuredProduct && (
-                  <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xs p-4 border border-[#E5E5E2] flex justify-between items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block">
-                        Featured Masterpiece
-                      </span>
-                      <h4 className="text-xs font-semibold text-[#111111] truncate">
-                        {featuredProduct.name}
-                      </h4>
-                    </div>
-                    <Link
-                      href={`/products/${featuredProduct.slug}`}
-                      className="text-xs font-semibold text-[#111111] hover:underline flex items-center shrink-0"
-                    >
-                      View <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
+          {/* Section 4: Truthful Catalog Selections */}
+          <ProductSection
+            eyebrow="CATALOG HIGHLIGHTS"
+            title="MORE TO COLLECT"
+            viewAllUrl="/shop"
+            viewAllText="EXPLORE ALL"
+            products={popularProducts}
+          />
 
-        {/* Feature Value Props */}
-        <section className="editorial-container">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8 border-y border-[#E5E5E2]">
-            <div className="flex items-start space-x-4">
-              <ShieldCheck className="w-6 h-6 text-[#111111] shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#111111]">
-                  100% Authenticity Guaranteed
-                </h4>
-                <p className="text-xs text-[#6B6B6B] mt-1">
-                  Directly sourced from licensed Japanese and global studios with serialized seals.
-                </p>
-              </div>
-            </div>
+          {/* Section 5: Secondary Promotional Banner */}
+          {promoCat && promoCat.id !== featuredCat?.id && (
+            <PromoBanner
+              categoryName={promoCat.name}
+              categorySlug={promoCat.slug}
+              imageUrl={promoCat.imageUrl || promoCat.image || undefined}
+              description={promoCat.description || "Explore high-definition posters, keychains, and graphic apparel."}
+            />
+          )}
 
-            <div className="flex items-start space-x-4">
-              <Truck className="w-6 h-6 text-[#111111] shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#111111]">
-                  Reinforced Collector Packaging
-                </h4>
-                <p className="text-xs text-[#6B6B6B] mt-1">
-                  Double-walled boxes with corner armor so mint boxes arrive untouched.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <Award className="w-6 h-6 text-[#111111] shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#111111]">
-                  Curated Inventory
-                </h4>
-                <p className="text-xs text-[#6B6B6B] mt-1">
-                  Every figure chosen for sculpt fidelity, paint density, and character presence.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Featured Collection Grid */}
-        <section className="editorial-container space-y-8">
-          <div className="flex items-end justify-between border-b border-[#E5E5E2] pb-4">
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] block">
-                Editor's Selection
-              </span>
-              <h2 className="text-xl sm:text-2xl font-semibold text-[#111111] tracking-tight">
-                Featured Figures
-              </h2>
-            </div>
-            <Link
-              href="/shop?featuredOnly=true"
-              className="text-xs font-semibold text-[#111111] hover:underline flex items-center"
-            >
-              View all featured <ArrowRight className="w-3.5 h-3.5 ml-1" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
-
-        {/* Category Showcase */}
-        <section className="editorial-container space-y-8">
-          <div className="border-b border-[#E5E5E2] pb-4">
-            <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] block">
-              Browse by Category
-            </span>
-            <h2 className="text-xl sm:text-2xl font-semibold text-[#111111] tracking-tight">
-              Curated Mediums
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.slice(0, 4).map((cat) => {
-              const imageSrc = cat.imageUrl || cat.image;
-              return (
-                <Link
-                  key={cat.id}
-                  href={`/shop?category=${cat.slug}`}
-                  className="group relative aspect-[3/4] bg-[#F7F7F5] border border-[#E5E5E2] overflow-hidden block shadow-xs"
-                >
-                  {imageSrc ? (
-                    <Image
-                      src={imageSrc}
-                      alt={cat.name}
-                      fill
-                      priority
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#111111]/90 flex items-center justify-center">
-                      <FolderTree className="w-12 h-12 text-white/20" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white pointer-events-none">
-                    <span className="text-[10px] uppercase tracking-widest text-white/70 font-mono">
-                      Category
-                    </span>
-                    <h3 className="text-lg font-semibold tracking-tight">{cat.name}</h3>
-                    <span className="text-xs text-white/90 mt-1 flex items-center font-medium group-hover:underline">
-                      Explore items <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Editorial Brand Section */}
-        <section className="bg-white border-y border-[#E5E5E2] py-20">
-          <div className="editorial-container text-center max-w-2xl mx-auto space-y-6">
-            <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B]">
-              The FictionFigure Manifesto
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-semibold text-[#111111] tracking-tight leading-tight">
-              Collect what means something.
-            </h2>
-            <p className="text-xs sm:text-sm text-[#6B6B6B] leading-relaxed">
-              "FictionFigure brings together figures and collectibles chosen for craftsmanship, character, and the stories behind them. We believe figures aren't plastic placeholders — they are tangible physical anchors to moments that stayed with us."
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/about"
-                className="inline-block px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
-              >
-                Our Curation Philosophy
-              </Link>
-            </div>
-          </div>
-        </section>
+          {/* Section 6: Trust & Service Benefits Strip */}
+          <TrustStrip />
+        </div>
       </main>
 
       <Footer />
