@@ -40,26 +40,27 @@ export function CartDrawer() {
         className="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300"
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-[#F7F7F5] border-l border-[#E5E5E2] flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 w-full sm:w-auto max-w-full flex justify-end pl-0 sm:pl-10">
+        <div className="w-full sm:w-screen max-w-full sm:max-w-md bg-[#F7F7F5] border-l border-[#E5E5E2] flex flex-col shadow-2xl animate-in slide-in-from-right duration-300 min-w-0 box-border h-full overflow-hidden">
           {/* Header */}
-          <div className="p-6 border-b border-[#E5E5E2] flex items-center justify-between bg-white">
-            <div className="flex items-center space-x-2">
-              <ShoppingBag className="w-5 h-5 text-[#111111]" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-[#111111]">
+          <div className="p-4 sm:p-6 border-b border-[#E5E5E2] flex items-center justify-between bg-white shrink-0 min-w-0 w-full box-border">
+            <div className="flex items-center space-x-2 min-w-0">
+              <ShoppingBag className="w-5 h-5 text-[#111111] shrink-0" />
+              <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#111111] truncate">
                 Shopping Cart ({isHydrating ? "..." : cartCount})
               </h2>
             </div>
             <button
               onClick={() => setIsCartOpen(false)}
-              className="p-2 text-[#6B6B6B] hover:text-[#111111] transition-colors"
+              className="p-2 text-[#6B6B6B] hover:text-[#111111] transition-colors shrink-0 ml-2"
+              aria-label="Close cart drawer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 sm:space-y-6 min-w-0 w-full box-border">
             {isHydrating || isValidating ? (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-12">
                 <Loader2 className="w-8 h-8 text-[#111111] animate-spin" />
@@ -90,9 +91,9 @@ export function CartDrawer() {
               cart.map((item) => (
                 <div
                   key={item.variantId}
-                  className="flex space-x-4 p-4 bg-white border border-[#E5E5E2] rounded-lg shadow-2xs"
+                  className="flex space-x-3 sm:space-x-4 p-3.5 sm:p-4 bg-white border border-[#E5E5E2] rounded-lg shadow-2xs min-w-0 w-full box-border"
                 >
-                  <div className="relative w-20 h-20 bg-[#F7F7F5] border border-[#E5E5E2] rounded-md overflow-hidden shrink-0 p-1 flex items-center justify-center">
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-[#F7F7F5] border border-[#E5E5E2] rounded-md overflow-hidden shrink-0 p-1 flex items-center justify-center">
                     {item.image && item.image.trim() !== "" ? (
                       <Image
                         src={item.image}
@@ -115,7 +116,7 @@ export function CartDrawer() {
                         {item.title}
                       </h4>
                       {item.variantTitle && (
-                        <p className="text-[11px] font-medium text-[#6B6B6B] mt-0.5">
+                        <p className="text-[11px] font-medium text-[#6B6B6B] mt-0.5 truncate">
                           Variant: <strong className="font-mono text-[#111111]">{item.variantTitle}</strong>
                         </p>
                       )}
@@ -124,8 +125,8 @@ export function CartDrawer() {
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center border border-[#E5E5E2] rounded-md bg-white">
+                    <div className="flex items-center justify-between pt-2 gap-2 min-w-0">
+                      <div className="flex items-center border border-[#E5E5E2] rounded-md bg-white shrink-0">
                         <button
                           onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                           className="p-1 text-[#6B6B6B] hover:text-[#111111] transition-colors"
@@ -149,7 +150,7 @@ export function CartDrawer() {
 
                       <button
                         onClick={() => removeItem(item.variantId)}
-                        className="text-[#6B6B6B] hover:text-[#A83232] transition-colors p-1"
+                        className="text-[#6B6B6B] hover:text-[#A83232] transition-colors p-1 shrink-0"
                         title="Remove item"
                         aria-label="Remove item"
                       >
@@ -164,28 +165,28 @@ export function CartDrawer() {
 
           {/* Footer & Checkout */}
           {cart.length > 0 && (
-            <div className="p-6 bg-white border-t border-[#E5E5E2] space-y-4">
-              <div className="flex justify-between items-center text-sm font-extrabold">
-                <span className="text-[#6B6B6B] uppercase tracking-wider text-xs font-bold">Subtotal</span>
-                <span className="text-[#111111] font-mono text-base">{formatPrice(cartSubtotal)}</span>
+            <div className="p-4 sm:p-6 bg-white border-t border-[#E5E5E2] space-y-4 shrink-0 min-w-0 w-full box-border">
+              <div className="flex justify-between items-center text-sm font-extrabold gap-2 min-w-0 w-full">
+                <span className="text-[#6B6B6B] uppercase tracking-wider text-xs font-bold shrink-0">Subtotal</span>
+                <span className="text-[#111111] font-mono text-sm sm:text-base font-bold shrink-0 text-right">{formatPrice(cartSubtotal)}</span>
               </div>
               <p className="text-[11px] text-[#6B6B6B] leading-relaxed">
                 Taxes and shipping calculated at checkout. Free shipping on orders of {formatPrice(freeShippingThreshold)} or more.
               </p>
 
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-2 w-full min-w-0">
                 <Link
                   href="/checkout"
                   onClick={() => setIsCartOpen(false)}
-                  className="w-full flex items-center justify-center py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#D4AF37] hover:text-[#111111] transition-all shadow-sm"
+                  className="w-full flex items-center justify-center py-3.5 px-4 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#D4AF37] hover:text-[#111111] transition-all shadow-sm min-h-[44px] box-border"
                 >
-                  CHECKOUT <ArrowRight className="w-4 h-4 ml-2" />
+                  CHECKOUT <ArrowRight className="w-4 h-4 ml-2 shrink-0" />
                 </Link>
 
                 <Link
                   href="/cart"
                   onClick={() => setIsCartOpen(false)}
-                  className="w-full flex items-center justify-center py-3 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-bold uppercase tracking-widest rounded-md hover:border-[#111111] transition-all"
+                  className="w-full flex items-center justify-center py-3 px-4 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-bold uppercase tracking-widest rounded-md hover:border-[#111111] transition-all min-h-[44px] box-border"
                 >
                   VIEW SHOPPING BAG
                 </Link>
