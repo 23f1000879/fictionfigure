@@ -419,7 +419,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
         </div>
 
         {/* Right Column: Product Info & Purchase Controls (5 Cols Desktop) */}
-        <div className="lg:col-span-5 space-y-6 sm:space-y-7 w-full max-w-full box-border">
+        <div className="lg:col-span-5 space-y-6 sm:space-y-7 w-full max-w-full box-border lg:sticky lg:top-24 lg:self-start">
           
           {/* Header & Brand Info */}
           <div className="space-y-2.5 w-full max-w-full border-b border-[#E5E5E2] pb-5">
@@ -600,7 +600,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="w-full min-h-[50px] px-6 py-3.5 bg-white border-2 border-[#111111] text-[#111111] text-xs font-extrabold uppercase tracking-widest hover:bg-[#111111] hover:text-white rounded-lg transition-colors flex items-center justify-center max-w-full box-border shadow-2xs"
+                  className="w-full min-h-[50px] px-6 py-3.5 bg-[#111111] text-white text-xs font-extrabold uppercase tracking-widest hover:bg-black rounded-lg transition-colors flex items-center justify-center max-w-full box-border shadow-xs"
                 >
                   <ShoppingBag className="w-4 h-4 mr-2 shrink-0" /> Add to Cart
                 </button>
@@ -608,7 +608,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 <button
                   type="button"
                   onClick={handleBuyNow}
-                  className="w-full min-h-[50px] px-6 py-3.5 bg-[#111111] text-white text-xs font-extrabold uppercase tracking-widest hover:bg-black rounded-lg transition-colors flex items-center justify-center max-w-full box-border shadow-xs"
+                  className="w-full min-h-[50px] px-6 py-3.5 bg-white border-2 border-[#111111] text-[#111111] text-xs font-extrabold uppercase tracking-widest hover:bg-[#111111] hover:text-white rounded-lg transition-colors flex items-center justify-center max-w-full box-border shadow-2xs"
                 >
                   Buy Now <ChevronRight className="w-4 h-4 ml-1 shrink-0" />
                 </button>
@@ -954,6 +954,27 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Mobile Sticky Bottom Purchase Bar */}
+      {inStock && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E5E5E2] p-3 sm:hidden shadow-lg flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] text-[#6B6B6B] block font-mono uppercase tracking-wider truncate">
+              {currentVariant?.title !== "Standard Edition" && currentVariant?.title !== "Standard" ? currentVariant.title : product.name}
+            </span>
+            <span className="text-sm font-extrabold font-mono text-[#111111]">
+              {formatPrice(currentPrice)}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className="min-h-[44px] px-5 bg-[#111111] text-white text-xs font-extrabold uppercase tracking-widest rounded-lg hover:bg-black transition-colors flex items-center justify-center shrink-0 shadow-xs"
+          >
+            <ShoppingBag className="w-3.5 h-3.5 mr-1.5" /> Add to Cart
+          </button>
         </div>
       )}
 
