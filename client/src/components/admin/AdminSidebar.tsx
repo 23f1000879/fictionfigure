@@ -55,18 +55,35 @@ export function AdminSidebar({ isDrawerOpen = false, onClose }: AdminSidebarProp
     router.push("/login");
   };
 
-  const navItems = [
-    { href: "/admin", label: "Overview", icon: LayoutDashboard },
-    { href: "/admin/products", label: "Products", icon: Package },
-    { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
-    { href: "/admin/inventory", label: "Inventory", icon: Boxes },
-    { href: "/admin/restock-requests", label: "Restock Demand", icon: Bell, badge: pendingRestockCount },
-    { href: "/admin/categories", label: "Categories", icon: FolderTree },
-    { href: "/admin/discounts", label: "Discounts", icon: Tag },
-    { href: "/admin/customers", label: "Customers", icon: Users },
-    { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/admin/reviews", label: "Reviews", icon: Star },
-    { href: "/admin/settings", label: "Store Settings", icon: Sliders },
+  const navGroups = [
+    {
+      title: "MANAGEMENT",
+      items: [
+        { href: "/admin", label: "Overview", icon: LayoutDashboard },
+        { href: "/admin/products", label: "Products", icon: Package },
+        { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+        { href: "/admin/inventory", label: "Inventory", icon: Boxes },
+        { href: "/admin/restock-requests", label: "Restock Demand", icon: Bell, badge: pendingRestockCount },
+        { href: "/admin/categories", label: "Categories", icon: FolderTree },
+        { href: "/admin/discounts", label: "Discounts", icon: Tag },
+        { href: "/admin/customers", label: "Customers", icon: Users },
+        { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+        { href: "/admin/reviews", label: "Reviews", icon: Star },
+      ],
+    },
+    {
+      title: "STOREFRONT / CMS",
+      items: [
+        { href: "/admin/homepage", label: "Homepage CMS", icon: LayoutDashboard },
+        { href: "/admin/media", label: "Media Library", icon: Boxes },
+      ],
+    },
+    {
+      title: "SETTINGS",
+      items: [
+        { href: "/admin/settings", label: "Store Settings", icon: Sliders },
+      ],
+    },
   ];
 
   const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => (
@@ -92,33 +109,40 @@ export function AdminSidebar({ isDrawerOpen = false, onClose }: AdminSidebarProp
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 text-xs font-semibold uppercase tracking-wider overflow-y-auto">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onLinkClick}
-              className={`flex items-center justify-between px-4 py-3 transition-colors ${
-                isActive
-                  ? "bg-white text-[#111111] font-bold"
-                  : "text-[#A0A0A0] hover:text-white hover:bg-[#1E1E1E]"
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </div>
-              {item.badge !== undefined && item.badge !== null && item.badge > 0 && (
-                <span className="px-2 py-0.5 bg-[#B86E00] text-white text-[10px] font-mono font-bold rounded-full">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 p-4 space-y-6 text-xs font-semibold uppercase tracking-wider overflow-y-auto">
+        {navGroups.map((group) => (
+          <div key={group.title} className="space-y-1">
+            <h3 className="px-4 text-[10px] font-mono font-bold text-[#6B6B6B] tracking-widest uppercase mb-2">
+              {group.title}
+            </h3>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onLinkClick}
+                  className={`flex items-center justify-between px-4 py-2.5 transition-colors ${
+                    isActive
+                      ? "bg-white text-[#111111] font-bold"
+                      : "text-[#A0A0A0] hover:text-white hover:bg-[#1E1E1E]"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge !== undefined && item.badge !== null && item.badge > 0 && (
+                    <span className="px-2 py-0.5 bg-[#B86E00] text-white text-[10px] font-mono font-bold rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Footer link to main Storefront & Sign Out */}

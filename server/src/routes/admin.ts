@@ -126,6 +126,120 @@ router.post("/uploads/product-image", (req, res) => {
 // Enforce Strict Admin Authentication & Authorization Across All Admin Console Endpoints
 router.use(requireAdmin);
 
+/**
+ * GET /api/admin/media
+ * Admin Media Library & Asset Usage Tracker
+ */
+router.get("/media", async (_req: any, res: any) => {
+  try {
+    const productImages = await prisma.productImage.findMany({
+      select: {
+        id: true,
+        url: true,
+        altText: true,
+        createdAt: true,
+        product: {
+          select: { id: true, name: true, slug: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const categories = await prisma.category.findMany({
+      where: { imageUrl: { not: null } },
+      select: { id: true, name: true, slug: true, imageUrl: true },
+    });
+
+    const settings = await prisma.storeSetting.findMany();
+    const settingsMap: Record<string, string> = {};
+    settings.forEach((s) => (settingsMap[s.key] = s.value));
+
+    const mediaMap = new Map<string, any>();
+
+    // 1. Collect Product Images
+    productImages.forEach((img) => {
+      if (!img.url) return;
+      const existing = mediaMap.get(img.url) || {
+        url: img.url,
+        createdAt: img.createdAt,
+        usage: [],
+      };
+      existing.usage.push({
+        type: "product",
+        id: img.product.id,
+        title: img.product.name,
+        slug: img.product.slug,
+      });
+      mediaMap.set(img.url, existing);
+    });
+
+    // 2. Collect Category Images
+    categories.forEach((cat) => {
+      if (!cat.imageUrl) return;
+      const existing = mediaMap.get(cat.imageUrl) || {
+        url: cat.imageUrl,
+        createdAt: new Date(),
+        usage: [],
+      };
+      existing.usage.push({
+        type: "category",
+        id: cat.id,
+        title: cat.name,
+        slug: cat.slug,
+      });
+      mediaMap.set(cat.imageUrl, existing);
+    });
+
+    // 3. Scan Hero Carousel Slides
+    if (settingsMap.homepage_carousel_slides_json) {
+      try {
+        const slides = JSON.parse(settingsMap.homepage_carousel_slides_json);
+        if (Array.isArray(slides)) {
+          slides.forEach((slide: any) => {
+            if (slide.image) {
+              const existing = mediaMap.get(slide.image) || {
+                url: slide.image,
+                createdAt: new Date(),
+                usage: [],
+              };
+              existing.usage.push({
+                type: "hero_slide",
+                id: slide.id || "hero",
+                title: slide.title || "Hero Slide",
+              });
+              mediaMap.set(slide.image, existing);
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
+    // 4. Scan Main Hero Image
+    if (settingsMap.homepage_hero_image_url) {
+      const url = settingsMap.homepage_hero_image_url;
+      const existing = mediaMap.get(url) || {
+        url,
+        createdAt: new Date(),
+        usage: [],
+      };
+      existing.usage.push({
+        type: "hero_main",
+        title: "Main Hero Poster",
+      });
+      mediaMap.set(url, existing);
+    }
+
+    const items = Array.from(mediaMap.values());
+    res.json({
+      success: true,
+      media: items,
+      totalCount: items.length,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Failed to load media assets." });
+  }
+});
+
 // ==========================================
 // 2. CATEGORIES MANAGEMENT (FULL CRUD)
 // ==========================================

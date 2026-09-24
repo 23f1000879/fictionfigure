@@ -222,6 +222,13 @@ router.get("/", async (_req, res) => {
           return settingsMap[key] !== undefined ? settingsMap[key] : ((DEFAULT_SETTINGS as any)[key] || "");
         };
 
+        let homepageCmsConfig = null;
+        if (settingsMap.homepage_cms_config_json) {
+          try {
+            homepageCmsConfig = JSON.parse(settingsMap.homepage_cms_config_json);
+          } catch (e) {}
+        }
+
         const payload = {
           success: true,
           settings: settingsMap,
@@ -236,6 +243,7 @@ router.get("/", async (_req, res) => {
           announcements: processedAnnouncements,
           featuredProduct,
           carouselSlides: processedCarouselSlides,
+          homepageCmsConfig,
           upiId: resolveStringSetting("upi_id"),
           upiQrUrl: resolveStringSetting("upi_qr_url"),
         };

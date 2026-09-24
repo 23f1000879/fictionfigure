@@ -45,6 +45,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { DEFAULT_HOMEPAGE_CMS_CONFIG, DEFAULT_HOMEPAGE_SECTIONS } from "@/types/cms";
+
 async function getHeroSettings() {
   try {
     const res = await fetch(`${API_BASE}/settings`, { next: { revalidate: 60 } });
@@ -69,6 +71,8 @@ export default async function HomePage() {
 
   const settings = heroData?.settings || {};
   const heroEnabled = settings.homepage_hero_enabled !== "false";
+  const cmsConfig = heroData?.homepageCmsConfig || DEFAULT_HOMEPAGE_CMS_CONFIG;
+  const sectionsOrder = cmsConfig?.sectionsOrder || DEFAULT_HOMEPAGE_SECTIONS;
 
   // Carousel slides from backend API or dynamic fallback using existing category assets
   const slides: CarouselSlide[] =
@@ -137,6 +141,78 @@ export default async function HomePage() {
     "url": "https://www.fictionfigures.in",
   };
 
+  const renderSection = (sectionId: string) => {
+    switch (sectionId) {
+      case "categories":
+        if (cmsConfig?.shopByCategory?.enabled === false) return null;
+        return (
+          <CategoryShowcase
+            key="categories"
+            categories={categories}
+            eyebrow={cmsConfig?.shopByCategory?.eyebrow || "CURATED UNIVERSE"}
+            title={cmsConfig?.shopByCategory?.title || "SHOP BY CATEGORY"}
+            viewAllText={cmsConfig?.shopByCategory?.ctaText || "EXPLORE ALL CATEGORIES"}
+            viewAllUrl={cmsConfig?.shopByCategory?.ctaUrl || "/collections"}
+          />
+        );
+      case "new_arrivals":
+        if (cmsConfig?.newArrivals?.enabled === false) return null;
+        return (
+          <ProductSection
+            key="new_arrivals"
+            eyebrow={cmsConfig?.newArrivals?.eyebrow || "FRESHLY ADDED TO COLLECTION"}
+            title={cmsConfig?.newArrivals?.title || "NEW ARRIVALS"}
+            viewAllUrl={cmsConfig?.newArrivals?.ctaUrl || "/shop?sortBy=newest"}
+            viewAllText={cmsConfig?.newArrivals?.ctaText || "VIEW ALL NEW"}
+            products={newArrivals}
+          />
+        );
+      case "featured_collection":
+        if (cmsConfig?.featuredCollection?.enabled === false) return null;
+        if (!featuredCat) return null;
+        return (
+          <FeaturedCollection
+            key="featured_collection"
+            title={cmsConfig?.featuredCollection?.title || featuredCat.name}
+            subtitle={cmsConfig?.featuredCollection?.eyebrow || "SPOTLIGHT COLLECTION"}
+            description={cmsConfig?.featuredCollection?.description || featuredCat.description || "Authentic collectible figures and merchandise directly from global studios."}
+            imageUrl={cmsConfig?.featuredCollection?.imageUrl || featuredCat.imageUrl || featuredCat.image || undefined}
+            shopUrl={cmsConfig?.featuredCollection?.ctaDestinationValue ? `/shop?category=${cmsConfig.featuredCollection.ctaDestinationValue}` : `/shop?category=${featuredCat.slug}`}
+            buttonLabel={cmsConfig?.featuredCollection?.ctaText || `EXPLORE ${featuredCat.name}`}
+          />
+        );
+      case "more_to_collect":
+        if (cmsConfig?.moreToCollect?.enabled === false) return null;
+        return (
+          <ProductSection
+            key="more_to_collect"
+            eyebrow={cmsConfig?.moreToCollect?.eyebrow || "CATALOG HIGHLIGHTS"}
+            title={cmsConfig?.moreToCollect?.title || "MORE TO COLLECT"}
+            viewAllUrl={cmsConfig?.moreToCollect?.ctaUrl || "/shop"}
+            viewAllText={cmsConfig?.moreToCollect?.ctaText || "EXPLORE ALL"}
+            products={popularProducts}
+          />
+        );
+      case "promo_banner":
+        if (cmsConfig?.promoBanner?.enabled === false) return null;
+        if (!promoCat) return null;
+        return (
+          <PromoBanner
+            key="promo_banner"
+            categoryName={promoCat.name}
+            categorySlug={promoCat.slug}
+            imageUrl={cmsConfig?.promoBanner?.bgImageUrl || promoCat.imageUrl || promoCat.image || undefined}
+            description={cmsConfig?.promoBanner?.description || promoCat.description || "Explore high-definition posters, keychains, and graphic apparel."}
+          />
+        );
+      case "trust_strip":
+        if (cmsConfig?.trustStrip?.enabled === false) return null;
+        return <TrustStrip key="trust_strip" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <Header />
@@ -155,53 +231,11 @@ export default async function HomePage() {
         {/* Phase 2 Finished Hero Carousel */}
         {heroEnabled && <HeroCarousel slides={slides} />}
 
-        {/* Below-The-Hero Editorial Merchandising Sections */}
+        {/* Dynamic Section Rendering based on Saved Section Order & Visibility */}
         <div className="space-y-10 sm:space-y-14 py-8 sm:py-12">
-          {/* Section 1: Shop By Category */}
-          <CategoryShowcase categories={categories} />
-
-          {/* Section 2: New Arrivals Product Grid */}
-          <ProductSection
-            eyebrow="FRESHLY ADDED TO COLLECTION"
-            title="NEW ARRIVALS"
-            viewAllUrl="/shop?sortBy=newest"
-            viewAllText="VIEW ALL NEW"
-            products={newArrivals}
-          />
-
-          {/* Section 3: Featured Collection Spotlight Banner */}
-          {featuredCat && (
-            <FeaturedCollection
-              title={featuredCat.name}
-              subtitle="SPOTLIGHT COLLECTION"
-              description={featuredCat.description || "Authentic collectible figures and merchandise directly from global studios."}
-              imageUrl={featuredCat.imageUrl || featuredCat.image || undefined}
-              shopUrl={`/shop?category=${featuredCat.slug}`}
-              buttonLabel={`EXPLORE ${featuredCat.name}`}
-            />
-          )}
-
-          {/* Section 4: Truthful Catalog Selections */}
-          <ProductSection
-            eyebrow="CATALOG HIGHLIGHTS"
-            title="MORE TO COLLECT"
-            viewAllUrl="/shop"
-            viewAllText="EXPLORE ALL"
-            products={popularProducts}
-          />
-
-          {/* Section 5: Secondary Promotional Banner */}
-          {promoCat && promoCat.id !== featuredCat?.id && (
-            <PromoBanner
-              categoryName={promoCat.name}
-              categorySlug={promoCat.slug}
-              imageUrl={promoCat.imageUrl || promoCat.image || undefined}
-              description={promoCat.description || "Explore high-definition posters, keychains, and graphic apparel."}
-            />
-          )}
-
-          {/* Section 6: Trust & Service Benefits Strip */}
-          <TrustStrip />
+          {sectionsOrder
+            .filter((sec: any) => sec.id !== "hero" && sec.enabled)
+            .map((sec: any) => renderSection(sec.id))}
         </div>
       </main>
 

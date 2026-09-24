@@ -19,9 +19,19 @@ export interface CategoryItem {
 
 interface CategoryShowcaseProps {
   categories: CategoryItem[];
+  eyebrow?: string;
+  title?: string;
+  viewAllText?: string;
+  viewAllUrl?: string;
 }
 
-export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
+export function CategoryShowcase({
+  categories,
+  eyebrow = "CATEGORIES",
+  title = "Shop By Category",
+  viewAllText = "VIEW ALL",
+  viewAllUrl = "/shop",
+}: CategoryShowcaseProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   if (!categories || categories.length === 0) return null;
@@ -41,10 +51,10 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
       <div className="flex items-end justify-between border-b border-[#E5E5E2] pb-3">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#D4AF37] block mb-0.5">
-            CATEGORIES
+            {eyebrow}
           </span>
           <h2 className="text-xl sm:text-2xl font-bold text-[#111111] tracking-tight uppercase">
-            Shop By Category
+            {title}
           </h2>
         </div>
 
@@ -70,10 +80,10 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
           </div>
 
           <Link
-            href="/shop"
+            href={viewAllUrl}
             className="text-xs font-bold uppercase tracking-wider text-[#111111] hover:text-[#D4AF37] transition-colors flex items-center group"
           >
-            <span>VIEW ALL</span>
+            <span>{viewAllText}</span>
             <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
