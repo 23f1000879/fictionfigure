@@ -105,21 +105,16 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
     product.category?.name?.toLowerCase()?.includes("t-shirt")
   );
 
-  const hasSizeVariants = Boolean(
-    product.variants?.some((v) =>
-      ["S", "M", "L", "XL", "XXL", "XS", "3XL"].includes(v.title.toUpperCase()) ||
-      (v.title !== "Standard Edition" && v.title !== "Standard" && v.title !== "Default Title")
-    )
+  const hasVariants = Boolean(
+    product.variants &&
+    (product.variants.length > 1 ||
+      (product.variants.length === 1 &&
+        product.variants[0].title !== "Standard Edition" &&
+        product.variants[0].title !== "Standard" &&
+        product.variants[0].title !== "Default Title"))
   );
 
-  const isClothing = Boolean(
-    (product as any).isClothing ||
-    isClothingCategory ||
-    hasSizeVariants
-  );
-
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [sizeError, setSizeError] = useState<string | null>(null);
+  const [variantError, setVariantError] = useState<string | null>(null);
 
   const currentVariant = product.variants[selectedVariantIndex] || product.variants[0];
   const currentPrice = currentVariant?.price || product.price;
@@ -127,7 +122,11 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const inStock = currentVariant ? currentVariant.inventoryCount > 0 : false;
   const isLowStock = currentVariant && currentVariant.inventoryCount > 0 && currentVariant.inventoryCount <= 3;
 
-  const currentImage = product.images[selectedImageIndex]?.url || product.images[0]?.url || "";
+  const currentImage =
+    currentVariant?.imageUrl ||
+    product.images[selectedImageIndex]?.url ||
+    product.images[0]?.url ||
+    "";
 
   // Check if customer already has a pending restock request for this product
   React.useEffect(() => {
@@ -237,10 +236,6 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   };
 
   const handleAddToCart = () => {
-    if (isClothing && !selectedSize) {
-      setSizeError("Please select a size.");
-      return;
-    }
     if (!currentVariant || !inStock) return;
     addItem({
       variantId: currentVariant.id,
@@ -256,10 +251,6 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   };
 
   const handleBuyNow = () => {
-    if (isClothing && !selectedSize) {
-      setSizeError("Please select a size.");
-      return;
-    }
     if (!currentVariant || !inStock) return;
     handleAddToCart();
     router.push("/checkout");
@@ -408,15 +399,15 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
             </div>
           </div>
 
-          {/* Variant / Size Selector */}
-          {isClothing ? (
+          {/* Generic Variant Selector */}
+          {hasVariants && (
             <div className="space-y-3 w-full max-w-full">
-              <label className="text-xs font-semibold uppercase tracking-widest text-[#111111] block">
-                SELECT SIZE
+              <label className="text-xs font-semibold uppercase tracking-widest text-[#111111] block font-mono">
+                SELECT VARIANT: <span className="text-[#D4AF37] font-bold">{currentVariant?.title}</span>
               </label>
               <div className="flex flex-wrap gap-2.5 w-full max-w-full">
                 {product.variants.map((v, idx) => {
-                  const isSelected = selectedSize === v.title;
+                  const isSelected = selectedVariantIndex === idx;
                   const isOutOfStock = v.inventoryCount <= 0;
 
                   return (
@@ -425,11 +416,10 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                       type="button"
                       disabled={isOutOfStock}
                       onClick={() => {
-                        setSelectedSize(v.title);
-                        setSizeError(null);
                         setSelectedVariantIndex(idx);
+                        setVariantError(null);
                       }}
-                      className={`min-w-[48px] h-12 px-3 border text-xs font-bold font-mono transition-all flex items-center justify-center relative ${
+                      className={`min-h-[44px] px-4 py-2 border text-xs font-bold font-mono transition-all flex items-center justify-center space-x-2 relative ${
                         isSelected
                           ? "border-[#111111] bg-[#111111] text-white shadow-sm"
                           : isOutOfStock
@@ -437,43 +427,22 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                           : "border-[#E5E5E2] bg-white text-[#111111] hover:border-[#111111]"
                       }`}
                     >
-                      {v.title}
+                      <span>{v.title}</span>
+                      {v.price && v.price !== product.price && (
+                        <span className={`text-[10px] font-normal ${isSelected ? "text-[#D4AF37]" : "text-[#6B6B6B]"}`}>
+                          ({formatPrice(v.price)})
+                        </span>
+                      )}
                     </button>
                   );
                 })}
               </div>
-              {sizeError && (
+              {variantError && (
                 <div className="p-3 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold">
-                  {sizeError}
+                  {variantError}
                 </div>
               )}
             </div>
-          ) : (
-            product.variants.length > 1 && (
-              <div className="space-y-3 w-full max-w-full">
-                <label className="text-xs font-semibold uppercase tracking-widest text-[#111111] block">
-                  Select Edition / Scale:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-full">
-                  {product.variants.map((v, idx) => (
-                    <button
-                      key={v.id}
-                      onClick={() => setSelectedVariantIndex(idx)}
-                      className={`p-3 text-left border transition-all text-xs w-full ${
-                        selectedVariantIndex === idx
-                          ? "border-[#111111] bg-white font-semibold text-[#111111]"
-                          : "border-[#E5E5E2] bg-[#F7F7F5] text-[#6B6B6B] hover:border-[#111111]"
-                      }`}
-                    >
-                      <span className="block font-medium truncate">{v.title}</span>
-                      <span className="font-mono text-[11px] block mt-0.5 text-[#111111]">
-                        {formatPrice(v.price)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )
           )}
 
           {/* Quantity Controls & Action Buttons */}

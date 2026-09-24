@@ -540,7 +540,7 @@ export function CheckoutClient() {
                     <h5 className="font-semibold text-[#111111] truncate">{item.title}</h5>
                     {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
                       <span className="text-[10px] font-medium text-[#111111] block">
-                        Size: <strong className="font-mono">{item.variantTitle}</strong>
+                        Variant: <strong className="font-mono">{item.variantTitle}</strong>
                       </span>
                     )}
                     <span className="text-[10px] text-[#6B6B6B]">Qty: {item.quantity}</span>
@@ -1231,7 +1231,7 @@ export function CheckoutClient() {
                       <h5 className="font-semibold text-[#111111] truncate">{item.title}</h5>
                       {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
                         <p className="text-[10px] font-medium text-[#111111]">
-                          Size: <strong className="font-mono">{item.variantTitle}</strong>
+                          Variant: <strong className="font-mono">{item.variantTitle}</strong>
                         </p>
                       )}
                       <div className="text-[10px] text-[#6B6B6B] flex items-center space-x-2">

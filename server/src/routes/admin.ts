@@ -489,23 +489,41 @@ router.post("/products", async (req, res) => {
     }
 
     let variantsToCreate: any[] = [];
+    const rawVariants = Array.isArray(req.body.variants)
+      ? req.body.variants
+      : Array.isArray(sizeVariants)
+      ? sizeVariants
+      : [];
 
-    if (isClothingProduct && Array.isArray(sizeVariants) && sizeVariants.length > 0) {
-      variantsToCreate = sizeVariants.map((sv: any) => {
-        const sizeTitle = String(sv.size || sv.title).trim();
-        const sizeStock = Math.max(0, Number(sv.stock !== undefined ? sv.stock : sv.inventoryCount) || 0);
+    const hasVariantMode = Boolean(
+      req.body.hasVariants ||
+      req.body.productType === "variants" ||
+      isClothingProduct ||
+      rawVariants.length > 0
+    );
+
+    if (hasVariantMode && rawVariants.length > 0) {
+      variantsToCreate = rawVariants.map((v: any, idx: number) => {
+        const titleStr = String(v.title || v.name || v.size || `Variant ${idx + 1}`).trim();
+        const skuStr = String(v.sku || `${sku}-${titleStr.toUpperCase().replace(/\s+/g, "-")}`).trim();
+        const priceNum = Math.max(0, Number(v.price !== undefined ? v.price : price) || 0);
+        const compareAtNum = v.compareAtPrice ? Math.max(0, Number(v.compareAtPrice) || 0) : null;
+        const stockNum = Math.max(0, Number(v.stock !== undefined ? v.stock : v.inventoryCount) || 0);
+        const imgUrl = v.imageUrl || imgArray[0] || null;
+
         return {
-          title: sizeTitle,
-          sku: `${sku}-${sizeTitle.toUpperCase()}`,
-          price: Number(price),
-          inventoryCount: sizeStock,
-          imageUrl: imgArray[0] || null,
+          title: titleStr,
+          sku: skuStr,
+          price: priceNum,
+          compareAtPrice: compareAtNum,
+          inventoryCount: stockNum,
+          imageUrl: imgUrl,
           options: {
-            create: [{ name: "Size", value: sizeTitle }],
+            create: [{ name: "Variant", value: titleStr }],
           },
           inventory: {
             create: {
-              quantity: sizeStock,
+              quantity: stockNum,
               reservedQuantity: 0,
               lowStockThreshold: 3,
             },
@@ -518,6 +536,7 @@ router.post("/products", async (req, res) => {
           title: "Standard Edition",
           sku: `${sku}-STD`,
           price: Number(price),
+          compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
           inventoryCount: stock,
           imageUrl: imgArray[0] || null,
           inventory: {
@@ -621,6 +640,7 @@ router.patch("/products/:id", async (req, res) => {
       images,
       isClothing,
       sizeVariants,
+      variants,
     } = req.body;
 
     const existingProduct = await prisma.product.findUnique({
@@ -649,37 +669,49 @@ router.patch("/products/:id", async (req, res) => {
       },
     });
 
-    const isClothingProduct = isClothing !== undefined ? Boolean(isClothing) : existingProduct.isClothing;
+    const rawVariants = variants !== undefined ? variants : (sizeVariants !== undefined ? sizeVariants : null);
 
-    if (isClothingProduct && Array.isArray(sizeVariants)) {
-      const activeSizeTitles = new Set<string>();
+    if (Array.isArray(rawVariants)) {
+      const activeTitles = new Set<string>();
 
-      for (const sv of sizeVariants) {
-        const sizeTitle = String(sv.size || sv.title).trim();
-        if (!sizeTitle) continue;
-        activeSizeTitles.add(sizeTitle);
+      for (const v of rawVariants) {
+        const titleStr = String(v.title || v.name || v.size || "").trim();
+        if (!titleStr) continue;
+        activeTitles.add(titleStr);
 
-        const sizeStock = Math.max(0, Number(sv.stock !== undefined ? sv.stock : sv.inventoryCount) || 0);
-        const existingVariant = existingProduct.variants.find((v) => v.title === sizeTitle);
+        const skuStr = String(v.sku || `${existingProduct.sku}-${titleStr.toUpperCase().replace(/\s+/g, "-")}`).trim();
+        const priceNum = Math.max(
+          0,
+          Number(v.price !== undefined ? v.price : (price !== undefined ? price : existingProduct.price)) || 0
+        );
+        const compareAtNum = v.compareAtPrice ? Math.max(0, Number(v.compareAtPrice) || 0) : null;
+        const stockNum = Math.max(0, Number(v.stock !== undefined ? v.stock : v.inventoryCount) || 0);
+        const imgUrl = v.imageUrl || null;
+
+        const existingVariant = existingProduct.variants.find((exV) => exV.id === v.id || exV.title === titleStr);
 
         if (existingVariant) {
           await prisma.productVariant.update({
             where: { id: existingVariant.id },
             data: {
-              inventoryCount: sizeStock,
-              ...(price !== undefined && { price: Number(price) }),
+              title: titleStr,
+              sku: skuStr,
+              price: priceNum,
+              compareAtPrice: compareAtNum,
+              inventoryCount: stockNum,
+              ...(imgUrl !== undefined && { imageUrl: imgUrl }),
             },
           });
           if (existingVariant.inventory) {
             await prisma.inventory.update({
               where: { variantId: existingVariant.id },
-              data: { quantity: sizeStock },
+              data: { quantity: stockNum },
             });
           } else {
             await prisma.inventory.create({
               data: {
                 variantId: existingVariant.id,
-                quantity: sizeStock,
+                quantity: stockNum,
                 reservedQuantity: 0,
                 lowStockThreshold: 3,
               },
@@ -689,16 +721,18 @@ router.patch("/products/:id", async (req, res) => {
           await prisma.productVariant.create({
             data: {
               productId: id,
-              title: sizeTitle,
-              sku: `${existingProduct.sku}-${sizeTitle.toUpperCase()}`,
-              price: Number(price !== undefined ? price : existingProduct.price),
-              inventoryCount: sizeStock,
+              title: titleStr,
+              sku: skuStr,
+              price: priceNum,
+              compareAtPrice: compareAtNum,
+              inventoryCount: stockNum,
+              imageUrl: imgUrl,
               options: {
-                create: [{ name: "Size", value: sizeTitle }],
+                create: [{ name: "Variant", value: titleStr }],
               },
               inventory: {
                 create: {
-                  quantity: sizeStock,
+                  quantity: stockNum,
                   reservedQuantity: 0,
                   lowStockThreshold: 3,
                 },
@@ -708,16 +742,16 @@ router.patch("/products/:id", async (req, res) => {
         }
       }
 
-      // Set stock to 0 for any size variants that were omitted/disabled by admin
-      for (const v of existingProduct.variants) {
-        if (v.title !== "Standard Edition" && !activeSizeTitles.has(v.title)) {
+      // Mark unselected variants stock as 0
+      for (const exV of existingProduct.variants) {
+        if (exV.title !== "Standard Edition" && !activeTitles.has(exV.title)) {
           await prisma.productVariant.update({
-            where: { id: v.id },
+            where: { id: exV.id },
             data: { inventoryCount: 0 },
           });
-          if (v.inventory) {
+          if (exV.inventory) {
             await prisma.inventory.update({
-              where: { variantId: v.id },
+              where: { variantId: exV.id },
               data: { quantity: 0 },
             });
           }

@@ -293,11 +293,11 @@ export default function AdminOrderDetailPage() {
                     </h4>
                     {variantTitle && variantTitle !== "Standard Edition" && variantTitle !== "Standard" ? (
                       <span className="text-[11px] font-medium text-[#111111] block">
-                        Size: <strong className="font-mono text-[#111111]">{variantTitle}</strong>
+                        Variant: <strong className="font-mono text-[#111111]">{variantTitle}</strong>
                       </span>
                     ) : (
                       <span className="text-[11px] text-[#6B6B6B] block">
-                        Size: <span className="font-mono text-[#6B6B6B]">—</span>
+                        Variant: <span className="font-mono text-[#6B6B6B]">—</span>
                       </span>
                     )}
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#6B6B6B] pt-0.5">

@@ -109,7 +109,7 @@ export function CartDrawer() {
                       </h4>
                       {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
                         <p className="text-[11px] font-medium text-[#111111] mt-0.5">
-                          Size: <strong className="font-mono">{item.variantTitle}</strong>
+                          Variant: <strong className="font-mono">{item.variantTitle}</strong>
                         </p>
                       )}
                       <p className="text-[11px] font-mono text-[#6B6B6B] mt-0.5">
