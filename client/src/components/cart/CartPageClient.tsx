@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Trash2, Plus, Minus, ArrowRight, ArrowLeft, Tag, ShoppingBag, Check, Loader2 } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, ArrowLeft, Tag, ShoppingBag, Loader2, Sparkles } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
 import { formatPrice } from "@/lib/utils";
@@ -61,80 +61,94 @@ export function CartPageClient() {
 
   if (isHydrating || isValidating) {
     return (
-      <div className="py-20 text-center space-y-4 max-w-md mx-auto">
-        <Loader2 className="w-10 h-10 text-[#111111] animate-spin mx-auto" />
-        <h2 className="text-sm font-semibold text-[#6B6B6B] uppercase tracking-wider">
+      <div className="py-24 text-center space-y-4 max-w-md mx-auto">
+        <Loader2 className="w-8 h-8 text-[#111111] animate-spin mx-auto" />
+        <p className="text-xs font-semibold text-[#6B6B6B] uppercase tracking-widest">
           Updating Shopping Cart...
-        </h2>
+        </p>
       </div>
     );
   }
 
   if (cart.length === 0) {
     return (
-      <div className="py-20 text-center space-y-6 max-w-md mx-auto">
-        <div className="w-20 h-20 bg-[#F0F0ED] rounded-full flex items-center justify-center mx-auto text-[#6B6B6B]">
-          <ShoppingBag className="w-10 h-10" />
+      <div className="py-20 sm:py-28 text-center max-w-lg mx-auto px-4">
+        <div className="w-20 h-20 bg-[#F0F0ED] rounded-full flex items-center justify-center mx-auto text-[#6B6B6B] mb-6 border border-[#E5E5E2]">
+          <ShoppingBag className="w-8 h-8 text-[#111111]" />
         </div>
-        <h2 className="text-2xl font-semibold text-[#111111]">Your cart is empty</h2>
-        <p className="text-xs text-[#6B6B6B] leading-relaxed">
-          Looks like you haven't added any figures to your cart yet. Explore our curated catalog of scale figures and statues.
+        <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#D4AF37] block mb-2">
+          FICTIONFIGURE BAG
+        </span>
+        <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-[#111111] mb-3">
+          YOUR CART IS EMPTY
+        </h2>
+        <p className="text-xs text-[#6B6B6B] leading-relaxed max-w-sm mx-auto mb-8 font-normal">
+          Looks like you haven't added anything yet. Explore our curated collections of authentic scale figures and collectibles.
         </p>
-        <Link
-          href="/shop"
-          className="inline-block px-8 py-3.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
-        >
-          Explore Collection
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            href="/shop"
+            className="w-full sm:w-auto px-8 py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#D4AF37] hover:text-[#111111] transition-all shadow-sm text-center"
+          >
+            EXPLORE COLLECTIONS
+          </Link>
+          <Link
+            href="/shop"
+            className="w-full sm:w-auto px-8 py-3.5 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-bold uppercase tracking-widest hover:border-[#111111] transition-all text-center"
+          >
+            CONTINUE SHOPPING
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex justify-between items-end border-b border-[#E5E5E2] pb-6">
+    <div className="space-y-8 pb-12">
+      {/* Editorial Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-[#E5E5E2] pb-6 gap-4">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] block">
-            Shopping Cart
+          <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#D4AF37] block mb-1">
+            SHOPPING BAG
           </span>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#111111] tracking-tight">
-            Selected Figures ({cart.length})
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111111] tracking-tight uppercase">
+            CART ({cart.length} {cart.length === 1 ? "ITEM" : "ITEMS"})
           </h1>
         </div>
         <Link
           href="/shop"
-          className="text-xs font-semibold text-[#111111] hover:underline flex items-center"
+          className="text-xs font-bold uppercase tracking-wider text-[#111111] hover:text-[#D4AF37] transition-colors flex items-center"
         >
-          <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Continue Shopping
+          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Continue Shopping
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Cart Item Table */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="hidden sm:grid grid-cols-6 text-xs uppercase font-semibold text-[#6B6B6B] pb-3 border-b border-[#E5E5E2] tracking-wider">
-            <span className="col-span-3">Item Details</span>
-            <span className="text-center">Price</span>
-            <span className="text-center">Quantity</span>
-            <span className="text-right">Total</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* Cart Item List (8 columns) */}
+        <div className="lg:col-span-8 space-y-4">
+          <div className="hidden sm:grid grid-cols-12 text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] pb-3 border-b border-[#E5E5E2]">
+            <span className="col-span-6">PRODUCT</span>
+            <span className="col-span-2 text-center">PRICE</span>
+            <span className="col-span-2 text-center">QUANTITY</span>
+            <span className="col-span-2 text-right">TOTAL</span>
           </div>
 
           <div className="divide-y divide-[#E5E5E2]">
             {cart.map((item) => (
               <div
                 key={item.variantId}
-                className="py-4 grid grid-cols-1 sm:grid-cols-6 gap-4 items-center"
+                className="py-6 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center"
               >
-                {/* Product & Variant info */}
-                <div className="sm:col-span-3 flex space-x-4 items-center">
-                  <div className="relative w-20 h-20 bg-[#F0F0ED] shrink-0 border border-[#E5E5E2]">
+                {/* Product Image & Details (6 cols) */}
+                <div className="sm:col-span-6 flex space-x-4 items-center">
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] overflow-hidden shrink-0 p-1">
                     {item.image ? (
                       <Image
                         src={item.image}
                         alt={item.title}
                         fill
-                        className="object-cover"
+                        sizes="96px"
+                        className="object-contain p-1"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B]">
@@ -143,51 +157,79 @@ export function CartPageClient() {
                     )}
                   </div>
 
-                  <div className="min-w-0">
-                    <span className="text-[10px] uppercase font-semibold text-[#6B6B6B] block">
-                      {item.brand}
-                    </span>
-                    <h4 className="text-xs font-semibold text-[#111111] truncate">{item.title}</h4>
-                    <p className="text-[11px] text-[#6B6B6B]">{item.variantTitle}</p>
-                    <span className="text-[10px] text-[#6B6B6B] font-mono block mt-0.5">
-                      SKU: {item.sku}
-                    </span>
+                  <div className="min-w-0 space-y-1">
+                    {item.brand && (
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block">
+                        {item.brand}
+                      </span>
+                    )}
+                    <h4 className="text-xs sm:text-sm font-semibold text-[#111111] truncate leading-snug">
+                      {item.title}
+                    </h4>
+                    {item.variantTitle && (
+                      <p className="text-[11px] text-[#6B6B6B] font-medium">
+                        Variant: <strong className="text-[#111111] font-mono">{item.variantTitle}</strong>
+                      </p>
+                    )}
+                    {item.sku && (
+                      <span className="text-[10px] text-[#6B6B6B] font-mono block">
+                        SKU: {item.sku}
+                      </span>
+                    )}
+
+                    {/* Mobile Price Display */}
+                    <div className="sm:hidden text-xs font-mono font-bold text-[#111111] pt-1">
+                      {formatPrice(item.price)}
+                    </div>
                   </div>
                 </div>
 
-                {/* Price */}
-                <div className="text-left sm:text-center text-xs font-mono font-semibold text-[#111111]">
+                {/* Desktop Unit Price (2 cols) */}
+                <div className="hidden sm:block sm:col-span-2 text-center text-xs font-mono font-semibold text-[#111111]">
                   {formatPrice(item.price)}
                 </div>
 
-                {/* Quantity */}
-                <div className="flex justify-start sm:justify-center items-center">
-                  <div className="flex items-center border border-[#E5E5E2] bg-white">
+                {/* Compact Quantity Control (2 cols) */}
+                <div className="sm:col-span-2 flex justify-between sm:justify-center items-center">
+                  <div className="flex items-center border border-[#E5E5E2] rounded-md bg-white shadow-2xs">
                     <button
                       onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                      className="p-1.5 text-[#6B6B6B] hover:text-[#111111]"
+                      className="p-2 text-[#6B6B6B] hover:text-[#111111] transition-colors"
+                      title="Decrease quantity"
+                      aria-label="Decrease quantity"
                     >
-                      <Minus className="w-3.5 h-3.5" />
+                      <Minus className="w-3 h-3" />
                     </button>
-                    <span className="px-3 text-xs font-mono font-semibold text-[#111111]">
+                    <span className="px-3 text-xs font-mono font-bold text-[#111111]">
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                      className="p-1.5 text-[#6B6B6B] hover:text-[#111111]"
+                      className="p-2 text-[#6B6B6B] hover:text-[#111111] transition-colors"
+                      title="Increase quantity"
+                      aria-label="Increase quantity"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-3 h-3" />
                     </button>
                   </div>
+
+                  {/* Mobile Remove Button */}
+                  <button
+                    onClick={() => removeItem(item.variantId)}
+                    className="sm:hidden text-xs font-semibold text-[#6B6B6B] hover:text-[#A83232] transition-colors uppercase tracking-wider flex items-center"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Remove
+                  </button>
                 </div>
 
-                {/* Total & Delete */}
-                <div className="flex items-center justify-between sm:justify-end space-x-4 text-xs font-mono font-semibold text-[#111111]">
+                {/* Line Total & Remove Action (2 cols) */}
+                <div className="hidden sm:flex sm:col-span-2 items-center justify-end space-x-3 text-xs font-mono font-semibold text-[#111111]">
                   <span>{formatPrice(item.price * item.quantity)}</span>
                   <button
                     onClick={() => removeItem(item.variantId)}
                     className="text-[#6B6B6B] hover:text-[#A83232] transition-colors p-1"
                     title="Remove item"
+                    aria-label="Remove item"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -197,54 +239,54 @@ export function CartPageClient() {
           </div>
         </div>
 
-        {/* Order Summary & Coupon Form */}
-        <div className="space-y-6">
-          <div className="p-6 bg-white border border-[#E5E5E2] space-y-6">
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
-              Order Summary
+        {/* Order Summary Column (4 columns) */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="p-6 bg-white border border-[#E5E5E2] rounded-lg space-y-6 shadow-2xs">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3">
+              ORDER SUMMARY
             </h3>
 
             <div className="space-y-3 text-xs">
               <div className="flex justify-between text-[#6B6B6B]">
-                <span>Items Subtotal</span>
-                <span className="font-mono text-[#111111]">{formatPrice(cartSubtotal)}</span>
+                <span>Subtotal</span>
+                <span className="font-mono text-[#111111] font-medium">{formatPrice(cartSubtotal)}</span>
               </div>
 
               {appliedCoupon && (
-                <div className="flex justify-between text-[#2E6B44]">
+                <div className="flex justify-between text-[#2E6B44] font-medium">
                   <span>Discount ({appliedCoupon.code})</span>
                   <span className="font-mono">-{formatPrice(discountAmount)}</span>
                 </div>
               )}
 
               <div className="flex justify-between text-[#6B6B6B]">
-                <span>Estimated Shipping</span>
-                <span className="font-mono text-[#111111]">
+                <span>Shipping</span>
+                <span className="font-mono text-[#111111] font-medium">
                   {shippingAmount === 0 ? "FREE" : formatPrice(shippingAmount)}
                 </span>
               </div>
 
-              <div className="pt-3 border-t border-[#E5E5E2] flex justify-between text-sm font-semibold">
-                <span className="uppercase text-xs tracking-wider">Total</span>
-                <span className="font-mono text-base text-[#111111]">{formatPrice(finalTotal)}</span>
+              <div className="pt-3 border-t border-[#E5E5E2] flex justify-between items-center text-sm font-extrabold text-[#111111]">
+                <span className="uppercase text-xs tracking-wider">TOTAL</span>
+                <span className="font-mono text-lg">{formatPrice(finalTotal)}</span>
               </div>
             </div>
 
-            {/* Coupon Code Form */}
+            {/* Coupon Code Area */}
             <div className="pt-4 border-t border-[#E5E5E2] space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] block">
-                Promo Code
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] block">
+                COUPON CODE
               </label>
 
               {appliedCoupon ? (
-                <div className="flex items-center justify-between p-2.5 bg-[#F0F0ED] border border-[#E5E5E2] text-xs text-[#2E6B44]">
+                <div className="flex items-center justify-between p-3 bg-[#2E6B44]/10 border border-[#2E6B44] text-xs text-[#2E6B44] rounded-md font-semibold">
                   <div className="flex items-center space-x-2">
-                    <Tag className="w-4 h-4" />
-                    <span className="font-semibold uppercase">{appliedCoupon.code} Applied</span>
+                    <Tag className="w-3.5 h-3.5 shrink-0" />
+                    <span className="uppercase tracking-wider">{appliedCoupon.code} Applied</span>
                   </div>
                   <button
                     onClick={() => setAppliedCoupon(null)}
-                    className="text-xs text-[#6B6B6B] hover:text-[#111111] underline"
+                    className="text-xs text-[#6B6B6B] hover:text-[#111111] underline uppercase font-bold"
                   >
                     Remove
                   </button>
@@ -255,15 +297,15 @@ export function CartPageClient() {
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="e.g. WELCOME10"
-                    className="w-full px-3 py-2 bg-[#F7F7F5] border border-[#E5E5E2] text-xs uppercase text-[#111111] placeholder-[#6B6B6B] focus:border-[#111111] focus:outline-none"
+                    placeholder="Enter code"
+                    className="w-full px-3 py-2.5 bg-[#F7F7F5] border border-[#E5E5E2] text-xs font-mono uppercase text-[#111111] placeholder-[#6B6B6B] rounded-md focus:border-[#111111] focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={isValidatingCoupon}
-                    className="px-4 py-2 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50 transition-colors"
+                    className="px-4 py-2.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-wider rounded-md hover:bg-[#D4AF37] hover:text-[#111111] disabled:opacity-50 transition-colors shrink-0"
                   >
-                    Apply
+                    {isValidatingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "APPLY"}
                   </button>
                 </form>
               )}
@@ -271,13 +313,13 @@ export function CartPageClient() {
               {couponError && <p className="text-[11px] text-[#A83232]">{couponError}</p>}
             </div>
 
-            {/* Checkout Action CTA */}
+            {/* Checkout Primary CTA */}
             <div className="pt-4">
               <Link
                 href={`/checkout${appliedCoupon ? `?coupon=${appliedCoupon.code}` : ""}`}
-                className="w-full flex items-center justify-center py-3.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
+                className="w-full flex items-center justify-center py-4 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#D4AF37] hover:text-[#111111] transition-all shadow-sm"
               >
-                Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" />
+                CHECKOUT <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
             </div>
           </div>
@@ -286,3 +328,4 @@ export function CartPageClient() {
     </div>
   );
 }
+

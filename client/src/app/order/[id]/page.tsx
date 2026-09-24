@@ -156,27 +156,45 @@ export default function OrderDetailPage() {
   const banner = getStatusBanner();
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-12 text-[#111111] space-y-6 sm:space-y-8 box-border overflow-x-hidden">
-      {/* Header */}
-      <div className="flex items-center space-x-3 border-b border-[#E5E5E2] pb-6">
-        <Link href="/shop" className="p-2 border border-[#E5E5E2] hover:border-[#111111] min-w-[40px] min-h-[40px] flex items-center justify-center shrink-0">
-          <ArrowLeft className="w-4 h-4 text-[#111111]" />
-        </Link>
-        <div className="min-w-0">
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-[#6B6B6B] block">
-            Order Confirmation Receipt
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-16 text-[#111111] space-y-8 box-border overflow-x-hidden">
+      {/* Order Confirmed Hero Header */}
+      <div className="text-center space-y-4 bg-white border border-[#E5E5E2] p-8 sm:p-12 rounded-lg shadow-2xs">
+        <div className="w-16 h-16 bg-[#2E6B44]/10 border border-[#2E6B44]/20 rounded-full flex items-center justify-center mx-auto text-[#2E6B44]">
+          <CheckCircle2 className="w-10 h-10" />
+        </div>
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#D4AF37] block mb-1">
+            PURCHASE COMPLETE
           </span>
-          <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-[#111111] truncate">
-            Order #{order.orderNumber}
+          <h1 className="text-2xl sm:text-4xl font-extrabold uppercase tracking-tight text-[#111111]">
+            ORDER CONFIRMED
           </h1>
-          <span className="text-xs text-[#6B6B6B] font-mono block mt-0.5">
-            Placed on {formatDate(order.createdAt)}
-          </span>
+          <p className="text-sm font-semibold text-[#111111] mt-1">
+            Thank you for your order!
+          </p>
+          <p className="text-xs text-[#6B6B6B] mt-1 font-mono">
+            Order Reference: <strong className="text-[#111111]">{order.orderNumber}</strong> • Placed on {formatDate(order.createdAt)}
+          </p>
+        </div>
+
+        <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/shop"
+            className="px-6 py-3 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#D4AF37] hover:text-[#111111] transition-all"
+          >
+            CONTINUE SHOPPING →
+          </Link>
+          <Link
+            href="/account/orders"
+            className="px-6 py-3 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-bold uppercase tracking-widest rounded-md hover:border-[#111111] transition-all"
+          >
+            VIEW ALL ORDERS
+          </Link>
         </div>
       </div>
 
       {/* Dynamic Status Banner */}
-      <div className={`p-4 sm:p-5 border flex items-start space-x-3 ${banner.bg}`}>
+      <div className={`p-4 sm:p-5 border rounded-lg flex items-start space-x-3 ${banner.bg}`}>
         {banner.icon}
         <div className="min-w-0">
           <h4 className="font-bold text-xs uppercase tracking-wider leading-snug">{banner.title}</h4>
@@ -185,13 +203,13 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Order Details & Address Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-[#E5E5E2] p-5 sm:p-6 text-xs">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-[#E5E5E2] p-6 text-xs rounded-lg shadow-2xs">
         {/* Shipping Address */}
         <div className="space-y-2 min-w-0">
-          <span className="text-[#6B6B6B] font-semibold uppercase tracking-wider text-[11px] block border-b border-[#E5E5E2] pb-2">
-            Shipping Address
+          <span className="text-[#6B6B6B] font-bold uppercase tracking-widest text-[10px] block border-b border-[#E5E5E2] pb-2">
+            SHIPPING ADDRESS
           </span>
-          <p className="font-semibold text-[#111111] truncate">{order.shippingAddress?.fullName || "Collector"}</p>
+          <p className="font-bold text-[#111111] truncate text-sm">{order.shippingAddress?.fullName || "Collector"}</p>
           <p className="text-[#6B6B6B] break-words">{order.shippingAddress?.streetAddress}</p>
           {order.shippingAddress?.apartment && <p className="text-[#6B6B6B] break-words">{order.shippingAddress.apartment}</p>}
           <p className="text-[#6B6B6B]">
@@ -203,12 +221,12 @@ export default function OrderDetailPage() {
 
         {/* Payment & Tracking Status */}
         <div className="space-y-3 min-w-0">
-          <span className="text-[#6B6B6B] font-semibold uppercase tracking-wider text-[11px] block border-b border-[#E5E5E2] pb-2">
-            Fulfillment & Payment
+          <span className="text-[#6B6B6B] font-bold uppercase tracking-widest text-[10px] block border-b border-[#E5E5E2] pb-2">
+            FULFILLMENT & PAYMENT
           </span>
 
           <div className="space-y-1">
-            <span className="text-[#6B6B6B] text-[11px] uppercase block">Payment Method:</span>
+            <span className="text-[#6B6B6B] text-[10px] font-bold uppercase block">Payment Method</span>
             <span className="font-semibold text-[#111111] block">
               {isCod ? "Cash on Delivery (COD)" : "UPI Payment"}
             </span>
@@ -216,41 +234,41 @@ export default function OrderDetailPage() {
 
           {isUpi && primaryPayment?.utr && (
             <div className="space-y-1">
-              <span className="text-[#6B6B6B] text-[11px] uppercase block">Submitted UTR Reference:</span>
-              <span className="font-mono font-bold text-[#111111] bg-[#F0F0ED] px-2 py-0.5 border border-[#E5E5E2] inline-block max-w-full truncate">
+              <span className="text-[#6B6B6B] text-[10px] font-bold uppercase block">Submitted UTR Reference</span>
+              <span className="font-mono font-bold text-[#111111] bg-[#F7F7F5] px-2.5 py-1 border border-[#E5E5E2] rounded-md inline-block max-w-full truncate">
                 {primaryPayment.utr}
               </span>
             </div>
           )}
 
           <div className="space-y-1">
-            <span className="text-[#6B6B6B] text-[11px] uppercase block">Payment Status:</span>
+            <span className="text-[#6B6B6B] text-[10px] font-bold uppercase block">Payment Status</span>
             {isCod ? (
-              <span className="inline-block px-2.5 py-1 bg-[#111111] text-white text-[10px] uppercase font-bold tracking-wider">
+              <span className="inline-block px-2.5 py-1 bg-[#111111] text-white text-[10px] uppercase font-bold tracking-wider rounded-xs">
                 PAYMENT DUE ON DELIVERY
               </span>
             ) : isPaymentPaid ? (
-              <span className="inline-block px-2.5 py-1 bg-[#2E6B44] text-white text-[10px] uppercase font-bold tracking-wider">
+              <span className="inline-block px-2.5 py-1 bg-[#2E6B44] text-white text-[10px] uppercase font-bold tracking-wider rounded-xs">
                 PAID
               </span>
             ) : isPaymentFailed ? (
-              <span className="inline-block px-2.5 py-1 bg-[#A83232] text-white text-[10px] uppercase font-bold tracking-wider">
+              <span className="inline-block px-2.5 py-1 bg-[#A83232] text-white text-[10px] uppercase font-bold tracking-wider rounded-xs">
                 PAYMENT FAILED
               </span>
             ) : (
-              <span className="inline-block px-2.5 py-1 bg-[#B86E00] text-white text-[10px] uppercase font-bold tracking-wider">
+              <span className="inline-block px-2.5 py-1 bg-[#B86E00] text-white text-[10px] uppercase font-bold tracking-wider rounded-xs">
                 PAYMENT VERIFICATION PENDING
               </span>
             )}
           </div>
 
           <div className="space-y-1 pt-1">
-            <span className="text-[#6B6B6B] text-[11px] uppercase block">Tracking Reference:</span>
+            <span className="text-[#6B6B6B] text-[10px] font-bold uppercase block">Tracking Reference</span>
             {order.trackingNumber ? (
               <span className="font-mono font-bold text-[#111111] block">TRK: {order.trackingNumber}</span>
             ) : (
               <span className="text-[#6B6B6B] italic block text-[11px]">
-                Tracking information will be available after your order is shipped.
+                Tracking details will be provided once your order ships.
               </span>
             )}
           </div>
@@ -258,9 +276,9 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Purchased Items List */}
-      <div className="bg-white border border-[#E5E5E2] p-5 sm:p-6 space-y-4 text-xs">
-        <h3 className="font-semibold uppercase tracking-wider text-[#111111] border-b border-[#E5E5E2] pb-3">
-          Order Items ({order.items?.length || 0})
+      <div className="bg-white border border-[#E5E5E2] p-6 space-y-4 text-xs rounded-lg shadow-2xs">
+        <h3 className="font-bold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3 text-xs">
+          ORDER ITEMS ({order.items?.length || 0})
         </h3>
 
         <div className="space-y-4 divide-y divide-[#E5E5E2]">
@@ -270,10 +288,10 @@ export default function OrderDetailPage() {
 
             return (
               <div key={item.id} className="pt-4 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
-                <div className="flex space-x-3.5 items-center min-w-0 flex-1">
-                  <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-[#F0F0ED] shrink-0 border border-[#E5E5E2]">
+                <div className="flex space-x-4 items-center min-w-0 flex-1">
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-[#F7F7F5] shrink-0 border border-[#E5E5E2] rounded-md overflow-hidden p-1">
                     {item.image ? (
-                      <Image src={item.image} alt={item.title} fill className="object-cover" />
+                      <Image src={item.image} alt={item.title} fill className="object-contain p-1" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B]">
                         No Image
@@ -282,25 +300,25 @@ export default function OrderDetailPage() {
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
                     <h5 className="font-semibold text-[#111111] leading-snug break-words">{item.title}</h5>
-                    {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
-                      <p className="text-[11px] font-medium text-[#111111]">
-                        Variant: <strong className="font-mono">{item.variantTitle}</strong>
+                    {item.variantTitle && (
+                      <p className="text-[11px] font-medium text-[#6B6B6B]">
+                        Variant: <strong className="font-mono text-[#111111]">{item.variantTitle}</strong>
                       </p>
                     )}
-                    <p className="text-[10px] text-[#6B6B6B] font-mono">SKU: {item.sku}</p>
+                    {item.sku && <p className="text-[10px] text-[#6B6B6B] font-mono">SKU: {item.sku}</p>}
                     <p className="text-[11px] text-[#6B6B6B]">Qty: {item.quantity} × {formatPrice(item.price)}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end space-x-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#F7F7F5]">
-                  <span className="font-mono font-semibold text-[#111111]">
+                  <span className="font-mono font-extrabold text-sm text-[#111111]">
                     {formatPrice(item.total)}
                   </span>
 
                   {isDelivered && productTarget && (
                     <Link
                       href={`/products/${productTarget}#reviews`}
-                      className="px-3 py-1.5 bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider hover:bg-black transition-colors inline-flex items-center space-x-1.5 shrink-0"
+                      className="px-3 py-1.5 bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider hover:bg-[#D4AF37] hover:text-[#111111] transition-colors inline-flex items-center space-x-1.5 shrink-0 rounded-md"
                     >
                       <Star className="w-3 h-3 fill-white text-white" />
                       <span>Write Review</span>
@@ -313,45 +331,28 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Financial Breakdown */}
-        <div className="pt-4 border-t border-[#E5E5E2] space-y-2 text-xs w-full sm:max-w-xs sm:ml-auto">
+        <div className="pt-4 border-t border-[#E5E5E2] space-y-2.5 text-xs w-full sm:max-w-xs sm:ml-auto">
           <div className="flex justify-between text-[#6B6B6B]">
             <span>Subtotal</span>
-            <span className="font-mono text-[#111111]">{formatPrice(order.subtotal)}</span>
+            <span className="font-mono text-[#111111] font-medium">{formatPrice(order.subtotal)}</span>
           </div>
           {order.discountAmount > 0 && (
-            <div className="flex justify-between text-[#2E6B44]">
+            <div className="flex justify-between text-[#2E6B44] font-medium">
               <span>Discount {order.coupon?.code ? `(${order.coupon.code})` : ""}</span>
               <span className="font-mono">-{formatPrice(order.discountAmount)}</span>
             </div>
           )}
           <div className="flex justify-between text-[#6B6B6B]">
             <span>Shipping ({order.shippingMethod || "Standard"})</span>
-            <span className="font-mono text-[#111111]">
+            <span className="font-mono text-[#111111] font-medium">
               {order.shippingAmount === 0 ? "FREE" : formatPrice(order.shippingAmount)}
             </span>
           </div>
-          <div className="flex justify-between pt-2 border-t border-[#E5E5E2] text-sm font-semibold">
-            <span className="uppercase text-xs tracking-wider">Grand Total</span>
-            <span className="font-mono text-[#111111]">{formatPrice(order.totalAmount)}</span>
+          <div className="flex justify-between pt-3 border-t border-[#E5E5E2] text-sm font-extrabold text-[#111111]">
+            <span className="uppercase text-xs tracking-wider">GRAND TOTAL</span>
+            <span className="font-mono text-base">{formatPrice(order.totalAmount)}</span>
           </div>
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
-        <Link
-          href="/shop"
-          className="w-full sm:w-auto min-h-[44px] px-8 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors text-center flex items-center justify-center"
-        >
-          <ShoppingBag className="w-4 h-4 mr-2" /> Continue Shopping
-        </Link>
-
-        <Link
-          href="/account/orders"
-          className="w-full sm:w-auto min-h-[44px] px-6 py-3 border border-[#E5E5E2] hover:border-[#111111] text-xs font-semibold uppercase tracking-widest text-[#111111] text-center flex items-center justify-center"
-        >
-          View All Orders
-        </Link>
       </div>
     </div>
   );

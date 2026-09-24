@@ -90,47 +90,51 @@ export function CartDrawer() {
               cart.map((item) => (
                 <div
                   key={item.variantId}
-                  className="flex space-x-4 p-4 bg-white border border-[#E5E5E2]"
+                  className="flex space-x-4 p-4 bg-white border border-[#E5E5E2] rounded-lg shadow-2xs"
                 >
-                  <div className="relative w-20 h-20 bg-[#F7F7F5] border border-[#E5E5E2] overflow-hidden shrink-0">
+                  <div className="relative w-20 h-20 bg-[#F7F7F5] border border-[#E5E5E2] rounded-md overflow-hidden shrink-0 p-1">
                     <Image
                       src={item.image || "/placeholder.jpg"}
                       alt={item.title}
                       fill
                       sizes="80px"
-                      className="object-cover"
+                      className="object-contain p-1"
                     />
                   </div>
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <h4 className="text-xs font-semibold text-[#111111] truncate">
+                      <h4 className="text-xs font-semibold text-[#111111] truncate leading-snug">
                         {item.title}
                       </h4>
-                      {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
-                        <p className="text-[11px] font-medium text-[#111111] mt-0.5">
-                          Variant: <strong className="font-mono">{item.variantTitle}</strong>
+                      {item.variantTitle && (
+                        <p className="text-[11px] font-medium text-[#6B6B6B] mt-0.5">
+                          Variant: <strong className="font-mono text-[#111111]">{item.variantTitle}</strong>
                         </p>
                       )}
-                      <p className="text-[11px] font-mono text-[#6B6B6B] mt-0.5">
+                      <p className="text-[11px] font-mono font-bold text-[#111111] mt-0.5">
                         {formatPrice(item.price)}
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center border border-[#E5E5E2]">
+                      <div className="flex items-center border border-[#E5E5E2] rounded-md bg-white">
                         <button
                           onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                          className="p-1 text-[#6B6B6B] hover:text-[#111111]"
+                          className="p-1 text-[#6B6B6B] hover:text-[#111111] transition-colors"
+                          title="Decrease quantity"
+                          aria-label="Decrease quantity"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="px-2 text-xs font-mono font-semibold">
+                        <span className="px-2 text-xs font-mono font-bold text-[#111111]">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                          className="p-1 text-[#6B6B6B] hover:text-[#111111]"
+                          className="p-1 text-[#6B6B6B] hover:text-[#111111] transition-colors"
+                          title="Increase quantity"
+                          aria-label="Increase quantity"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -139,6 +143,8 @@ export function CartDrawer() {
                       <button
                         onClick={() => removeItem(item.variantId)}
                         className="text-[#6B6B6B] hover:text-[#A83232] transition-colors p-1"
+                        title="Remove item"
+                        aria-label="Remove item"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -152,11 +158,11 @@ export function CartDrawer() {
           {/* Footer & Checkout */}
           {cart.length > 0 && (
             <div className="p-6 bg-white border-t border-[#E5E5E2] space-y-4">
-              <div className="flex justify-between items-center text-sm font-semibold">
-                <span className="text-[#6B6B6B] uppercase tracking-wider text-xs">Subtotal</span>
-                <span className="text-[#111111]">{formatPrice(cartSubtotal)}</span>
+              <div className="flex justify-between items-center text-sm font-extrabold">
+                <span className="text-[#6B6B6B] uppercase tracking-wider text-xs font-bold">Subtotal</span>
+                <span className="text-[#111111] font-mono text-base">{formatPrice(cartSubtotal)}</span>
               </div>
-              <p className="text-[11px] text-[#6B6B6B]">
+              <p className="text-[11px] text-[#6B6B6B] leading-relaxed">
                 Taxes and shipping calculated at checkout. Free shipping on orders of {formatPrice(freeShippingThreshold)} or more.
               </p>
 
@@ -164,17 +170,17 @@ export function CartDrawer() {
                 <Link
                   href="/checkout"
                   onClick={() => setIsCartOpen(false)}
-                  className="w-full flex items-center justify-center py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors"
+                  className="w-full flex items-center justify-center py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#D4AF37] hover:text-[#111111] transition-all shadow-sm"
                 >
-                  Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" />
+                  CHECKOUT <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
 
                 <Link
                   href="/cart"
                   onClick={() => setIsCartOpen(false)}
-                  className="w-full flex items-center justify-center py-2.5 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-semibold uppercase tracking-wider hover:border-[#111111] transition-colors"
+                  className="w-full flex items-center justify-center py-3 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-bold uppercase tracking-widest rounded-md hover:border-[#111111] transition-all"
                 >
-                  View Shopping Cart
+                  VIEW SHOPPING BAG
                 </Link>
               </div>
             </div>

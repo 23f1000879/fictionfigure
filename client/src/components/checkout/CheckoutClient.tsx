@@ -533,14 +533,14 @@ export function CheckoutClient() {
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
               {cart.map((item) => (
                 <div key={item.variantId} className="flex space-x-3 items-center">
-                  <div className="relative w-12 h-12 bg-white shrink-0 border border-[#E5E5E2]">
-                    {item.image && <Image src={item.image} alt={item.title} fill className="object-contain p-1" />}
+                  <div className="relative w-12 h-12 bg-white shrink-0 border border-[#E5E5E2] rounded-md overflow-hidden p-0.5">
+                    {item.image && <Image src={item.image} alt={item.title} fill className="object-contain p-0.5" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <h5 className="font-semibold text-[#111111] truncate">{item.title}</h5>
-                    {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
-                      <span className="text-[10px] font-medium text-[#111111] block">
-                        Variant: <strong className="font-mono">{item.variantTitle}</strong>
+                    {item.variantTitle && (
+                      <span className="text-[10px] font-medium text-[#6B6B6B] block">
+                        Variant: <strong className="font-mono text-[#111111]">{item.variantTitle}</strong>
                       </span>
                     )}
                     <span className="text-[10px] text-[#6B6B6B]">Qty: {item.quantity}</span>
@@ -672,11 +672,16 @@ export function CheckoutClient() {
                     {cart.map((item) => (
                       <div key={item.variantId} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                         <div className="flex items-center space-x-3 min-w-0 flex-1">
-                          <div className="relative w-12 h-12 bg-white shrink-0 border border-[#E5E5E2]">
-                            {item.image && <Image src={item.image} alt={item.title} fill className="object-contain p-1" />}
+                          <div className="relative w-12 h-12 bg-white shrink-0 border border-[#E5E5E2] rounded-md overflow-hidden p-0.5">
+                            {item.image && <Image src={item.image} alt={item.title} fill className="object-contain p-0.5" />}
                           </div>
                           <div className="min-w-0 flex-1 space-y-0.5">
                             <h5 className="font-semibold text-[#111111] truncate">{item.title}</h5>
+                            {item.variantTitle && (
+                              <p className="text-[11px] font-medium text-[#6B6B6B]">
+                                Variant: <strong className="font-mono text-[#111111]">{item.variantTitle}</strong>
+                              </p>
+                            )}
                             <span className="text-[11px] text-[#6B6B6B] block">
                               Qty: {item.quantity} × {formatPrice(item.price)}
                             </span>
@@ -1224,14 +1229,14 @@ export function CheckoutClient() {
               <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
                 {cart.map((item) => (
                   <div key={item.variantId} className="flex space-x-3 items-center text-xs">
-                    <div className="relative w-14 h-14 bg-[#F7F7F5] shrink-0 border border-[#E5E5E2]">
-                      {item.image && <Image src={item.image} alt={item.title} fill className="object-contain p-1" />}
+                    <div className="relative w-14 h-14 bg-[#F7F7F5] shrink-0 border border-[#E5E5E2] rounded-md overflow-hidden p-0.5">
+                      {item.image && <Image src={item.image} alt={item.title} fill className="object-contain p-0.5" />}
                     </div>
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <h5 className="font-semibold text-[#111111] truncate">{item.title}</h5>
-                      {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
-                        <p className="text-[10px] font-medium text-[#111111]">
-                          Variant: <strong className="font-mono">{item.variantTitle}</strong>
+                      {item.variantTitle && (
+                        <p className="text-[10px] font-medium text-[#6B6B6B]">
+                          Variant: <strong className="font-mono text-[#111111]">{item.variantTitle}</strong>
                         </p>
                       )}
                       <div className="text-[10px] text-[#6B6B6B] flex items-center space-x-2">
