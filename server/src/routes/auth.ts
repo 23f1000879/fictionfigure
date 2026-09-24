@@ -309,4 +309,127 @@ router.get("/me", async (req, res) => {
   }
 });
 
+// 5. Update Customer Profile
+router.put("/me", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const JWT_SECRET = process.env.JWT_SECRET || "fictionfigure_jwt_secret_key_2026";
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    const { firstName, lastName, email } = req.body || {};
+
+    if (!firstName || !firstName.trim() || !lastName || !lastName.trim()) {
+      return res.status(400).json({ error: "First name and last name are required." });
+    }
+
+    let cleanEmail: string | null = null;
+    if (email && String(email).trim()) {
+      cleanEmail = String(email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        return res.status(400).json({ error: "Please enter a valid email address." });
+      }
+
+      // Check email uniqueness among other users
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: cleanEmail,
+          NOT: { id: decoded.userId },
+        },
+      });
+      if (existingUser) {
+        return res.status(400).json({ error: "Email address is already in use by another account." });
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: decoded.userId },
+      data: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: cleanEmail,
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        phoneVerified: true,
+        isVerified: true,
+      },
+    });
+
+    res.json({ success: true, user: updatedUser });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update profile." });
+  }
+});
+
+router.patch("/me", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const JWT_SECRET = process.env.JWT_SECRET || "fictionfigure_jwt_secret_key_2026";
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  try {
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    const { firstName, lastName, email } = req.body || {};
+
+    const dataToUpdate: any = {};
+    if (firstName && firstName.trim()) dataToUpdate.firstName = firstName.trim();
+    if (lastName && lastName.trim()) dataToUpdate.lastName = lastName.trim();
+
+    if (email !== undefined) {
+      if (email && String(email).trim()) {
+        const cleanEmail = String(email).trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+          return res.status(400).json({ error: "Please enter a valid email address." });
+        }
+        const existingUser = await prisma.user.findFirst({
+          where: {
+            email: cleanEmail,
+            NOT: { id: decoded.userId },
+          },
+        });
+        if (existingUser) {
+          return res.status(400).json({ error: "Email address is already in use by another account." });
+        }
+        dataToUpdate.email = cleanEmail;
+      } else {
+        dataToUpdate.email = null;
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: decoded.userId },
+      data: dataToUpdate,
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        phoneVerified: true,
+        isVerified: true,
+      },
+    });
+
+    res.json({ success: true, user: updatedUser });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update profile." });
+  }
+});
+
 export default router;

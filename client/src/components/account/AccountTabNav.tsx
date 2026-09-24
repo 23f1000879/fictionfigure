@@ -2,17 +2,18 @@
 
 import React from "react";
 import Link from "next/link";
-import { User, Package, Heart, ShieldCheck, Bell } from "lucide-react";
+import { User, Package, MapPin, Heart, ShieldCheck, Bell } from "lucide-react";
 
 interface AccountTabNavProps {
-  activeTab: "profile" | "orders" | "wishlist" | "restock-requests";
+  activeTab: "profile" | "orders" | "addresses" | "wishlist" | "restock-requests";
   orderCount?: number;
+  addressCount?: number;
   wishlistCount?: number;
   restockCount?: number;
   isAdmin?: boolean;
 }
 
-export function AccountTabNav({ activeTab, orderCount, wishlistCount, restockCount, isAdmin }: AccountTabNavProps) {
+export function AccountTabNav({ activeTab, orderCount, addressCount, wishlistCount, restockCount, isAdmin }: AccountTabNavProps) {
   return (
     <div className="w-full max-w-full overflow-x-auto whitespace-nowrap border-b border-[#E5E5E2] bg-white text-xs font-semibold uppercase tracking-wider">
       <div className="flex w-max min-w-full">
@@ -38,6 +39,18 @@ export function AccountTabNav({ activeTab, orderCount, wishlistCount, restockCou
         >
           <Package className="w-4 h-4 shrink-0" />
           <span>Orders {orderCount !== undefined ? `(${orderCount})` : ""}</span>
+        </Link>
+
+        <Link
+          href="/account/addresses"
+          className={`px-4 sm:px-6 py-3.5 border-b-2 flex items-center space-x-2 shrink-0 transition-colors ${
+            activeTab === "addresses"
+              ? "border-[#111111] text-[#111111] font-bold"
+              : "border-transparent text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]"
+          }`}
+        >
+          <MapPin className="w-4 h-4 shrink-0" />
+          <span>Saved Addresses {addressCount !== undefined ? `(${addressCount})` : ""}</span>
         </Link>
 
         <Link

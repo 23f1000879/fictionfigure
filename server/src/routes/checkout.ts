@@ -327,6 +327,191 @@ router.get("/addresses", async (req, res) => {
   }
 });
 
+// Create New Address
+router.post("/addresses", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    const { fullName, streetAddress, apartment, city, state, postalCode, country, phone, isDefault } = req.body || {};
+
+    if (!fullName || !fullName.trim() || !streetAddress || !streetAddress.trim() || !city || !city.trim() || !state || !state.trim()) {
+      return res.status(400).json({ error: "Please fill in all required address fields." });
+    }
+
+    const cleanPin = String(postalCode || "").trim();
+    if (!/^\d{6}$/.test(cleanPin)) {
+      return res.status(400).json({ error: "Please enter a valid 6-digit PIN code (e.g. 334001)." });
+    }
+
+    if (isDefault) {
+      await prisma.address.updateMany({
+        where: { userId: decoded.userId },
+        data: { isDefault: false },
+      });
+    }
+
+    const existingCount = await prisma.address.count({ where: { userId: decoded.userId } });
+    const makeDefault = isDefault || existingCount === 0;
+
+    const newAddress = await prisma.address.create({
+      data: {
+        userId: decoded.userId,
+        fullName: fullName.trim(),
+        streetAddress: streetAddress.trim(),
+        apartment: apartment ? String(apartment).trim() : null,
+        city: city.trim(),
+        state: state.trim(),
+        postalCode: cleanPin,
+        country: country || "India",
+        phone: phone ? String(phone).trim() : "",
+        isDefault: makeDefault,
+      },
+    });
+
+    res.json({ success: true, address: newAddress });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to create address." });
+  }
+});
+
+// Edit Address
+router.put("/addresses/:id", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const addressId = req.params.id;
+
+    const existing = await prisma.address.findFirst({
+      where: { id: addressId, userId: decoded.userId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Address not found." });
+    }
+
+    const { fullName, streetAddress, apartment, city, state, postalCode, country, phone, isDefault } = req.body || {};
+
+    if (!fullName || !fullName.trim() || !streetAddress || !streetAddress.trim() || !city || !city.trim() || !state || !state.trim()) {
+      return res.status(400).json({ error: "Please fill in all required address fields." });
+    }
+
+    const cleanPin = String(postalCode || "").trim();
+    if (!/^\d{6}$/.test(cleanPin)) {
+      return res.status(400).json({ error: "Please enter a valid 6-digit PIN code (e.g. 334001)." });
+    }
+
+    if (isDefault && !existing.isDefault) {
+      await prisma.address.updateMany({
+        where: { userId: decoded.userId },
+        data: { isDefault: false },
+      });
+    }
+
+    const updatedAddress = await prisma.address.update({
+      where: { id: addressId },
+      data: {
+        fullName: fullName.trim(),
+        streetAddress: streetAddress.trim(),
+        apartment: apartment ? String(apartment).trim() : null,
+        city: city.trim(),
+        state: state.trim(),
+        postalCode: cleanPin,
+        country: country || "India",
+        phone: phone ? String(phone).trim() : existing.phone,
+        isDefault: isDefault ?? existing.isDefault,
+      },
+    });
+
+    res.json({ success: true, address: updatedAddress });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update address." });
+  }
+});
+
+// Delete Address
+router.delete("/addresses/:id", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const addressId = req.params.id;
+
+    const existing = await prisma.address.findFirst({
+      where: { id: addressId, userId: decoded.userId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Address not found." });
+    }
+
+    await prisma.address.delete({ where: { id: addressId } });
+
+    if (existing.isDefault) {
+      const nextFirst = await prisma.address.findFirst({
+        where: { userId: decoded.userId },
+        orderBy: { createdAt: "desc" },
+      });
+      if (nextFirst) {
+        await prisma.address.update({
+          where: { id: nextFirst.id },
+          data: { isDefault: true },
+        });
+      }
+    }
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to delete address." });
+  }
+});
+
+// Set Address as Default
+router.post(["/addresses/:id/default", "/addresses/:id/set-default"], async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const addressId = req.params.id;
+
+    const existing = await prisma.address.findFirst({
+      where: { id: addressId, userId: decoded.userId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Address not found." });
+    }
+
+    await prisma.address.updateMany({
+      where: { userId: decoded.userId },
+      data: { isDefault: false },
+    });
+
+    const updated = await prisma.address.update({
+      where: { id: addressId },
+      data: { isDefault: true },
+    });
+
+    res.json({ success: true, address: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to set default address." });
+  }
+});
+
 // 3. Authoritative Order Calculation Endpoint
 router.post("/calculate", async (req, res) => {
   try {

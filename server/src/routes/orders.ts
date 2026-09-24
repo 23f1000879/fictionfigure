@@ -182,11 +182,16 @@ export async function handleGetMyOrders(req: any, res: any) {
       orderBy: { createdAt: "desc" },
       include: {
         items: {
-          take: 1,
-          select: {
-            title: true,
-            price: true,
-            quantity: true,
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: {
+                    images: { orderBy: { sortOrder: "asc" }, take: 1 },
+                  },
+                },
+              },
+            },
           },
         },
         payments: {
@@ -201,23 +206,42 @@ export async function handleGetMyOrders(req: any, res: any) {
 
     res.json({
       success: true,
-      orders: orders.map((o) => ({
-        id: o.id,
-        orderNumber: o.orderNumber,
-        status: o.status,
-        createdAt: o.createdAt,
-        totalAmount: o.totalAmount,
-        subtotal: o.subtotal,
-        shippingAmount: o.shippingAmount,
-        discountAmount: o.discountAmount,
-        firstItemTitle: o.items[0]?.title || "Collectible Figure",
-        paymentMethod: o.payments[0]?.paymentMethod || "UPI",
-        paymentStatus:
-          o.payments[0]?.paymentMethod === "COD" && o.payments[0]?.status !== "PAID"
-            ? "PAYMENT DUE ON DELIVERY"
-            : o.payments[0]?.status || "PENDING",
-        utr: o.payments[0]?.transactionRef || null,
-      })),
+      orders: orders.map((o) => {
+        const primaryItem = o.items[0];
+        const primaryImage = primaryItem?.variant?.product?.images?.[0]?.url || "";
+        const totalItemsCount = o.items.reduce((acc, item) => acc + item.quantity, 0);
+
+        return {
+          id: o.id,
+          orderNumber: o.orderNumber,
+          status: o.status,
+          createdAt: o.createdAt,
+          totalAmount: o.totalAmount,
+          subtotal: o.subtotal,
+          shippingAmount: o.shippingAmount,
+          discountAmount: o.discountAmount,
+          trackingNumber: o.trackingNumber || null,
+          itemCount: totalItemsCount,
+          firstItemTitle: primaryItem?.title || "Collectible Figure",
+          image: primaryImage,
+          paymentMethod: o.payments[0]?.paymentMethod || "UPI",
+          paymentStatus:
+            o.payments[0]?.paymentMethod === "COD" && o.payments[0]?.status !== "PAID"
+              ? "PAYMENT DUE ON DELIVERY"
+              : o.payments[0]?.status || "PENDING",
+          utr: o.payments[0]?.transactionRef || null,
+          items: o.items.map((item) => ({
+            id: item.id,
+            title: item.title,
+            variantTitle: item.variant?.title || "",
+            sku: item.sku,
+            price: item.price,
+            quantity: item.quantity,
+            total: item.total,
+            image: item.variant?.product?.images?.[0]?.url || "",
+          })),
+        };
+      }),
     });
   } catch (err: any) {
     console.error("GET /my-orders error:", err);
