@@ -1,21 +1,16 @@
-import React, { Suspense } from "react";
+import React from "react";
 import type { Metadata } from "next";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
-import { ProductCard } from "@/components/product/ProductCard";
-import { ProductFilters } from "@/components/product/ProductFilters";
-import { getProducts, getCategories, getBrandsAndMetadata } from "@/lib/services/productService";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { CartProvider } from "@/context/CartContext";
-import Link from "next/link";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { ProductSortSelector } from "@/components/product/ProductSortSelector";
+import { getProducts, getCategories } from "@/lib/services/productService";
+import { CollectionListingView } from "@/components/collection/CollectionListingView";
 
 export const revalidate = 60; // 60s Vercel Edge ISR Cache for Catalog
 
 interface ShopPageProps {
-  searchParams?: any;
+  searchParams?: Promise<Record<string, string | undefined>>;
 }
 
 export async function generateMetadata({ searchParams }: ShopPageProps): Promise<Metadata> {
@@ -24,8 +19,9 @@ export async function generateMetadata({ searchParams }: ShopPageProps): Promise
   const franchiseName = resolvedParams.franchise;
   const brandName = resolvedParams.brand;
 
-  let title = "All Figures & Collectibles | Shop | FictionFigure";
-  let desc = "Browse our full catalog of curated premium collectibles, scale anime statues, articulated action figures, and keychains.";
+  let title = "All Figures & Collectibles | Shop | FICTIONFIGURE";
+  let desc =
+    "Browse our full catalog of curated premium collectibles, scale anime statues, articulated action figures, and keychains.";
 
   let isIndexable = true;
   let canonical = "https://www.fictionfigures.in/shop";
@@ -34,20 +30,24 @@ export async function generateMetadata({ searchParams }: ShopPageProps): Promise
     const { categories } = await getProducts({ category: categorySlug, limit: 1 });
     const cat = categories.find((c: any) => c.slug === categorySlug);
     if (cat) {
-      title = `${cat.name} Collectibles | Shop | FictionFigure`;
-      desc = cat.description || `Browse our premium collection of ${cat.name} action figures, statues, and keychains.`;
+      title = `${cat.name} Collectibles | Shop | FICTIONFIGURE`;
+      desc =
+        cat.description ||
+        `Browse our premium collection of ${cat.name} action figures, statues, and keychains.`;
       canonical = `https://www.fictionfigures.in/shop?category=${categorySlug}`;
     }
   } else if (franchiseName) {
-    title = `${franchiseName} Figures & Statues | Shop | FictionFigure`;
+    title = `${franchiseName} Figures & Statues | Shop | FICTIONFIGURE`;
     desc = `Browse our premium collection of ${franchiseName} scale figures and collectibles.`;
     isIndexable = false;
   } else if (brandName) {
-    title = `${brandName} Collectibles | Shop | FictionFigure`;
+    title = `${brandName} Collectibles | Shop | FICTIONFIGURE`;
     desc = `Explore premium designer figures and collectibles from ${brandName}.`;
     isIndexable = false;
   } else {
-    const hasOtherFilters = Object.keys(resolvedParams).some(k => k !== 'page' && k !== 'sortBy');
+    const hasOtherFilters = Object.keys(resolvedParams).some(
+      (k) => k !== "page" && k !== "sortBy"
+    );
     if (hasOtherFilters) {
       isIndexable = false;
     }
@@ -59,7 +59,7 @@ export async function generateMetadata({ searchParams }: ShopPageProps): Promise
     alternates: {
       canonical,
     },
-    robots: isIndexable ? { index: true, follow: true } : { index: false, follow: true }
+    robots: isIndexable ? { index: true, follow: true } : { index: false, follow: true },
   };
 }
 
@@ -86,22 +86,20 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     await getProducts(filters);
 
   const activeCategoryObj = categories.find((c: any) => c.slug === filters.category);
-  const formattedCountText =
-    totalCount === 1 ? "1 Product" : totalCount === 0 ? "No Products" : `${totalCount} Products`;
 
   const breadcrumbElements = [
     {
       "@type": "ListItem",
       "position": 1,
       "name": "Home",
-      "item": "https://www.fictionfigures.in"
+      "item": "https://www.fictionfigures.in",
     },
     {
       "@type": "ListItem",
       "position": 2,
       "name": "Shop",
-      "item": "https://www.fictionfigures.in/shop"
-    }
+      "item": "https://www.fictionfigures.in/shop",
+    },
   ];
 
   if (activeCategoryObj) {
@@ -109,14 +107,14 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       "@type": "ListItem",
       "position": 3,
       "name": activeCategoryObj.name,
-      "item": `https://www.fictionfigures.in/shop?category=${activeCategoryObj.slug}`
+      "item": `https://www.fictionfigures.in/shop?category=${activeCategoryObj.slug}`,
     });
   }
 
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    "itemListElement": breadcrumbElements
+    "itemListElement": breadcrumbElements,
   };
 
   return (
@@ -129,115 +127,25 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       <SearchModal />
       <CartDrawer />
 
-      <main className="editorial-container py-12 text-[#111111]">
-        {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between pb-8 mb-8 border-b border-[#E5E5E2] gap-4">
-          <div>
-            <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] mb-2">
-              <Link href="/" className="hover:text-[#111111]">
-                Home
-              </Link>
-              <span>/</span>
-              <span className="text-[#111111]">Shop</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-[#111111] tracking-tight">
-              {activeCategoryObj ? activeCategoryObj.name : "All Figures & Collectibles"}
-            </h1>
-            <p className="text-xs text-[#6B6B6B] mt-1 max-w-lg">
-              {activeCategoryObj?.description ||
-                "Curated museum-grade statues, anime scale figures, designer toys, and articulated pieces."}
-            </p>
-          </div>
-
-          {/* Sort Selector & Product Count Header */}
-          <div className="flex items-center justify-between md:justify-end gap-4 text-xs">
-            <span className="text-[#6B6B6B] font-mono font-semibold">{formattedCountText}</span>
-
-            {/* Sort Controls */}
-            <ProductSortSelector currentSort={filters.sortBy} />
-          </div>
-        </div>
-
-        {/* Catalog Main Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
-          {/* Filter Sidebar & Mobile Drawer */}
-          <aside className="space-y-6">
-            <Suspense fallback={<div className="text-xs text-[#6B6B6B]">Loading filters...</div>}>
-              <ProductFilters
-                categories={categories}
-                brands={brands}
-                franchises={franchises}
-              />
-            </Suspense>
-          </aside>
-
-          {/* Product Grid Container */}
-          <div className="space-y-8">
-            {products.length === 0 ? (
-              <div className="text-center py-20 bg-white border border-[#E5E5E2] p-8 space-y-4">
-                <h3 className="text-base font-semibold text-[#111111]">
-                  NO FIGURES FOUND
-                </h3>
-                <p className="text-xs text-[#6B6B6B] max-w-md mx-auto">
-                  We couldn't find any collectibles matching your selected filters. Try resetting filters or searching for another character.
-                </p>
-                <Link
-                  href="/shop"
-                  className="inline-block px-6 py-2.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors"
-                >
-                  Clear Filters & View All
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {products.map((product: any) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-8 border-t border-[#E5E5E2] text-xs">
-                {currentPage > 1 ? (
-                  <Link
-                    href={`/shop?${new URLSearchParams({
-                      ...resolvedParams,
-                      page: String(currentPage - 1),
-                    }).toString()}`}
-                    className="flex items-center px-4 py-2 border border-[#E5E5E2] text-[#111111] hover:border-[#111111] font-semibold uppercase tracking-wider"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5 mr-2" /> Previous
-                  </Link>
-                ) : (
-                  <span className="opacity-40 cursor-not-allowed flex items-center px-4 py-2 border border-[#E5E5E2] text-[#6B6B6B] uppercase font-semibold">
-                    <ArrowLeft className="w-3.5 h-3.5 mr-2" /> Previous
-                  </span>
-                )}
-
-                <span className="font-mono text-[#6B6B6B]">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                {currentPage < totalPages ? (
-                  <Link
-                    href={`/shop?${new URLSearchParams({
-                      ...resolvedParams,
-                      page: String(currentPage + 1),
-                    }).toString()}`}
-                    className="flex items-center px-4 py-2 border border-[#E5E5E2] text-[#111111] hover:border-[#111111] font-semibold uppercase tracking-wider"
-                  >
-                    Next <ArrowRight className="w-3.5 h-3.5 ml-2" />
-                  </Link>
-                ) : (
-                  <span className="opacity-40 cursor-not-allowed flex items-center px-4 py-2 border border-[#E5E5E2] text-[#6B6B6B] uppercase font-semibold">
-                    Next <ArrowRight className="w-3.5 h-3.5 ml-2" />
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+      <main className="flex-1 bg-[#F7F7F5] min-h-screen">
+        <CollectionListingView
+          title={activeCategoryObj ? activeCategoryObj.name : "ALL FIGURES & COLLECTIBLES"}
+          eyebrow={activeCategoryObj ? "CATEGORY COLLECTION" : "STOREFRONT CATALOG"}
+          description={
+            activeCategoryObj?.description ||
+            "Curated museum-grade statues, anime scale figures, designer toys, and articulated pieces."
+          }
+          categoryImage={activeCategoryObj?.imageUrl || activeCategoryObj?.image || null}
+          activeCategorySlug={filters.category || ""}
+          baseUrl="/shop"
+          products={products}
+          totalCount={totalCount}
+          totalPages={totalPages}
+          currentPage={currentPage}
+          categories={categories}
+          brands={brands}
+          franchises={franchises}
+        />
       </main>
 
       <Footer />
