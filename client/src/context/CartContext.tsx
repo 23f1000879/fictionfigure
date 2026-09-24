@@ -223,9 +223,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const clearCart = () => {
-    updateCartState([]);
-  };
+  const clearCart = useCallback(() => {
+    setCart([]);
+    saveStoredCartRaw([]);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY_V2);
+        sessionStorage.removeItem(LEGACY_STORAGE_KEY);
+      } catch (_) {}
+    }
+  }, []);
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   const cartSubtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);

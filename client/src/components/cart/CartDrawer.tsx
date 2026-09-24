@@ -92,14 +92,21 @@ export function CartDrawer() {
                   key={item.variantId}
                   className="flex space-x-4 p-4 bg-white border border-[#E5E5E2] rounded-lg shadow-2xs"
                 >
-                  <div className="relative w-20 h-20 bg-[#F7F7F5] border border-[#E5E5E2] rounded-md overflow-hidden shrink-0 p-1">
-                    <Image
-                      src={item.image || "/placeholder.jpg"}
-                      alt={item.title}
-                      fill
-                      sizes="80px"
-                      className="object-contain p-1"
-                    />
+                  <div className="relative w-20 h-20 bg-[#F7F7F5] border border-[#E5E5E2] rounded-md overflow-hidden shrink-0 p-1 flex items-center justify-center">
+                    {item.image && item.image.trim() !== "" ? (
+                      <Image
+                        src={item.image}
+                        alt={item.title}
+                        fill
+                        sizes="80px"
+                        className="object-contain p-1"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B] font-mono uppercase">
+                        No image
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between">

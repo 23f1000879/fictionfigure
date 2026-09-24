@@ -141,17 +141,18 @@ export function CartPageClient() {
               >
                 {/* Product Image & Details (6 cols) */}
                 <div className="sm:col-span-6 flex space-x-4 items-center">
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] overflow-hidden shrink-0 p-1">
-                    {item.image ? (
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] overflow-hidden shrink-0 p-1 flex items-center justify-center">
+                    {item.image && item.image.trim() !== "" ? (
                       <Image
                         src={item.image}
                         alt={item.title}
                         fill
                         sizes="96px"
                         className="object-contain p-1"
+                        unoptimized
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B]">
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B] font-mono uppercase">
                         No img
                       </div>
                     )}

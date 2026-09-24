@@ -33,9 +33,10 @@ export function CheckoutClient() {
   const searchParams = useSearchParams();
   const { cart, cartSubtotal, clearCart, isHydrating, isValidating, reconcileCart } = useCart();
   const { shippingFee: configShippingFee, freeShippingThreshold: configThreshold } = useSettings();
+  const isOrderPlacedRef = React.useRef(false);
 
   useEffect(() => {
-    if (!isHydrating && !isValidating && cart.length === 0) {
+    if (!isHydrating && !isValidating && cart.length === 0 && !isOrderPlacedRef.current) {
       router.replace("/cart");
     }
   }, [cart.length, isHydrating, isValidating, router]);
@@ -415,6 +416,7 @@ export function CheckoutClient() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create order. Please try again.");
 
+      isOrderPlacedRef.current = true;
       clearCart();
       router.push(`/order/${data.orderNumber}`);
     } catch (err: any) {
