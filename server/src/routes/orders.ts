@@ -7,28 +7,46 @@ const JWT_SECRET = process.env.JWT_SECRET || "fictionfigure_jwt_secret_key_2026"
 
 /**
  * Shared Helper to resolve customer ownership and format order receipt
+ * HARDENED AUTHORIZATION: Strict User ID Match
  */
 export async function handleGetOrderDetails(req: any, res: any) {
   try {
     const { id } = req.params;
     const authHeader = req.headers.authorization;
 
-    let authenticatedUserId: string | null = null;
-    let authenticatedUserPhone: string | null = null;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        error: "Authentication required. Please sign in to view this order receipt.",
+      });
+    }
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      try {
-        const token = authHeader.split(" ")[1];
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        if (decoded?.userId) {
-          authenticatedUserId = decoded.userId;
-          const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
-            select: { phone: true, role: true },
-          });
-          if (user?.phone) authenticatedUserPhone = user.phone;
-        }
-      } catch (e) {}
+    const token = authHeader.split(" ")[1];
+    let decoded: any = null;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({
+        error: "Authentication required. Please sign in to view this order receipt.",
+      });
+    }
+
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({
+        error: "Authentication required. Please sign in to view this order receipt.",
+      });
+    }
+
+    const authenticatedUserId = decoded.userId;
+
+    const user = await prisma.user.findUnique({
+      where: { id: authenticatedUserId },
+      select: { id: true, role: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        error: "Authentication required. Please sign in to view this order receipt.",
+      });
     }
 
     // Lookup order by UUID or public order number (e.g. FF-668844-971)
@@ -60,37 +78,14 @@ export async function handleGetOrderDetails(req: any, res: any) {
       return res.status(404).json({ error: "Order not found." });
     }
 
-    // STRICT CUSTOMER OWNERSHIP SECURITY CHECK
-    const isGuestOrder = !order.userId && !order.user?.phone;
-    const isAuthenticated = Boolean(authenticatedUserId || authenticatedUserPhone);
+    // HARDENED CUSTOMER AUTHORIZATION CHECK
+    // Order userId MUST equal authenticated user id (unless user has ADMIN role)
+    const isOwner = order.userId === authenticatedUserId;
+    const isAdmin = user.role === "ADMIN";
 
-    const authPhone10 = authenticatedUserPhone ? authenticatedUserPhone.replace(/\D/g, "").slice(-10) : "";
-    const orderUserPhone10 = order.user?.phone ? order.user.phone.replace(/\D/g, "").slice(-10) : "";
-
-    let orderAddressPhone10 = "";
-    try {
-      if (order.shippingAddressJson) {
-        const parsed = typeof order.shippingAddressJson === "string" ? JSON.parse(order.shippingAddressJson) : order.shippingAddressJson;
-        if (parsed.phone) orderAddressPhone10 = String(parsed.phone).replace(/\D/g, "").slice(-10);
-      }
-    } catch (e) {}
-
-    const isMatchingOwner =
-      isGuestOrder ||
-      (authenticatedUserId && order.userId === authenticatedUserId) ||
-      (authenticatedUserPhone && order.user?.phone === authenticatedUserPhone) ||
-      (authPhone10 && orderUserPhone10 && authPhone10 === orderUserPhone10) ||
-      (authPhone10 && orderAddressPhone10 && authPhone10 === orderAddressPhone10) ||
-      (authenticatedUserPhone && order.shippingAddressJson?.includes(authenticatedUserPhone));
-
-    if (!isMatchingOwner) {
-      if (!isAuthenticated) {
-        return res.status(401).json({
-          error: "Authentication required. Please sign in to view this order receipt.",
-        });
-      }
-      return res.status(404).json({
-        error: "Order not found.",
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        error: "Access restricted. You do not have permission to view this order.",
       });
     }
 
@@ -167,18 +162,10 @@ export async function handleGetMyOrders(req: any, res: any) {
     }
 
     const userId = decoded.userId;
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
 
-    const ownerFilters: any[] = [{ userId }];
-    if (user?.phone) {
-      ownerFilters.push({ user: { phone: user.phone } });
-      ownerFilters.push({ shippingAddressJson: { contains: user.phone } });
-      const cleanPhone = user.phone.replace(/\D/g, "").slice(-10);
-      if (cleanPhone) ownerFilters.push({ shippingAddressJson: { contains: cleanPhone } });
-    }
-
+    // HARDENED ORDER HISTORY QUERY: Strictly scoped to authenticated user ID
     const orders = await prisma.order.findMany({
-      where: { OR: ownerFilters },
+      where: { userId: userId },
       orderBy: { createdAt: "desc" },
       include: {
         items: {
