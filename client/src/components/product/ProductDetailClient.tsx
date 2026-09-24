@@ -317,7 +317,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
         {/* Left Column: Image Gallery (7 Cols Desktop) */}
         <div className="lg:col-span-7 space-y-4 w-full max-w-full box-border">
           {/* Main Hero Product Image Surface */}
-          <div className="relative aspect-square sm:aspect-[4/3] md:aspect-square w-full max-w-full bg-white border border-[#E5E5E2] rounded-lg overflow-hidden group box-border p-4 sm:p-6 flex items-center justify-center shadow-2xs">
+          <div className="relative aspect-square sm:aspect-[4/3] md:aspect-square w-full max-w-full bg-white border border-[#E5E5E2] rounded-lg overflow-hidden group box-border flex items-center justify-center shadow-2xs">
             {currentImage ? (
               <Image
                 src={currentImage}
@@ -325,7 +325,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 fill
                 priority
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 720px"
-                className="object-contain p-2 sm:p-4 cursor-zoom-in max-w-full transition-transform duration-300 group-hover:scale-105"
+                className="object-contain cursor-zoom-in max-w-full transition-transform duration-300 group-hover:scale-105"
                 onClick={() => setIsLightboxOpen(true)}
               />
             ) : (
