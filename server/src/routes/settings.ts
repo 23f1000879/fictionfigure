@@ -161,6 +161,63 @@ router.get("/", async (_req, res) => {
           }
         }
 
+        let processedCarouselSlides: any[] = [];
+        if (settingsMap.homepage_carousel_slides_json) {
+          try {
+            const rawSlides = JSON.parse(settingsMap.homepage_carousel_slides_json);
+            if (Array.isArray(rawSlides)) {
+              processedCarouselSlides = rawSlides
+                .filter((s: any) => s && s.enabled !== false)
+                .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+            }
+          } catch (e) {}
+        }
+
+        // If no saved slides exist in DB setting, build default slides dynamically in memory from existing hero setting & real DB categories
+        if (processedCarouselSlides.length === 0) {
+          const mainHeroImage = settingsMap.homepage_hero_image_url || "";
+          if (mainHeroImage) {
+            processedCarouselSlides.push({
+              id: "hero-default-1",
+              image: mainHeroImage,
+              eyebrow: settingsMap.homepage_hero_eyebrow || "CURATED COLLECTOR GALLERY",
+              title: settingsMap.homepage_hero_title || "Figures worth collecting.",
+              titleAccent: settingsMap.homepage_hero_title_accent || "Stories worth keeping.",
+              description: settingsMap.homepage_hero_description || "Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.",
+              primaryLabel: settingsMap.homepage_hero_primary_label || "SHOP COLLECTION",
+              primaryUrl: settingsMap.homepage_hero_primary_url || "/shop",
+              enabled: true,
+              sortOrder: 1,
+            });
+          }
+
+          // Fetch top existing categories with images to form additional editorial panels
+          try {
+            const realCategories = await prisma.category.findMany({
+              where: { imageUrl: { not: null } },
+              take: 3,
+              orderBy: { createdAt: "desc" },
+            });
+
+            realCategories.forEach((cat, idx) => {
+              if (cat.imageUrl) {
+                processedCarouselSlides.push({
+                  id: `hero-cat-${cat.id}`,
+                  image: cat.imageUrl,
+                  eyebrow: "FEATURED COLLECTION",
+                  title: cat.name,
+                  titleAccent: "",
+                  description: cat.description || `Explore authentic figures and items in the ${cat.name} collection.`,
+                  primaryLabel: "EXPLORE COLLECTION",
+                  primaryUrl: `/shop?category=${cat.slug}`,
+                  enabled: true,
+                  sortOrder: idx + 2,
+                });
+              }
+            });
+          } catch (e) {}
+        }
+
         const resolveStringSetting = (key: string) => {
           return settingsMap[key] !== undefined ? settingsMap[key] : ((DEFAULT_SETTINGS as any)[key] || "");
         };
@@ -178,6 +235,7 @@ router.get("/", async (_req, res) => {
           supportHours: resolveStringSetting("support_hours"),
           announcements: processedAnnouncements,
           featuredProduct,
+          carouselSlides: processedCarouselSlides,
           upiId: resolveStringSetting("upi_id"),
           upiQrUrl: resolveStringSetting("upi_qr_url"),
         };
@@ -209,6 +267,7 @@ router.get("/", async (_req, res) => {
         { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
       ],
       featuredProduct: null,
+      carouselSlides: [],
       upiId: DEFAULT_SETTINGS.upi_id || "fictionfigure@upi",
       upiQrUrl: DEFAULT_SETTINGS.upi_qr_url || "",
     });

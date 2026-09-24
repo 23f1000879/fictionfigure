@@ -39,6 +39,19 @@ interface AnnouncementItem {
   sortOrder: number;
 }
 
+export interface CarouselSlideItem {
+  id: string;
+  image: string;
+  eyebrow: string;
+  title: string;
+  titleAccent: string;
+  description: string;
+  primaryLabel: string;
+  primaryUrl: string;
+  enabled: boolean;
+  sortOrder: number;
+}
+
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({
     shipping_fee: "100",
@@ -76,10 +89,12 @@ export default function AdminSettingsPage() {
     { id: "3", text: "SUPPORT: +91 97974 94639", enabled: true, sortOrder: 3 },
   ]);
 
+  const [carouselSlides, setCarouselSlides] = useState<CarouselSlideItem[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingSlideImageId, setUploadingSlideImageId] = useState<string | null>(null);
   const [uploadingQr, setUploadingQr] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -98,6 +113,15 @@ export default function AdminSettingsPage() {
             const parsed = JSON.parse(data.settings.announcements_json);
             if (Array.isArray(parsed) && parsed.length > 0) {
               setAnnouncements(parsed);
+            }
+          } catch (e) {}
+        }
+
+        if (data.settings.homepage_carousel_slides_json) {
+          try {
+            const parsedSlides = JSON.parse(data.settings.homepage_carousel_slides_json);
+            if (Array.isArray(parsedSlides) && parsedSlides.length > 0) {
+              setCarouselSlides(parsedSlides);
             }
           } catch (e) {}
         }
@@ -252,6 +276,90 @@ export default function AdminSettingsPage() {
     const jsonStr = JSON.stringify(announcements);
     setSettings((prev) => ({ ...prev, announcements_json: jsonStr }));
     handleSaveSection("Announcement Bar", ["announcements_json"], { announcements_json: jsonStr });
+  };
+
+  // Carousel Slide Handlers
+  const handleAddSlide = () => {
+    const newSlide: CarouselSlideItem = {
+      id: String(Date.now()),
+      image: "",
+      eyebrow: "FEATURED COLLECTION",
+      title: "New Promotional Slide",
+      titleAccent: "",
+      description: "Enter a brief description for this featured collection...",
+      primaryLabel: "SHOP COLLECTION",
+      primaryUrl: "/shop",
+      enabled: true,
+      sortOrder: carouselSlides.length + 1,
+    };
+    setCarouselSlides([...carouselSlides, newSlide]);
+  };
+
+  const handleUpdateSlide = (id: string, field: keyof CarouselSlideItem, value: any) => {
+    setCarouselSlides(
+      carouselSlides.map((slide) => (slide.id === id ? { ...slide, [field]: value } : slide))
+    );
+  };
+
+  const handleSlideImageUpload = async (slideId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingSlideImageId(slideId);
+    setError("");
+    setMessage("");
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await adminFetch(`${API_BASE}/admin/uploads/product-image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to upload slide image.");
+
+      if (data.url) {
+        handleUpdateSlide(slideId, "image", data.url);
+        setMessage("Slide image uploaded to Cloudinary successfully.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to upload slide image.");
+    } finally {
+      setUploadingSlideImageId(null);
+    }
+  };
+
+  const handleDeleteSlide = (id: string) => {
+    setCarouselSlides(carouselSlides.filter((s) => s.id !== id));
+  };
+
+  const handleMoveSlide = (index: number, direction: "up" | "down") => {
+    const targetIdx = direction === "up" ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= carouselSlides.length) return;
+
+    const list = [...carouselSlides];
+    const temp = list[index];
+    list[index] = list[targetIdx];
+    list[targetIdx] = temp;
+
+    const reordered = list.map((item, idx) => ({ ...item, sortOrder: idx + 1 }));
+    setCarouselSlides(reordered);
+  };
+
+  const handleSaveCarousel = () => {
+    const jsonStr = JSON.stringify(carouselSlides);
+    setSettings((prev) => ({ ...prev, homepage_carousel_slides_json: jsonStr }));
+    handleSaveSection(
+      "Homepage Hero Carousel",
+      ["homepage_hero_enabled", "homepage_carousel_slides_json"],
+      {
+        homepage_hero_enabled: settings.homepage_hero_enabled || "true",
+        homepage_carousel_slides_json: jsonStr,
+      }
+    );
   };
 
   // Shipping Live Preview Math
@@ -652,192 +760,283 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          {/* SECTION 4: HOMEPAGE HERO CMS */}
-          <div className="bg-white border border-[#E5E5E2] p-5 sm:p-6 space-y-5">
-            <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-3">
+          {/* SECTION 4: HOMEPAGE HERO & CAROUSEL CMS */}
+          <div className="bg-white border border-[#E5E5E2] p-5 sm:p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#E5E5E2] pb-3 gap-3">
               <div>
                 <h3 className="font-semibold uppercase tracking-wider text-[#111111] text-sm">
-                  4. HOMEPAGE HERO CMS
+                  4. HOMEPAGE HERO & COLLECTION CAROUSEL CMS
                 </h3>
                 <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-                  Manage the main hero banner, text content, action buttons, and featured masterpiece overlay.
+                  Manage the homepage horizontal collection carousel slides, imagery, titles, and CTA link destinations.
                 </p>
               </div>
-              <label className="flex items-center space-x-2 cursor-pointer bg-[#F7F7F5] px-3 py-1.5 border border-[#E5E5E2]">
-                <input
-                  type="checkbox"
-                  checked={settings.homepage_hero_enabled !== "false"}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      homepage_hero_enabled: e.target.checked ? "true" : "false",
-                    })
-                  }
-                  className="rounded text-[#111111] focus:ring-0"
-                />
-                <span className="font-semibold uppercase text-[11px] text-[#111111]">
-                  Enable Hero
-                </span>
-              </label>
-            </div>
-
-            {/* Hero Image & Upload */}
-            <div className="space-y-3">
-              <label className="font-semibold uppercase text-[#6B6B6B] block text-[11px]">
-                Hero Image
-              </label>
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="relative w-full sm:w-36 aspect-[3/4] border border-[#E5E5E2] overflow-hidden shrink-0">
-                  {settings.homepage_hero_image_url ? (
-                    <Image
-                      src={settings.homepage_hero_image_url}
-                      alt="Hero Preview"
-                      fill
-                      className="object-contain"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6B6B6B]">
-                      No Image Selected
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2 flex-1 w-full">
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={handleAddSlide}
+                  className="px-3 py-1.5 bg-[#F7F7F5] border border-[#E5E5E2] hover:border-[#111111] text-[11px] font-semibold uppercase tracking-wider text-[#111111] flex items-center"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Carousel Slide
+                </button>
+                <label className="flex items-center space-x-2 cursor-pointer bg-[#F7F7F5] px-3 py-1.5 border border-[#E5E5E2]">
                   <input
-                    type="url"
-                    value={settings.homepage_hero_image_url || ""}
+                    type="checkbox"
+                    checked={settings.homepage_hero_enabled !== "false"}
                     onChange={(e) =>
-                      setSettings({ ...settings, homepage_hero_image_url: e.target.value })
+                      setSettings({
+                        ...settings,
+                        homepage_hero_enabled: e.target.checked ? "true" : "false",
+                      })
                     }
-                    placeholder="https://res.cloudinary.com/..."
-                    className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-[11px] focus:border-[#111111] focus:outline-none"
+                    className="rounded text-[#111111] focus:ring-0"
                   />
-                  <div className="flex items-center gap-2">
-                    <label className="px-3 py-2 bg-white border border-[#E5E5E2] hover:border-[#111111] text-[#111111] font-semibold uppercase text-[10px] tracking-wider cursor-pointer inline-flex items-center">
-                      {uploadingImage ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                      ) : (
-                        <Upload className="w-3.5 h-3.5 mr-1.5" />
-                      )}
-                      <span>Upload Image to Cloudinary</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        disabled={uploadingImage}
-                        className="hidden"
-                      />
-                    </label>
+                  <span className="font-semibold uppercase text-[11px] text-[#111111]">
+                    Enable Carousel
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Carousel Slides List */}
+            {carouselSlides.length === 0 ? (
+              <div className="p-8 text-center bg-[#F7F7F5] border border-[#E5E5E2] space-y-2">
+                <p className="text-xs text-[#6B6B6B]">
+                  No custom carousel slides saved yet. The storefront is currently using dynamic fallback slides derived from real store assets.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleAddSlide}
+                  className="px-4 py-2 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black inline-flex items-center"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1.5" /> Create First Slide
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {carouselSlides.map((slide, idx) => (
+                  <div
+                    key={slide.id}
+                    className={`border p-4 sm:p-5 space-y-4 ${
+                      slide.enabled ? "bg-white border-[#E5E5E2]" : "bg-[#F7F7F5] border-[#E5E5E2] opacity-70"
+                    }`}
+                  >
+                    {/* Slide Header */}
+                    <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-3">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={slide.enabled !== false}
+                          onChange={(e) => handleUpdateSlide(slide.id, "enabled", e.target.checked)}
+                          className="rounded text-[#111111] focus:ring-0"
+                        />
+                        <span className="font-mono text-xs font-bold text-[#111111] uppercase tracking-wider">
+                          Slide #{idx + 1}
+                        </span>
+                        {slide.title && (
+                          <span className="text-xs font-semibold text-[#6B6B6B] truncate max-w-[200px] sm:max-w-[300px]">
+                            — {slide.title}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center space-x-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveSlide(idx, "up")}
+                          className="p-1.5 border border-[#E5E5E2] hover:border-[#111111] disabled:opacity-30"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5 text-[#111111]" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === carouselSlides.length - 1}
+                          onClick={() => handleMoveSlide(idx, "down")}
+                          className="p-1.5 border border-[#E5E5E2] hover:border-[#111111] disabled:opacity-30"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5 text-[#111111]" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSlide(slide.id)}
+                          className="p-1.5 border border-[#E5E5E2] hover:border-[#A83232] text-[#6B6B6B] hover:text-[#A83232]"
+                          title="Delete Slide"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Slide Content Layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                      {/* Image Thumbnail & Upload Controls */}
+                      <div className="md:col-span-1 space-y-2">
+                        <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                          Slide Image Preview
+                        </label>
+                        <div className="relative aspect-[3/4] w-full border border-[#E5E5E2] bg-[#F7F7F5] overflow-hidden">
+                          {slide.image ? (
+                            <Image
+                              src={slide.image}
+                              alt={slide.title || "Slide Preview"}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center text-[10px] text-[#6B6B6B]">
+                              <span>No Image Set</span>
+                              <span className="text-[9px] text-[#999] mt-1">Upload or Paste URL</span>
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 bg-black/70 text-white text-[9px] font-mono px-1.5 py-0.5 uppercase">
+                            Preview
+                          </div>
+                        </div>
+
+                        <label className="w-full px-3 py-2 bg-white border border-[#E5E5E2] hover:border-[#111111] text-[#111111] font-semibold uppercase text-[10px] tracking-wider cursor-pointer inline-flex items-center justify-center">
+                          {uploadingSlideImageId === slide.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                          ) : (
+                            <Upload className="w-3.5 h-3.5 mr-1.5" />
+                          )}
+                          <span>Upload Image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleSlideImageUpload(slide.id, e)}
+                            disabled={uploadingSlideImageId === slide.id}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Text & URL Inputs */}
+                      <div className="md:col-span-3 space-y-3">
+                        <div className="space-y-1">
+                          <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                            Image URL (Cloudinary or Direct Web URL)
+                          </label>
+                          <input
+                            type="url"
+                            value={slide.image || ""}
+                            onChange={(e) => handleUpdateSlide(slide.id, "image", e.target.value)}
+                            placeholder="https://res.cloudinary.com/... or https://..."
+                            className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-[11px] focus:border-[#111111] focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Eyebrow / Tag
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.eyebrow || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "eyebrow", e.target.value)}
+                              placeholder="e.g. FIGURES"
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Main Title *
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.title || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "title", e.target.value)}
+                              placeholder="e.g. Characters worth collecting."
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Accent Subtitle
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.titleAccent || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "titleAccent", e.target.value)}
+                              placeholder="e.g. Masterwork Statues"
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                            Short Description
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={slide.description || ""}
+                            onChange={(e) => handleUpdateSlide(slide.id, "description", e.target.value)}
+                            placeholder="Brief description paragraph..."
+                            className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs leading-relaxed"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              CTA Button Label
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.primaryLabel || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "primaryLabel", e.target.value)}
+                              placeholder="SHOP FIGURES"
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              CTA Destination URL / Category
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.primaryUrl || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "primaryUrl", e.target.value)}
+                              placeholder="/shop?category=figures"
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Text Fields Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1 sm:col-span-1">
-                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">Eyebrow Text</label>
-                <input
-                  type="text"
-                  value={settings.homepage_hero_eyebrow || ""}
-                  onChange={(e) =>
-                    setSettings({ ...settings, homepage_hero_eyebrow: e.target.value })
-                  }
-                  placeholder="CURATED COLLECTOR GALLERY"
-                  className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-1">
-                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">Main Heading</label>
-                <input
-                  type="text"
-                  value={settings.homepage_hero_title || ""}
-                  onChange={(e) => setSettings({ ...settings, homepage_hero_title: e.target.value })}
-                  placeholder="Figures worth collecting."
-                  className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-1">
-                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">Accent Heading</label>
-                <input
-                  type="text"
-                  value={settings.homepage_hero_title_accent || ""}
-                  onChange={(e) =>
-                    setSettings({ ...settings, homepage_hero_title_accent: e.target.value })
-                  }
-                  placeholder="Stories worth keeping."
-                  className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">Description Paragraph</label>
-              <textarea
-                rows={3}
-                value={settings.homepage_hero_description || ""}
-                onChange={(e) =>
-                  setSettings({ ...settings, homepage_hero_description: e.target.value })
-                }
-                placeholder="Curated figures, statues, and collectible pieces..."
-                className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none leading-relaxed"
-              />
-            </div>
-
-            {/* Featured Masterpiece Overlay Product Selection */}
-            <div className="space-y-1 pt-2 border-t border-[#E5E5E2]">
-              <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
-                Featured Hero Masterpiece Product (Overlay Card)
-              </label>
-              <select
-                value={settings.homepage_hero_featured_product_id || ""}
-                onChange={(e) =>
-                  setSettings({ ...settings, homepage_hero_featured_product_id: e.target.value })
-                }
-                className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
-              >
-                <option value="">-- No Featured Product Selected --</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.sku}) — {formatPrice(p.price)}
-                  </option>
                 ))}
-              </select>
-              <p className="text-[11px] text-[#6B6B6B] mt-1">
-                {settings.homepage_hero_featured_product_id && selectedFeaturedProduct
-                  ? `Currently featured: ${selectedFeaturedProduct.name}`
-                  : "No featured product selected."}
-              </p>
-            </div>
+              </div>
+            )}
 
-            <div className="flex justify-end pt-3">
+            <div className="flex justify-between items-center pt-3 border-t border-[#E5E5E2]">
               <button
-                onClick={() =>
-                  handleSaveSection("Homepage Hero", [
-                    "homepage_hero_enabled",
-                    "homepage_hero_image_url",
-                    "homepage_hero_eyebrow",
-                    "homepage_hero_title",
-                    "homepage_hero_title_accent",
-                    "homepage_hero_description",
-                    "homepage_hero_primary_label",
-                    "homepage_hero_primary_url",
-                    "homepage_hero_secondary_label",
-                    "homepage_hero_secondary_url",
-                    "homepage_hero_featured_product_id",
-                  ])
-                }
-                disabled={savingSection === "Homepage Hero"}
+                type="button"
+                onClick={handleAddSlide}
+                className="px-4 py-2 bg-[#F7F7F5] border border-[#E5E5E2] hover:border-[#111111] text-xs font-semibold uppercase tracking-wider text-[#111111] flex items-center"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add Slide
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveCarousel}
+                disabled={savingSection === "Homepage Hero Carousel"}
                 className="px-5 py-2.5 bg-[#111111] text-white font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50 flex items-center"
               >
-                {savingSection === "Homepage Hero" ? (
+                {savingSection === "Homepage Hero Carousel" ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : (
                   <Save className="w-4 h-4 mr-2" />
                 )}
-                <span>SAVE HOMEPAGE HERO</span>
+                <span>SAVE HERO CAROUSEL</span>
               </button>
             </div>
           </div>
