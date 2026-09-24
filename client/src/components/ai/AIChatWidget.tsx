@@ -103,13 +103,13 @@ export function AIChatWidget() {
   useEffect(() => {
     // Pre-load store metadata dynamically to guide local intent matching
     fetch(`${API_BASE}/products?limit=1`)
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {
           setStoreMeta({
-            categories: data.categories || [],
-            brands: data.brands || [],
-            franchises: data.franchises || [],
+            categories: Array.isArray(data.categories) ? data.categories : [],
+            brands: Array.isArray(data.brands) ? data.brands : [],
+            franchises: Array.isArray(data.franchises) ? data.franchises : [],
           });
         }
       })
@@ -423,10 +423,10 @@ ${itemsList}`;
       {/* Floating Launcher Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-40 p-3.5 bg-[#111111] text-white shadow-2xl hover:bg-black transition-all duration-200 flex items-center space-x-2 border border-[#E5E5E2]"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-2.5 sm:p-3.5 bg-[#111111] text-white shadow-2xl hover:bg-black transition-all duration-200 flex items-center space-x-2 border border-[#E5E5E2] rounded-none"
         aria-label="Open Shopping Assistant"
       >
-        <Sparkles className="w-5 h-5 text-white animate-pulse" />
+        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4AF37]" />
         <span className="text-xs font-semibold uppercase tracking-wider hidden sm:inline">
           Store Concierge
         </span>

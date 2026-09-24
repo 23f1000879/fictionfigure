@@ -57,24 +57,26 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
   };
 
   return (
-    <div className="group flex flex-col bg-white border border-[#E5E5E2] hover:border-[#111111] transition-all duration-200">
-      {/* Image Container */}
-      <div className="relative aspect-[3/4] bg-[#F0F0ED] overflow-hidden">
-        <Link href={`/products/${product.slug}`} className="block w-full h-full">
+    <div className="group flex flex-col bg-transparent border-none transition-all duration-180">
+      {/* Product Image Display with Object Contain for zero cropping */}
+      <div className="relative aspect-[3/4] bg-[#FFFFFF] border border-[#E5E5E2] group-hover:border-[#111111] overflow-hidden p-3 transition-all duration-180">
+        <Link href={`/products/${product.slug}`} className="block w-full h-full relative">
           {primaryImage ? (
             <>
               <Image
                 src={primaryImage}
                 alt={product.name}
                 fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="object-contain object-center group-hover:scale-104 transition-transform duration-200"
               />
               {secondaryImage !== primaryImage && (
                 <Image
                   src={secondaryImage}
                   alt={`${product.name} alternate view`}
                   fill
-                  className="object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-contain object-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 />
               )}
             </>
@@ -85,18 +87,18 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
           )}
         </Link>
 
-        {/* Wishlist Button */}
+        {/* Wishlist Toggle Button */}
         <button
           onClick={async (e) => {
             e.preventDefault();
             e.stopPropagation();
             await toggleWishlist(product.id);
           }}
-          className="absolute top-2 right-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/90 backdrop-blur-xs border border-[#E5E5E2] hover:bg-white text-[#111111] transition-all z-10"
+          className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-white/90 backdrop-blur-xs border border-[#E5E5E2] hover:border-[#111111] hover:bg-white text-[#111111] transition-all z-10 rounded-none"
           aria-label="Save to Wishlist"
         >
           <Heart
-            className={`w-4 h-4 ${
+            className={`w-3.5 h-3.5 ${
               isWishlisted ? "fill-[#111111] text-[#111111]" : "text-[#111111]"
             }`}
           />
@@ -104,50 +106,47 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
 
         {/* Status Badges */}
         {!inStock ? (
-          <span className="absolute bottom-3 left-3 bg-[#A83232] text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 z-10">
+          <span className="absolute bottom-2 left-2 bg-[#A83232] text-white text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 z-10 rounded-none">
             Out of Stock
           </span>
         ) : isLowStock ? (
-          <span className="absolute bottom-3 left-3 bg-[#B86E00] text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 z-10">
+          <span className="absolute bottom-2 left-2 bg-[#B86E00] text-white text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 z-10 rounded-none">
             Only {stock} left
           </span>
         ) : isOnSale ? (
-          <span className="absolute bottom-3 left-3 bg-[#111111] text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 z-10">
+          <span className="absolute bottom-2 left-2 bg-[#111111] text-white text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 z-10 rounded-none">
             Sale
           </span>
         ) : null}
       </div>
 
       {/* Product Content Details */}
-      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
+      <div className="pt-2.5 pb-1 px-0.5 flex-1 flex flex-col justify-between space-y-2">
         <div>
-          <div className="flex justify-between items-center text-[10px] uppercase tracking-wider text-[#6B6B6B] font-semibold mb-1">
-            <span className="truncate max-w-[100px] sm:max-w-none">{product.brand || "FictionFigure"}</span>
+          <div className="flex justify-between items-center text-[10px] uppercase tracking-wider text-[#6B6B6B] font-bold mb-0.5">
+            <span className="truncate max-w-[120px]">{product.brand || product.category?.name || "FictionFigure"}</span>
             {hasRealRating ? (
               <div className="flex items-center space-x-1 shrink-0">
-                <Star className="w-3 h-3 fill-[#111111] text-[#111111]" />
-                <span className="text-[#111111] font-mono">{product.rating?.toFixed(1)}</span>
-                <span className="text-[#6B6B6B] font-mono text-[9px]">({product.reviewCount})</span>
+                <Star className="w-3 h-3 fill-[#D4AF37] text-[#D4AF37]" />
+                <span className="text-[#111111] font-mono text-[10px]">{product.rating?.toFixed(1)}</span>
               </div>
-            ) : (
-              <span className="text-[9px] text-[#6B6B6B] font-mono shrink-0">No reviews yet</span>
-            )}
+            ) : null}
           </div>
 
           <Link href={`/products/${product.slug}`} className="block">
-            <h3 className="text-xs font-semibold text-[#111111] line-clamp-2 hover:underline leading-snug">
+            <h3 className="text-xs font-semibold text-[#111111] line-clamp-2 group-hover:text-[#D4AF37] transition-colors leading-snug">
               {product.name}
             </h3>
           </Link>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-[#F0F0ED]">
-          <div className="flex flex-col sm:flex-row sm:items-baseline space-y-0.5 sm:space-y-0 sm:space-x-2">
-            <span className="text-xs sm:text-sm font-semibold font-mono text-[#111111]">
+        <div className="flex items-center justify-between pt-1.5 border-t border-[#E5E5E2]/60">
+          <div className="flex items-baseline space-x-1.5">
+            <span className="text-xs sm:text-sm font-bold font-mono text-[#111111]">
               {formatPrice(product.price)}
             </span>
             {isOnSale && product.compareAtPrice && (
-              <span className="text-[10px] sm:text-xs text-[#6B6B6B] line-through font-mono">
+              <span className="text-[10px] text-[#6B6B6B] line-through font-mono">
                 {formatPrice(product.compareAtPrice)}
               </span>
             )}
@@ -156,18 +155,20 @@ export function ProductCard({ product, lowStockThreshold = 5 }: ProductCardProps
           {inStock ? (
             <button
               onClick={handleQuickAdd}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center border border-[#E5E5E2] hover:border-[#111111] hover:bg-[#111111] hover:text-white transition-colors"
+              className="w-7 h-7 flex items-center justify-center bg-white border border-[#E5E5E2] hover:border-[#111111] hover:bg-[#111111] hover:text-white text-[#111111] transition-all rounded-none"
+              aria-label="Add to Cart"
               title="Add to Cart"
             >
-              <ShoppingBag className="w-4 h-4" />
+              <ShoppingBag className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button
               disabled
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center border border-[#E5E5E2] opacity-40 cursor-not-allowed text-[#6B6B6B]"
+              className="w-7 h-7 flex items-center justify-center bg-white border border-[#E5E5E2] opacity-40 cursor-not-allowed text-[#6B6B6B] rounded-none"
+              aria-label="Out of Stock"
               title="Out of Stock"
             >
-              <ShoppingBag className="w-4 h-4" />
+              <ShoppingBag className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
