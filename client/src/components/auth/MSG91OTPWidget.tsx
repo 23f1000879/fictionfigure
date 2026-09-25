@@ -84,6 +84,28 @@ export function MSG91OTPWidget({ phone, onSuccess, onError }: MSG91OTPWidgetProp
     };
 
     const loadOtpScript = (urls: string[]) => {
+      // Script already on the page (a previous widget instance): initialise directly instead of
+      // injecting a second copy, which would register duplicate MSG91 handlers.
+      if (typeof (window as any).initSendOTP === "function") {
+        const initExisting = () => {
+          setLoading(false);
+          (window as any).initSendOTP(configuration);
+          if (!otpDispatchedRef.current) {
+            otpDispatchedRef.current = true;
+            (window as any).sendOtp?.(
+              cleanPhone,
+              (res: any) => {
+                setMsgSent(true);
+                const reqId = res?.reqId || res?.req_id || res?.requestId || (typeof res === "string" ? res : null);
+                if (reqId) reqIdRef.current = reqId;
+              },
+              (err: any) => onError(err?.message || "Failed to dispatch SMS OTP. Please try again.")
+            );
+          }
+        };
+        initExisting();
+        return;
+      }
       let i = 0;
       function attempt() {
         if (i >= urls.length) {

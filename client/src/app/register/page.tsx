@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, ArrowLeft, Eye, EyeOff, AlertCircle } from "lucide-react";
@@ -30,6 +30,12 @@ export default function RegisterPage() {
   });
 
   const [normalizedPhone, setNormalizedPhone] = useState("");
+
+  // Prefill from the sign-in page ("No account uses this number yet → Create account").
+  useEffect(() => {
+    const fromLogin = new URLSearchParams(window.location.search).get("phone");
+    if (fromLogin && /^\d{10}$/.test(fromLogin)) setForm((prev) => (prev.phone ? prev : { ...prev, phone: fromLogin }));
+  }, []);
 
   const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

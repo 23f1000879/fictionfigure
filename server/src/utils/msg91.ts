@@ -26,10 +26,32 @@ function extractVerifiedPhone(body: any): string | null {
   };
   walk(body);
   for (const c of candidates) {
+    if (c.length > 40 && c.split(".").length === 3) continue; // skip JWT-like strings
     const m = c.match(/(?:\+?91)?[6-9]\d{9}/);
     if (m) return last10(m[0]);
   }
   return null;
+}
+
+/** Reads a JWT's payload without trusting it (callers must have verified the token first). */
+function decodeJwtClaims(token: string): any {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3) return null;
+  try {
+    return JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+  } catch {
+    return null;
+  }
+}
+
+/** Keys and value types with every digit masked — safe to log. */
+function describeShape(v: any, depth = 0): any {
+  if (v == null || depth > 3) return v === null ? null : typeof v;
+  if (typeof v === "string") return v.length > 40 ? `string(${v.length})` : v.replace(/\d/g, "#");
+  if (typeof v !== "object") return typeof v;
+  const out: Record<string, any> = {};
+  for (const [k, val] of Object.entries(v)) out[k] = describeShape(val, depth + 1);
+  return out;
 }
 
 export async function verifyMsg91AccessToken(accessToken: string, reqId?: string): Promise<Msg91Verification> {
@@ -65,7 +87,19 @@ export async function verifyMsg91AccessToken(accessToken: string, reqId?: string
     if (!ok) {
       return { ok: false, verifiedPhone: null, status: 400, error: "OTP verification failed. Please request a new code." };
     }
-    return { ok: true, verifiedPhone: extractVerifiedPhone(data) };
+
+    // 1) Number reported in MSG91's verification response.
+    // 2) Otherwise the claims of the access token itself — safe only because MSG91 has just
+    //    validated this exact token above, so a forged token never reaches this step.
+    const verifiedPhone = extractVerifiedPhone(data) ?? extractVerifiedPhone(decodeJwtClaims(accessToken));
+    if (!verifiedPhone) {
+      // Masked shape only (no token, no digits) so an integration mismatch can be diagnosed.
+      console.warn("MSG91 verification succeeded but no verified number was found", {
+        response: describeShape(data),
+        tokenClaims: describeShape(decodeJwtClaims(accessToken)),
+      });
+    }
+    return { ok: true, verifiedPhone };
   } catch (e) {
     console.error("MSG91 verifyAccessToken network error");
     return { ok: false, verifiedPhone: null, status: 502, error: "Unable to verify the OTP right now. Please try again." };

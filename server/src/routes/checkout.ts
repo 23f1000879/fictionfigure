@@ -5,7 +5,7 @@ import { prisma } from "../db.js";
 import { getStoreSettingsHelper } from "./settings.js";
 import bcrypt from "bcryptjs";
 import { verifyMsg91AccessToken, phoneBindingOk } from "../utils/msg91.js";
-import { MIN_PASSWORD_LENGTH, hasUsablePassword, allowAttempt, clientIp, TOO_MANY_ATTEMPTS } from "../utils/security.js";
+import { MIN_PASSWORD_LENGTH, hasUsablePassword, allowAttempt, clientIp, TOO_MANY_ATTEMPTS, phoneAccountState } from "../utils/security.js";
 
 const router = Router();
 
@@ -127,9 +127,7 @@ export async function calculateAuthoritativeTotals(
   };
 }
 
-// 1. Identify Customer & Initiate OTP Endpoint
-// Never issues a session and never reveals whether the number has an account:
-// every unauthenticated checkout starts with OTP verification of the number.
+// 1. Identify Customer: server decides the path; never issues a session and never sends OTP.
 router.post("/auth/identify", async (req, res) => {
   try {
     const { phone } = req.body;
@@ -142,7 +140,13 @@ router.post("/auth/identify", async (req, res) => {
       return res.status(400).json({ error: "Please enter a valid 10-digit Indian mobile number." });
     }
 
-    res.json({ requiresOtp: true, normalizedPhone });
+    const ip = clientIp(req);
+    if (!allowAttempt(`phone-status-ip:${ip}`, 20, 15 * 60 * 1000) || !allowAttempt(`phone-status:${normalizedPhone}`, 10, 15 * 60 * 1000)) {
+      return res.status(429).json({ error: TOO_MANY_ATTEMPTS });
+    }
+
+    const user = await prisma.user.findFirst({ where: { phone: normalizedPhone }, select: { passwordHash: true } });
+    res.json({ state: phoneAccountState(user), normalizedPhone });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to identify customer mobile number." });
   }

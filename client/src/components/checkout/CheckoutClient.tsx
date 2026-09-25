@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
 import { OrderTotals } from "@/components/checkout/OrderTotals";
 import { UpiPaymentQr } from "@/components/checkout/UpiPaymentQr";
+import { PhoneAuthFlow } from "@/components/auth/PhoneAuthFlow";
 import { formatPrice } from "@/lib/utils";
 import {
   Check,
@@ -17,7 +18,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Loader2,
-  Phone,
   AlertCircle,
   ShieldCheck,
   Tag,
@@ -25,11 +25,8 @@ import {
   ChevronUp,
   MapPin,
   CreditCard,
-  UserCheck,
 } from "lucide-react";
 import { API_BASE } from "@/lib/api";
-import { MSG91OTPWidget, MSG91VerificationPayload } from "@/components/auth/MSG91OTPWidget";
-import { normalizeIndianPhone } from "@/lib/phone";
 
 export function CheckoutClient() {
   const router = useRouter();
@@ -47,23 +44,11 @@ export function CheckoutClient() {
   // State Management
   const [sessionToken, setSessionToken] = useState<string>("");
   const [isMobileVerified, setIsMobileVerified] = useState(false);
-  const [isIdentifying, setIsIdentifying] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
   const [isReviewStep, setIsReviewStep] = useState(false);
 
-  // Post-OTP outcome: OTP proves the number; an account always needs a password before a session exists.
-  const [loginRequiredMessage, setLoginRequiredMessage] = useState("");
-  const [accountSetup, setAccountSetup] = useState<{
-    status: "NEW_ACCOUNT" | "PASSWORD_SETUP_REQUIRED";
-    setupToken: string;
-    message: string;
-  } | null>(null);
-  const [setupForm, setSetupForm] = useState({ firstName: "", lastName: "", password: "", confirm: "" });
-  const [isCompletingAccount, setIsCompletingAccount] = useState(false);
 
   // Address State
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -120,52 +105,14 @@ export function CheckoutClient() {
       .catch(() => setUpiSettings((prev) => ({ ...prev, loaded: true })));
   }, []);
 
-  // 2. Fetch Authenticated User Session & Saved Addresses on Mount
+  // 2. Restore an existing signed-in session (profile + saved addresses) on mount
   useEffect(() => {
     const token = localStorage.getItem("fictionfigure_token");
     if (token) {
       setSessionToken(token);
-      fetch(`${API_BASE}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.authenticated && data.user && data.user.phoneVerified) {
-            setIsMobileVerified(true);
-            setFormData((prev) => ({
-              ...prev,
-              email: data.user.email || prev.email,
-              phone: data.user.phone || prev.phone,
-              fullName: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || prev.fullName,
-            }));
-
-            // Fetch Saved Addresses
-            fetch(`${API_BASE}/checkout/addresses`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-              .then((res) => res.json())
-              .then((addrData) => {
-                if (addrData.addresses && addrData.addresses.length > 0) {
-                  setSavedAddresses(addrData.addresses);
-                  const def = addrData.addresses.find((a: any) => a.isDefault) || addrData.addresses[0];
-                  setSelectedAddressId(def.id);
-                  setFormData((prev) => ({
-                    ...prev,
-                    fullName: def.fullName || prev.fullName,
-                    streetAddress: def.streetAddress || prev.streetAddress,
-                    apartment: def.apartment || prev.apartment,
-                    city: def.city || prev.city,
-                    state: def.state || prev.state,
-                    postalCode: def.postalCode || prev.postalCode,
-                    country: def.country || prev.country,
-                  }));
-                }
-              })
-              .catch(() => {});
-          }
-        })
-        .catch(() => {});
+      loadCustomerSession(token);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 3. Handle Coupon Validation
@@ -255,145 +202,65 @@ export function CheckoutClient() {
     return Object.keys(errors).length === 0;
   };
 
-  // Mobile Authentication Identification Handler
-  const handleIdentifyCustomer = async () => {
-    const norm = normalizeIndianPhone(formData.phone);
-    if (!norm) {
-      setErrorMessage("Please enter a valid 10-digit Indian mobile number.");
-      return;
-    }
+  // Loads the signed-in customer's profile and saved addresses for checkout.
+  const loadCustomerSession = (token: string) => {
+    fetch(`${API_BASE}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user && data.user.phoneVerified) {
+          setIsMobileVerified(true);
+          setFormData((prev) => ({
+            ...prev,
+            email: data.user.email || prev.email,
+            phone: data.user.phone || prev.phone,
+            fullName: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || prev.fullName,
+          }));
 
-    setIsIdentifying(true);
-    setErrorMessage("");
-
-    try {
-      const identifyRes = await fetch(`${API_BASE}/checkout/auth/identify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: norm }),
-      });
-
-      const identifyData = await identifyRes.json();
-      if (!identifyRes.ok) throw new Error(identifyData.error || "Failed to identify mobile number.");
-
-      setFormData((prev) => ({ ...prev, phone: norm }));
-      setLoginRequiredMessage("");
-      setAccountSetup(null);
-
-      // Every unauthenticated checkout verifies the number by OTP first.
-      setIsOtpSent(true);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to process mobile verification.");
-    } finally {
-      setIsIdentifying(false);
-    }
+          fetch(`${API_BASE}/checkout/addresses`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((res) => res.json())
+            .then((addrData) => {
+              if (addrData.addresses && addrData.addresses.length > 0) {
+                setSavedAddresses(addrData.addresses);
+                const def = addrData.addresses.find((a: any) => a.isDefault) || addrData.addresses[0];
+                setSelectedAddressId(def.id);
+                setFormData((prev) => ({
+                  ...prev,
+                  fullName: def.fullName || prev.fullName,
+                  streetAddress: def.streetAddress || prev.streetAddress,
+                  apartment: def.apartment || prev.apartment,
+                  city: def.city || prev.city,
+                  state: def.state || prev.state,
+                  postalCode: def.postalCode || prev.postalCode,
+                  country: def.country || prev.country,
+                }));
+              }
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
   };
 
-  // OTP Success Callback from MSG91 OTP Widget
-  const handleWidgetSuccess = async (payload: MSG91VerificationPayload) => {
-    setIsVerifyingOtp(true);
+  // Password sign-in or password creation succeeded inside PhoneAuthFlow.
+  const handleCheckoutAuthenticated = (token: string) => {
+    localStorage.setItem("fictionfigure_token", token);
+    setSessionToken(token);
     setErrorMessage("");
-
-    try {
-      const res = await fetch(`${API_BASE}/checkout/auth/verify-widget-token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formData.phone,
-          accessToken: payload.accessToken,
-          reqId: payload.reqId,
-          email: formData.email,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || data.error || "MSG91 OTP verification failed.");
-
-      setIsOtpSent(false);
-
-      if (data.status === "LOGIN_REQUIRED") {
-        setLoginRequiredMessage(data.message || "This number already has an account. Sign in with your password to continue.");
-        return;
-      }
-
-      if ((data.status === "NEW_ACCOUNT" || data.status === "PASSWORD_SETUP_REQUIRED") && data.setupToken) {
-        setAccountSetup({ status: data.status, setupToken: data.setupToken, message: data.message || "" });
-        setSetupForm((prev) => ({
-          ...prev,
-          firstName: data.firstName || prev.firstName,
-          lastName: data.lastName || prev.lastName,
-        }));
-        return;
-      }
-
-      throw new Error("Verification could not be completed. Please try again.");
-    } catch (err: any) {
-      setErrorMessage(err.message || "OTP verification failed. Please try again.");
-    } finally {
-      setIsVerifyingOtp(false);
-    }
+    loadCustomerSession(token);
   };
 
-  // Create the password (and account, for new customers) after OTP; only then is a session issued.
-  const handleCompleteAccount = async () => {
-    if (!accountSetup) return;
-    setErrorMessage("");
-    if (accountSetup.status === "NEW_ACCOUNT" && (!setupForm.firstName.trim() || !setupForm.lastName.trim())) {
-      setErrorMessage("Please enter your first and last name.");
-      return;
-    }
-    if (setupForm.password.length < 8) {
-      setErrorMessage("Use at least 8 characters for your password.");
-      return;
-    }
-    if (setupForm.password !== setupForm.confirm) {
-      setErrorMessage("Passwords do not match.");
-      return;
-    }
-
-    setIsCompletingAccount(true);
-    try {
-      const res = await fetch(`${API_BASE}/checkout/auth/complete-account`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          setupToken: accountSetup.setupToken,
-          password: setupForm.password,
-          firstName: setupForm.firstName,
-          lastName: setupForm.lastName,
-        }),
-      });
-      const data = await res.json();
-      if (res.status === 409) {
-        setAccountSetup(null);
-        setLoginRequiredMessage(data.message || "This number already has an account. Please sign in.");
-        return;
-      }
-      if (res.status === 401) {
-        setAccountSetup(null);
-        throw new Error(data.error || "Verification expired. Please verify your number again.");
-      }
-      if (!res.ok) throw new Error(data.message || data.error || "Could not create your account.");
-
-      if (data.token) {
-        localStorage.setItem("fictionfigure_token", data.token);
-        setSessionToken(data.token);
-      }
-      setIsMobileVerified(true);
-      setAccountSetup(null);
-      setSetupForm({ firstName: "", lastName: "", password: "", confirm: "" });
-      if (data.user) {
-        setFormData((prev) => ({
-          ...prev,
-          fullName: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || prev.fullName,
-          email: data.user.email || prev.email,
-        }));
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || "Could not create your account.");
-    } finally {
-      setIsCompletingAccount(false);
-    }
+  // A number belongs to an account: changing it signs out and requires a fresh sign-in/verification.
+  const handleChangeNumber = () => {
+    localStorage.removeItem("fictionfigure_token");
+    setSessionToken("");
+    setIsMobileVerified(false);
+    setSavedAddresses([]);
+    setSelectedAddressId("new");
+    setFormData((prev) => ({ ...prev, phone: "", email: "" }));
   };
 
   // Step 1 -> Step 2 Review Transition Handler
@@ -866,6 +733,7 @@ export function CheckoutClient() {
               <>
                 {/* SECTION 1: CONTACT INFORMATION */}
                 <section className="space-y-4 rounded-[14px] border border-white/[0.08] bg-[#111318] p-5 sm:p-6">
+                  {isMobileVerified && (
                   <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-[#F7F7F5] flex items-center">
                       <span className="flex flex-col"><span className="ff-eyebrow">Step 01</span><span className="mt-1.5 text-[17px] font-bold normal-case tracking-normal text-white">Contact information</span></span>
@@ -876,11 +744,12 @@ export function CheckoutClient() {
                       </span>
                     )}
                   </div>
+                  )}
 
                   {isMobileVerified ? (
                     <div className="p-4 rounded-[10px] bg-[#17191F] border border-white/[0.08] space-y-1 text-xs">
-                      <div className="flex justify-between items-center">
-                        <div>
+                      <div className="flex justify-between items-center gap-3">
+                        <div className="min-w-0">
                           <span className="font-semibold text-[#F7F7F5] block">
                             {formData.fullName || "Customer"}
                           </span>
@@ -888,167 +757,16 @@ export function CheckoutClient() {
                           {formData.email && <span className="text-[#9A9DA5] block text-[11px]">{formData.email}</span>}
                         </div>
                         <button
-                          onClick={() => setIsMobileVerified(false)}
-                          className="text-[11px] text-[#9A9DA5] hover:text-white underline uppercase tracking-wider font-medium"
+                          type="button"
+                          onClick={handleChangeNumber}
+                          className="min-h-[44px] text-[11px] text-[#9A9DA5] hover:text-white underline uppercase tracking-wider font-medium shrink-0"
                         >
                           Change Number
                         </button>
                       </div>
                     </div>
-                  ) : loginRequiredMessage ? (
-                    /* Existing password account: sign in to continue (OTP alone never opens an account) */
-                    <div className="p-4 rounded-[10px] bg-[#17191F] border border-white/[0.08] space-y-3 text-[13px]">
-                      <p className="text-[#C9CBD1] leading-relaxed">{loginRequiredMessage}</p>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <Link href="/login?redirect=/checkout" className="ff-btn ff-btn-gold">
-                          Sign in to continue <ArrowRight className="w-4 h-4" />
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => setLoginRequiredMessage("")}
-                          className="min-h-[44px] text-[12px] text-[#9A9DA5] hover:text-white underline"
-                        >
-                          Use a different number
-                        </button>
-                      </div>
-                      <p className="text-[12px] text-[#6E717A]">Your bag is saved on this device and will be here after you sign in.</p>
-                    </div>
-                  ) : accountSetup ? (
-                    /* OTP verified: create a password before any session is issued */
-                    <div className="p-4 sm:p-5 rounded-[10px] bg-[#17191F] border border-[#F5C518]/30 space-y-4 text-[13px]">
-                      <div className="space-y-1">
-                        <p className="ff-eyebrow">Number verified</p>
-                        <p className="text-white font-semibold">
-                          {accountSetup.status === "NEW_ACCOUNT" ? "Create your account password" : "Secure your account with a password"}
-                        </p>
-                        <p className="text-[#9A9DA5]">{accountSetup.message}</p>
-                      </div>
-                      {accountSetup.status === "NEW_ACCOUNT" && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            autoComplete="given-name"
-                            placeholder="First name"
-                            aria-label="First name"
-                            value={setupForm.firstName}
-                            onChange={(e) => setSetupForm({ ...setupForm, firstName: e.target.value })}
-                            className="w-full h-12 px-4 rounded-[8px] bg-[#0D0E12] border border-white/[0.08] text-[#F7F7F5] placeholder:text-[#6E717A] focus:border-[#F5C518]/60 focus:outline-none transition-colors"
-                          />
-                          <input
-                            type="text"
-                            autoComplete="family-name"
-                            placeholder="Last name"
-                            aria-label="Last name"
-                            value={setupForm.lastName}
-                            onChange={(e) => setSetupForm({ ...setupForm, lastName: e.target.value })}
-                            className="w-full h-12 px-4 rounded-[8px] bg-[#0D0E12] border border-white/[0.08] text-[#F7F7F5] placeholder:text-[#6E717A] focus:border-[#F5C518]/60 focus:outline-none transition-colors"
-                          />
-                        </div>
-                      )}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input
-                          type="password"
-                          autoComplete="new-password"
-                          placeholder="Password (min. 8 characters)"
-                          aria-label="Password"
-                          value={setupForm.password}
-                          onChange={(e) => setSetupForm({ ...setupForm, password: e.target.value })}
-                          className="w-full h-12 px-4 rounded-[8px] bg-[#0D0E12] border border-white/[0.08] text-[#F7F7F5] placeholder:text-[#6E717A] focus:border-[#F5C518]/60 focus:outline-none transition-colors"
-                        />
-                        <input
-                          type="password"
-                          autoComplete="new-password"
-                          placeholder="Confirm password"
-                          aria-label="Confirm password"
-                          value={setupForm.confirm}
-                          onChange={(e) => setSetupForm({ ...setupForm, confirm: e.target.value })}
-                          className="w-full h-12 px-4 rounded-[8px] bg-[#0D0E12] border border-white/[0.08] text-[#F7F7F5] placeholder:text-[#6E717A] focus:border-[#F5C518]/60 focus:outline-none transition-colors"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleCompleteAccount}
-                        disabled={isCompletingAccount}
-                        className="ff-btn ff-btn-gold w-full h-12 disabled:opacity-50 disabled:pointer-events-none"
-                      >
-                        {isCompletingAccount ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Save password &amp; continue <ArrowRight className="w-4 h-4" /></>}
-                      </button>
-                    </div>
-                  ) : !isOtpSent ? (
-                    <div className="space-y-4 text-xs">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="font-semibold uppercase text-[#9A9DA5] text-[11px]">
-                            Mobile Phone Number *
-                          </label>
-                          <input
-                            type="text"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="+91 98765 43210"
-                            className="w-full h-12 px-4 bg-[#0D0E12] border border-white/[0.08] text-xs text-[#F7F7F5] focus:border-[#F5C518]/60 focus:outline-none font-mono rounded-[8px] placeholder:text-[#6E717A] transition-colors"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="font-semibold uppercase text-[#9A9DA5] text-[11px]">
-                            Email Address (Optional)
-                          </label>
-                          <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="collector@domain.com"
-                            className="w-full h-12 px-4 bg-[#0D0E12] border border-white/[0.08] text-xs text-[#F7F7F5] focus:border-[#F5C518]/60 focus:outline-none rounded-[8px] placeholder:text-[#6E717A] transition-colors"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleIdentifyCustomer}
-                        disabled={isIdentifying}
-                        className="w-full min-h-[44px] px-6 py-3 bg-[#F5C518] text-[#08090B] text-xs font-semibold uppercase tracking-widest hover:bg-[#FFD43B] disabled:opacity-50 transition-colors flex items-center justify-center rounded-[6px]"
-                      >
-                        {isIdentifying ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                          <Phone className="w-4 h-4 mr-2" />
-                        )}
-                        <span>VERIFY MOBILE VIA OTP</span>
-                      </button>
-                      <p className="text-[12px] text-[#9A9DA5] text-center">
-                        Already have an account?{" "}
-                        <Link href="/login?redirect=/checkout" className="inline-flex items-center min-h-[36px] font-semibold text-white hover:text-[#F5C518]">
-                          Sign in with your password
-                        </Link>
-                      </p>
-                    </div>
                   ) : (
-                    /* MSG91 Web OTP Widget */
-                    <div className="p-5 rounded-[10px] bg-[#17191F] border border-white/[0.08] space-y-4 text-xs">
-                      <div className="flex justify-between items-center border-b border-white/[0.08] pb-3">
-                        <div>
-                          <h4 className="font-semibold uppercase tracking-wider text-[#F7F7F5]">
-                            Verify OTP Sent to {formData.phone}
-                          </h4>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsOtpSent(false)}
-                          className="text-[#9A9DA5] hover:text-white underline uppercase tracking-wider text-[10px]"
-                        >
-                          Change Phone
-                        </button>
-                      </div>
-
-                      <MSG91OTPWidget
-                        phone={formData.phone}
-                        onSuccess={handleWidgetSuccess}
-                        onError={(err) => setErrorMessage(err)}
-                      />
-                    </div>
+                    <PhoneAuthFlow mode="checkout" initialPhone={formData.phone} onAuthenticated={handleCheckoutAuthenticated} />
                   )}
                 </section>
 

@@ -33,3 +33,17 @@ export const clientIp = (req: any): string =>
   String(req.headers?.["x-forwarded-for"] || req.ip || req.socket?.remoteAddress || "unknown").split(",")[0].trim();
 
 export const TOO_MANY_ATTEMPTS = "Too many attempts. Please wait a few minutes and try again.";
+
+/**
+ * Account state for a phone number, decided on the server.
+ *  PASSWORD — an account exists and has a usable password: sign in with the password (no OTP)
+ *  ACTIVATE — an account exists without a usable password: OTP, then create a password
+ *  NEW      — no account: OTP, then create an account with a password
+ * Nothing else about the account is returned to unauthenticated callers.
+ */
+export type PhoneAccountState = "PASSWORD" | "ACTIVATE" | "NEW";
+
+export function phoneAccountState(user: { passwordHash: string } | null): PhoneAccountState {
+  if (!user) return "NEW";
+  return hasUsablePassword(user.passwordHash) ? "PASSWORD" : "ACTIVATE";
+}

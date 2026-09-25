@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { normalizeIndianPhone } from "../utils/phone.js";
 import { prisma } from "../db.js";
 import { verifyMsg91AccessToken, phoneBindingOk } from "../utils/msg91.js";
-import { MIN_PASSWORD_LENGTH, allowAttempt, clientIp, TOO_MANY_ATTEMPTS } from "../utils/security.js";
+import { MIN_PASSWORD_LENGTH, allowAttempt, clientIp, TOO_MANY_ATTEMPTS, phoneAccountState } from "../utils/security.js";
 
 const router = Router();
 
@@ -30,6 +30,26 @@ router.post("/check-phone", async (req, res) => {
     res.json({ valid: true, normalizedPhone });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to check mobile number" });
+  }
+});
+
+// 1b. Account state for a phone number (decides the sign-in path on the server).
+// Returns only PASSWORD | ACTIVATE | NEW — never ids, names, email or other account data.
+// Rate-limited to keep bulk probing of numbers impractical.
+router.post("/phone-status", async (req, res) => {
+  try {
+    const ip = clientIp(req);
+    const normalizedPhone = normalizeIndianPhone(req.body?.phone || "");
+    if (!normalizedPhone) {
+      return res.status(400).json({ error: "Please enter a valid 10-digit Indian mobile number." });
+    }
+    if (!allowAttempt(`phone-status-ip:${ip}`, 20, WINDOW_15_MIN) || !allowAttempt(`phone-status:${normalizedPhone}`, 10, WINDOW_15_MIN)) {
+      return res.status(429).json({ error: TOO_MANY_ATTEMPTS });
+    }
+    const user = await prisma.user.findFirst({ where: { phone: normalizedPhone }, select: { passwordHash: true } });
+    res.json({ state: phoneAccountState(user), normalizedPhone });
+  } catch (err: any) {
+    res.status(500).json({ error: "Could not check this number. Please try again." });
   }
 });
 
