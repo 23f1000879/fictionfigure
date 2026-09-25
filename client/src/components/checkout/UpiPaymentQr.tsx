@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Loader2, Smartphone, ShieldCheck, AlertCircle } from "lucide-react";
+import { Loader2, ShieldCheck, AlertCircle } from "lucide-react";
+import { UpiAppButtons } from "@/components/checkout/UpiAppButtons";
 import { API_BASE } from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
 
@@ -129,11 +130,7 @@ export function UpiPaymentQr({ upiId, payeeName, cartItems, couponCode, displaye
         )}
       </div>
 
-      {status === "ready" && (
-        <a href={uri} className="ff-btn ff-btn-outline w-full sm:hidden">
-          <Smartphone className="w-4 h-4" /> Pay with a UPI app
-        </a>
-      )}
+      {status === "ready" && <UpiAppButtons upiUri={uri} upiId={upiId} />}
 
       <p className="text-[12px] text-[#9A9DA5]">Scan using Google Pay, PhonePe, Paytm, BHIM or any UPI app.</p>
 
