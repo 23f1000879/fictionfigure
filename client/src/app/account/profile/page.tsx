@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, ArrowLeft, Loader2, AlertCircle, CheckCircle2, ShieldCheck, Save, LogOut } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Save, LogOut, ShieldCheck } from "lucide-react";
 import { formatDisplayPhone } from "@/lib/phone";
 import { API_BASE } from "@/lib/api";
 import { Header } from "@/components/storefront/Header";
@@ -140,15 +140,15 @@ export default function AccountProfilePage() {
       <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-12 text-[#111111] space-y-6 min-h-[70vh] box-border">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-6">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 min-w-0">
             <Link
               href="/account"
-              className="p-2 border border-[#E5E5E2] hover:border-[#111111] min-w-[40px] min-h-[40px] flex items-center justify-center shrink-0"
+              className="p-2 border border-[#E5E5E2] hover:border-[#111111] rounded-lg min-w-[40px] min-h-[40px] flex items-center justify-center shrink-0 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 text-[#111111]" />
             </Link>
             <div className="min-w-0">
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-[#6B6B6B] block">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-[#6B6B6B] block truncate">
                 Collector Sanctuary
               </span>
               <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-[#111111] truncate">
@@ -159,10 +159,10 @@ export default function AccountProfilePage() {
 
           <button
             onClick={handleLogout}
-            className="px-4 py-2 border border-[#E5E5E2] hover:border-[#111111] text-xs font-semibold uppercase tracking-wider text-[#111111] transition-colors flex items-center space-x-2 shrink-0"
+            className="px-4 py-2 border border-[#E5E5E2] hover:border-[#111111] text-xs font-semibold uppercase tracking-wider text-[#111111] rounded-lg transition-colors flex items-center space-x-2 shrink-0 min-h-[40px]"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <span className="hidden sm:inline">Sign Out</span>
           </button>
         </div>
 
@@ -171,7 +171,7 @@ export default function AccountProfilePage() {
 
         {/* Success Alert */}
         {successMessage && (
-          <div className="p-4 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold flex items-center space-x-2">
+          <div className="p-4 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold rounded-lg flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{successMessage}</span>
           </div>
@@ -179,56 +179,59 @@ export default function AccountProfilePage() {
 
         {/* Error Alert */}
         {error && (
-          <div className="p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center space-x-2">
+          <div className="p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold rounded-lg flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Edit Profile Form */}
-        <div className="bg-white border border-[#E5E5E2] p-5 sm:p-8 space-y-6 rounded-lg shadow-2xs">
-          <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-4">
+        {/* Edit Profile Form Card */}
+        <div className="bg-white border border-[#E5E5E2] p-6 sm:p-8 space-y-6 rounded-2xl shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E5E5E2]/80 pb-4 gap-2">
             <div>
               <h2 className="text-xs font-bold uppercase tracking-widest text-[#111111]">
                 EDIT PROFILE DETAILS
               </h2>
               <p className="text-xs text-[#6B6B6B] mt-0.5">
-                Update your collector name and email preferences.
+                Update your collector profile name and communication preferences.
               </p>
             </div>
-            <span className="text-[11px] font-mono text-[#6B6B6B]">ID: {user.id.slice(0, 8)}...</span>
+            <span className="text-[11px] font-medium text-[#2E6B44] flex items-center">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1 shrink-0" />
+              Verified Mobile Authentication Identity
+            </span>
           </div>
 
           <form onSubmit={handleSaveProfile} className="space-y-6 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-1">
-                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">First Name *</label>
+              <div className="space-y-1.5">
+                <label className="font-bold uppercase text-[#6B6B6B] text-[10px] tracking-wider block">First Name *</label>
                 <input
                   type="text"
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  placeholder="Ren"
-                  className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] rounded-md focus:border-[#111111] focus:outline-none"
+                  placeholder="First Name"
+                  className="w-full p-3.5 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] rounded-lg focus:border-[#111111] focus:outline-none focus:ring-1 focus:ring-[#111111] text-xs font-medium"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">Last Name *</label>
+              <div className="space-y-1.5">
+                <label className="font-bold uppercase text-[#6B6B6B] text-[10px] tracking-wider block">Last Name *</label>
                 <input
                   type="text"
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  placeholder="Amamiya"
-                  className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] rounded-md focus:border-[#111111] focus:outline-none"
+                  placeholder="Last Name"
+                  className="w-full p-3.5 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] rounded-lg focus:border-[#111111] focus:outline-none focus:ring-1 focus:ring-[#111111] text-xs font-medium"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-1">
-                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+              <div className="space-y-1.5">
+                <label className="font-bold uppercase text-[#6B6B6B] text-[10px] tracking-wider block">
                   Mobile Phone (Verified)
                 </label>
                 <div className="relative">
@@ -236,19 +239,19 @@ export default function AccountProfilePage() {
                     type="text"
                     value={formatDisplayPhone(user.phone)}
                     readOnly
-                    className="w-full p-3 bg-[#E5E5E2]/50 border border-[#E5E5E2] font-mono text-[#111111] rounded-md cursor-not-allowed"
+                    className="w-full p-3.5 bg-[#E5E5E2]/40 border border-[#E5E5E2] font-mono text-[#111111] rounded-lg cursor-not-allowed text-xs font-semibold"
                   />
-                  <span className="absolute right-3 top-3 text-[10px] font-bold text-[#2E6B44] uppercase tracking-wider flex items-center">
+                  <span className="absolute right-3.5 top-3.5 text-[10px] font-bold text-[#2E6B44] uppercase tracking-wider flex items-center">
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1 shrink-0" /> Verified
                   </span>
                 </div>
                 <p className="text-[10px] text-[#6B6B6B]">
-                  Your mobile phone number is verified via OTP authentication and serves as your primary login ID.
+                  Your verified mobile number is used as your primary login identity across FictionFigure.
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold uppercase text-[#6B6B6B] text-[11px]">
+              <div className="space-y-1.5">
+                <label className="font-bold uppercase text-[#6B6B6B] text-[10px] tracking-wider block">
                   Email Address (Optional)
                 </label>
                 <input
@@ -257,19 +260,19 @@ export default function AccountProfilePage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="collector@domain.com"
-                  className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] rounded-md focus:border-[#111111] focus:outline-none"
+                  className="w-full p-3.5 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] rounded-lg focus:border-[#111111] focus:outline-none focus:ring-1 focus:ring-[#111111] text-xs font-medium"
                 />
                 <p className="text-[10px] text-[#6B6B6B]">
-                  Used for digital invoices and order shipment updates.
+                  Used for order receipts, tracking notifications, and restock alerts.
                 </p>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#E5E5E2] flex items-center space-x-3">
+            <div className="pt-4 border-t border-[#E5E5E2]/80 flex items-center">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-8 py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#D4AF37] hover:text-[#111111] disabled:opacity-50 transition-all flex items-center space-x-2"
+                className="w-full sm:w-auto px-8 py-3.5 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-black disabled:opacity-50 transition-all flex items-center justify-center space-x-2 min-h-[44px]"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-1" />

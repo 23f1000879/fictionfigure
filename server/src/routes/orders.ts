@@ -195,7 +195,11 @@ export async function handleGetMyOrders(req: any, res: any) {
       success: true,
       orders: orders.map((o) => {
         const primaryItem = o.items[0];
-        const primaryImage = primaryItem?.variant?.product?.images?.[0]?.url || "";
+        const primaryImage =
+          primaryItem?.variant?.product?.images?.[0]?.url ||
+          primaryItem?.variant?.imageUrl ||
+          (primaryItem?.variant?.product as any)?.imageUrl ||
+          "";
         const totalItemsCount = o.items.reduce((acc, item) => acc + item.quantity, 0);
 
         return {
@@ -225,7 +229,11 @@ export async function handleGetMyOrders(req: any, res: any) {
             price: item.price,
             quantity: item.quantity,
             total: item.total,
-            image: item.variant?.product?.images?.[0]?.url || "",
+            image:
+              item.variant?.product?.images?.[0]?.url ||
+              item.variant?.imageUrl ||
+              (item.variant?.product as any)?.imageUrl ||
+              "",
           })),
         };
       }),

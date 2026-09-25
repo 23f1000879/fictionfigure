@@ -73,7 +73,7 @@ export default function OrderDetailPage() {
         <Header />
         <SearchModal />
         <CartDrawer />
-        <main className="w-full max-w-md mx-auto my-12 sm:my-20 p-6 sm:p-8 bg-white border border-[#E5E5E2] text-center space-y-4 shadow-sm min-h-[50vh]">
+        <main className="w-full max-w-md mx-auto my-12 sm:my-20 p-6 sm:p-8 bg-white border border-[#E5E5E2] rounded-2xl text-center space-y-4 shadow-sm min-h-[50vh]">
           <AlertCircle className="w-8 h-8 text-[#A83232] mx-auto" />
           <h2 className="text-base font-bold text-[#111111] uppercase tracking-wider">
             {isUnauth ? "Authentication Required" : isForbidden ? "Access Restricted" : "Order Not Found"}
@@ -89,14 +89,14 @@ export default function OrderDetailPage() {
             {isUnauth ? (
               <Link
                 href={`/login?redirect=/order/${orderId}`}
-                className="px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors"
+                className="px-6 py-3 bg-[#111111] text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-black transition-colors min-h-[44px] flex items-center"
               >
                 Sign In to Account
               </Link>
             ) : (
               <Link
                 href="/shop"
-                className="px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors"
+                className="px-6 py-3 bg-[#111111] text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-black transition-colors min-h-[44px] flex items-center"
               >
                 Return to Shop
               </Link>
@@ -176,9 +176,9 @@ export default function OrderDetailPage() {
       <Header />
       <SearchModal />
       <CartDrawer />
-      <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-16 text-[#111111] space-y-8 box-border overflow-x-hidden min-h-[70vh]">
+      <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-16 text-[#111111] space-y-6 sm:space-y-8 box-border overflow-x-hidden min-h-[70vh]">
         {/* Order Confirmed Hero Header */}
-        <div className="text-center space-y-4 bg-white border border-[#E5E5E2] p-8 sm:p-12 rounded-lg shadow-2xs">
+        <div className="text-center space-y-4 bg-white border border-[#E5E5E2] p-8 sm:p-12 rounded-2xl shadow-2xs">
           <div className="w-16 h-16 bg-[#2E6B44]/10 border border-[#2E6B44]/20 rounded-full flex items-center justify-center mx-auto text-[#2E6B44]">
             <CheckCircle2 className="w-10 h-10" />
           </div>
@@ -200,13 +200,13 @@ export default function OrderDetailPage() {
           <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/shop"
-              className="px-6 py-3 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#D4AF37] hover:text-[#111111] transition-all"
+              className="px-6 py-3 bg-[#111111] text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-black transition-all min-h-[44px] flex items-center justify-center"
             >
               CONTINUE SHOPPING →
             </Link>
             <Link
               href="/account/orders"
-              className="px-6 py-3 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-bold uppercase tracking-widest rounded-md hover:border-[#111111] transition-all"
+              className="px-6 py-3 bg-transparent border border-[#E5E5E2] text-[#111111] text-xs font-bold uppercase tracking-widest rounded-lg hover:border-[#111111] transition-all min-h-[44px] flex items-center justify-center"
             >
               VIEW ALL ORDERS
             </Link>
@@ -214,7 +214,7 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Dynamic Status Banner */}
-        <div className={`p-4 sm:p-5 border rounded-lg flex items-start space-x-3 ${banner.bg}`}>
+        <div className={`p-4 sm:p-5 border rounded-xl flex items-start space-x-3 ${banner.bg}`}>
           {banner.icon}
           <div className="min-w-0">
             <h4 className="font-bold text-xs uppercase tracking-wider leading-snug">{banner.title}</h4>
@@ -223,10 +223,10 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Order Details & Address Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-[#E5E5E2] p-6 text-xs rounded-lg shadow-2xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-[#E5E5E2] p-6 sm:p-8 text-xs rounded-2xl shadow-2xs">
           {/* Shipping Address */}
           <div className="space-y-2 min-w-0">
-            <span className="text-[#6B6B6B] font-bold uppercase tracking-widest text-[10px] block border-b border-[#E5E5E2] pb-2">
+            <span className="text-[#6B6B6B] font-bold uppercase tracking-widest text-[10px] block border-b border-[#E5E5E2]/80 pb-2">
               SHIPPING ADDRESS
             </span>
             <p className="font-bold text-[#111111] truncate text-sm">{order.shippingAddress?.fullName || "Collector"}</p>
@@ -241,7 +241,7 @@ export default function OrderDetailPage() {
 
           {/* Payment & Tracking Status */}
           <div className="space-y-3 min-w-0">
-            <span className="text-[#6B6B6B] font-bold uppercase tracking-widest text-[10px] block border-b border-[#E5E5E2] pb-2">
+            <span className="text-[#6B6B6B] font-bold uppercase tracking-widest text-[10px] block border-b border-[#E5E5E2]/80 pb-2">
               FULFILLMENT & PAYMENT
             </span>
 
@@ -255,7 +255,7 @@ export default function OrderDetailPage() {
             {isUpi && primaryPayment?.utr && (
               <div className="space-y-1">
                 <span className="text-[#6B6B6B] text-[10px] font-bold uppercase block">Submitted UTR Reference</span>
-                <span className="font-mono font-bold text-[#111111] bg-[#F7F7F5] px-2.5 py-1 border border-[#E5E5E2] rounded-md inline-block max-w-full truncate">
+                <span className="font-mono font-bold text-[#111111] bg-[#F7F7F5] px-2.5 py-1 border border-[#E5E5E2] rounded-lg inline-block max-w-full truncate">
                   {primaryPayment.utr}
                 </span>
               </div>
@@ -264,19 +264,19 @@ export default function OrderDetailPage() {
             <div className="space-y-1">
               <span className="text-[#6B6B6B] text-[10px] font-bold uppercase block">Payment Status</span>
               {isCod ? (
-                <span className="inline-block px-2.5 py-1 bg-[#111111] text-white text-[10px] uppercase font-bold tracking-wider rounded-xs">
+                <span className="inline-block px-2.5 py-0.5 bg-[#111111] text-white text-[10px] uppercase font-bold tracking-wider rounded-md">
                   PAYMENT DUE ON DELIVERY
                 </span>
               ) : isPaymentPaid ? (
-                <span className="inline-block px-2.5 py-1 bg-[#2E6B44] text-white text-[10px] uppercase font-bold tracking-wider rounded-xs">
+                <span className="inline-block px-2.5 py-0.5 bg-[#2E6B44] text-white text-[10px] uppercase font-bold tracking-wider rounded-md">
                   PAID
                 </span>
               ) : isPaymentFailed ? (
-                <span className="inline-block px-2.5 py-1 bg-[#A83232] text-white text-[10px] uppercase font-bold tracking-wider rounded-xs">
+                <span className="inline-block px-2.5 py-0.5 bg-[#A83232] text-white text-[10px] uppercase font-bold tracking-wider rounded-md">
                   PAYMENT FAILED
                 </span>
               ) : (
-                <span className="inline-block px-2.5 py-1 bg-[#B86E00] text-white text-[10px] uppercase font-bold tracking-wider rounded-xs">
+                <span className="inline-block px-2.5 py-0.5 bg-[#B86E00] text-white text-[10px] uppercase font-bold tracking-wider rounded-md">
                   PAYMENT VERIFICATION PENDING
                 </span>
               )}
@@ -285,9 +285,9 @@ export default function OrderDetailPage() {
             <div className="space-y-1 pt-1">
               <span className="text-[#6B6B6B] text-[10px] font-bold uppercase block">Tracking Reference</span>
               {order.trackingNumber ? (
-                <span className="font-mono font-bold text-[#111111] block">TRK: {order.trackingNumber}</span>
+                <span className="font-mono font-bold text-[#111111] block break-words">TRK: {order.trackingNumber}</span>
               ) : (
-                <span className="text-[#6B6B6B] italic block text-[11px]">
+                <span className="text-[#6B6B6B] italic block text-[11px] leading-relaxed">
                   Tracking details will be provided once your order ships.
                 </span>
               )}
@@ -296,12 +296,12 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Purchased Items List */}
-        <div className="bg-white border border-[#E5E5E2] p-6 space-y-4 text-xs rounded-lg shadow-2xs">
-          <h3 className="font-bold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2] pb-3 text-xs">
+        <div className="bg-white border border-[#E5E5E2] p-6 sm:p-8 space-y-4 text-xs rounded-2xl shadow-2xs">
+          <h3 className="font-bold uppercase tracking-widest text-[#111111] border-b border-[#E5E5E2]/80 pb-3 text-xs">
             ORDER ITEMS ({order.items?.length || 0})
           </h3>
 
-          <div className="space-y-4 divide-y divide-[#E5E5E2]">
+          <div className="space-y-4 divide-y divide-[#E5E5E2]/80">
             {order.items?.map((item: any) => {
               const isDelivered = order.status === "DELIVERED";
               const productTarget = item.productSlug || item.productId;
@@ -309,7 +309,7 @@ export default function OrderDetailPage() {
               return (
                 <div key={item.id} className="pt-4 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
                   <div className="flex space-x-4 items-center min-w-0 flex-1">
-                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-[#F7F7F5] shrink-0 border border-[#E5E5E2] rounded-md overflow-hidden p-1">
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-[#F7F7F5] shrink-0 border border-[#E5E5E2] rounded-xl overflow-hidden p-1">
                       {item.image ? (
                         <Image src={item.image} alt={item.title} fill className="object-contain p-1" />
                       ) : (
@@ -338,7 +338,7 @@ export default function OrderDetailPage() {
                     {isDelivered && productTarget && (
                       <Link
                         href={`/products/${productTarget}#reviews`}
-                        className="px-3 py-1.5 bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider hover:bg-[#D4AF37] hover:text-[#111111] transition-colors inline-flex items-center space-x-1.5 shrink-0 rounded-md"
+                        className="px-3.5 py-2 bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider hover:bg-black transition-colors inline-flex items-center space-x-1.5 shrink-0 rounded-lg min-h-[36px]"
                       >
                         <Star className="w-3 h-3 fill-white text-white" />
                         <span>Write Review</span>
@@ -351,7 +351,7 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Financial Breakdown */}
-          <div className="pt-4 border-t border-[#E5E5E2] space-y-2.5 text-xs w-full sm:max-w-xs sm:ml-auto">
+          <div className="pt-4 border-t border-[#E5E5E2]/80 space-y-2.5 text-xs w-full sm:max-w-xs sm:ml-auto">
             <div className="flex justify-between text-[#6B6B6B]">
               <span>Subtotal</span>
               <span className="font-mono text-[#111111] font-medium">{formatPrice(order.subtotal)}</span>
