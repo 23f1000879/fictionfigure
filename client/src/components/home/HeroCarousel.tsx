@@ -1,16 +1,24 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { useImageAspect, LANDSCAPE_RATIO, AmbientImage } from "@/components/ui/Artwork";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import type { TrustBenefitItem } from "@/types/cms";
 
 export interface CarouselSlide {
   id: string;
+  /** Foreground artwork: sharp, contained collection/product art (also used on the selector card). */
   image: string;
+  /** Full-bleed cinematic background for the whole hero (admin controlled, optional). */
+  backgroundImage?: string;
+  /** CSS object-position focal point for the background, e.g. "70% 30%". */
+  backgroundPosition?: string;
+  /** Short selector-card label, e.g. "ONE PIECE" (falls back to title). */
+  cardLabel?: string;
+  /** Selector-card caption, e.g. "Collection" (falls back to eyebrow). */
+  cardCaption?: string;
   eyebrow?: string;
   title: string;
   titleAccent?: string;
@@ -29,42 +37,73 @@ interface HeroCarouselProps {
   /** Store-level secondary CTA used when a slide does not define its own. */
   secondaryLabel?: string;
   secondaryUrl?: string;
+  /** Autoplay interval; set 0 to disable. */
+  intervalMs?: number;
 }
 
-/**
- * Background plate for one slide. Landscape campaign art is shown full-bleed;
- * portrait posters are diffused into an ambient wash (the crisp poster sits in the right column).
- */
-function HeroBackdrop({ src, visible, priority }: { src: string; visible: boolean; priority: boolean }) {
-  const ratio = useImageAspect(src);
-  const landscape = ratio !== null && ratio >= LANDSCAPE_RATIO;
-  return (
-    <div
-      className={`absolute inset-0 transition-opacity duration-700 ease-out ${visible ? "opacity-100" : "opacity-0"}`}
-      aria-hidden
-    >
-      {landscape ? (
-        <Image src={src} alt="" fill priority={priority} sizes="100vw" className="object-cover object-[70%_center]" />
-      ) : (
-        <AmbientImage src={src} opacity={0.45} />
-      )}
-    </div>
-  );
+const FADE_MS = 500;
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return reduced;
 }
 
-export function HeroCarousel({ slides, trustItems, secondaryLabel, secondaryUrl }: HeroCarouselProps) {
+export function HeroCarousel({
+  slides,
+  trustItems,
+  secondaryLabel,
+  secondaryUrl,
+  intervalMs = 6000,
+}: HeroCarouselProps) {
   const activeSlides = slides.filter((s) => s.enabled !== false);
+  const N = activeSlides.length;
+
   const [index, setIndex] = useState(0);
+  const [prevIndex, setPrevIndex] = useState<number | null>(null);
+  const [paused, setPaused] = useState(false);
+  // Bumped on every manual selection so the autoplay timer restarts from zero.
+  const [timerEpoch, setTimerEpoch] = useState(0);
+  const reducedMotion = usePrefersReducedMotion();
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
 
-  const N = activeSlides.length;
-  const slide = activeSlides[Math.min(index, Math.max(N - 1, 0))];
-  const ratio = useImageAspect(slide?.image);
-  const isLandscape = ratio !== null && ratio >= LANDSCAPE_RATIO;
+  const goTo = useCallback(
+    (next: number, manual = false) => {
+      if (N === 0) return;
+      const target = ((next % N) + N) % N;
+      setIndex((current) => {
+        if (current !== target) setPrevIndex(current);
+        return target;
+      });
+      if (manual) setTimerEpoch((e) => e + 1);
+    },
+    [N]
+  );
 
-  if (!slide) return null;
+  // Drop the outgoing background once its fade-out has finished.
+  useEffect(() => {
+    if (prevIndex === null) return;
+    const t = setTimeout(() => setPrevIndex(null), FADE_MS + 50);
+    return () => clearTimeout(t);
+  }, [prevIndex, index]);
 
-  const go = (next: number) => setIndex(((next % N) + N) % N);
+  // Autoplay
+  useEffect(() => {
+    if (N < 2 || paused || reducedMotion || !intervalMs) return;
+    const t = setTimeout(() => goTo(index + 1), intervalMs);
+    return () => clearTimeout(t);
+  }, [N, index, paused, reducedMotion, intervalMs, timerEpoch, goTo]);
+
+  if (N === 0) return null;
+  const slide = activeSlides[Math.min(index, N - 1)];
+  const nextIndex = (index + 1) % N;
+  const hasBackground = Boolean(slide.backgroundImage);
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === "mouse") return;
@@ -76,44 +115,86 @@ export function HeroCarousel({ slides, trustItems, secondaryLabel, secondaryUrl 
     if (!start || N < 2) return;
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(index + (dx < 0 ? 1 : -1));
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) goTo(index + (dx < 0 ? 1 : -1), true);
   };
+
+  // Only the active, outgoing and next backgrounds are mounted: active loads eagerly,
+  // next preloads at opacity 0, everything else stays unloaded.
+  const mountedBackgrounds = new Set<number>([index, nextIndex]);
+  if (prevIndex !== null) mountedBackgrounds.add(prevIndex);
 
   const primaryLabel = slide.primaryLabel || "SHOP COLLECTION";
   const primaryUrl = slide.primaryUrl || "/shop";
   const secLabel = slide.secondaryLabel || secondaryLabel;
   const secUrl = slide.secondaryUrl || secondaryUrl;
+  const fade = reducedMotion ? "" : "transition-opacity ease-out";
 
   return (
     <section
       className="relative isolate overflow-hidden bg-[#08090B] border-b border-white/[0.06]"
       aria-roledescription="carousel"
-      aria-label="Featured campaigns"
+      aria-label="Featured collections"
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
     >
-      {/* Background artwork */}
-      <div className="absolute inset-0 -z-10">
-        {activeSlides.map((s, i) =>
-          s.image ? <HeroBackdrop key={s.id} src={s.image} visible={i === index} priority={i === 0} /> : null
-        )}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#08090B] via-[#08090B]/85 lg:via-[#08090B]/70 to-[#08090B]/10" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#08090B] to-transparent" />
-        <div className="absolute right-[12%] top-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full bg-[#F5C518]/[0.07] blur-3xl" />
+      {/* ── Layer 1: cinematic backgrounds (crossfaded) ── */}
+      <div className="absolute inset-0 -z-10" aria-hidden>
+        {activeSlides.map((s, i) => {
+          if (!s.backgroundImage || !mountedBackgrounds.has(i)) return null;
+          return (
+            <div
+              key={s.id}
+              data-hero-bg={s.id}
+              className={`absolute inset-0 ${fade}`}
+              style={{ opacity: i === index ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
+            >
+              <Image
+                src={s.backgroundImage}
+                alt=""
+                fill
+                priority={i === index && i === 0}
+                sizes="100vw"
+                className="object-cover"
+                style={{ objectPosition: s.backgroundPosition || "70% center" }}
+              />
+            </div>
+          );
+        })}
+
+        {/* Placeholder atmosphere for slides without background artwork yet */}
+        <div
+          className={`absolute inset-0 ${fade}`}
+          style={{ opacity: hasBackground ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_72%_45%,rgba(245,197,24,0.10),transparent_55%),radial-gradient(ellipse_at_95%_100%,rgba(139,92,246,0.10),transparent_50%)]" />
+        </div>
+
+        {/* ── Layers 2–4: readability without flattening the art ── */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#08090B]/[0.92] via-[#08090B]/60 to-[#08090B]/20" />
+        <div className="absolute inset-y-0 left-0 w-full lg:w-[60%] bg-gradient-to-r from-[#08090B]/60 to-transparent" />
+        {/* Below lg the copy spans the full width, so the art is dimmed evenly rather than from the left */}
+        <div className="lg:hidden absolute inset-0 bg-[#08090B]/50" />
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#08090B] via-[#08090B]/60 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#08090B]/60 to-transparent" />
       </div>
 
-      <div className="ff-container grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center py-10 sm:py-14 lg:py-0 lg:min-h-[clamp(560px,calc(100svh-120px),700px)]">
+      {/* ── Layer 5: foreground ── */}
+      <div className="ff-container grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center pt-10 pb-6 sm:pt-14 lg:py-0 lg:min-h-[clamp(520px,calc(100svh-110px),650px)]">
         {/* Copy */}
-        <div key={slide.id} className="ff-fade-up lg:col-span-7 xl:col-span-6 flex flex-col gap-5 lg:py-14">
+        <div key={slide.id} className="ff-fade-up lg:col-span-7 flex flex-col gap-5 lg:py-12" aria-live="polite">
           {slide.eyebrow && <p className="ff-eyebrow text-[11px]">{slide.eyebrow}</p>}
 
-          <h1 className="font-black uppercase leading-[0.94] tracking-[-0.025em] text-[40px] sm:text-[56px] lg:text-[60px] xl:text-[72px] 2xl:text-[80px]">
+          <h1 className="font-black uppercase leading-[0.94] tracking-[-0.025em] text-[40px] sm:text-[56px] lg:text-[60px] xl:text-[72px] drop-shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
             <span className="block text-white">{slide.title}</span>
             {slide.titleAccent && <span className="block text-[#F5C518]">{slide.titleAccent}</span>}
           </h1>
 
           {slide.description && (
-            <p className="text-[14px] sm:text-[15px] leading-relaxed text-[#F7F7F5]/75 max-w-[440px]">
+            <p className="text-[14px] sm:text-[15px] leading-relaxed text-[#F7F7F5]/80 max-w-[440px]">
               {slide.description}
             </p>
           )}
@@ -124,21 +205,25 @@ export function HeroCarousel({ slides, trustItems, secondaryLabel, secondaryUrl 
               <ArrowRight className="w-4 h-4" />
             </Link>
             {secLabel && secUrl && (
-              <Link href={secUrl} className="ff-btn ff-btn-outline">
+              <Link href={secUrl} className="ff-btn ff-btn-outline backdrop-blur-sm">
                 {secLabel}
               </Link>
             )}
           </div>
 
-          <div className="hidden lg:block mt-3 pt-5 border-t border-white/[0.08] max-w-[620px]">
+          <div className="hidden lg:block mt-3 pt-5 border-t border-white/[0.1] max-w-[620px]">
             <TrustStrip items={trustItems} layout="hero" />
           </div>
         </div>
 
-        {/* Artwork + slide tiles */}
-        <div className="lg:col-span-5 xl:col-span-6 flex items-center justify-center lg:justify-end gap-4 xl:gap-5 lg:h-full lg:py-10">
-          {!isLandscape && slide.image && (
-            <div key={`art-${slide.id}`} className="ff-fade-up relative h-[380px] sm:h-[480px] lg:h-[500px] xl:h-[560px] aspect-[2/3] max-w-full">
+        {/* Foreground artwork + collection selector */}
+        <div className="lg:col-span-5 flex items-center justify-center lg:justify-end gap-4 xl:gap-5 lg:py-10">
+          {/* Contained foreground art is shown only while a slide has no background plate */}
+          {!hasBackground && slide.image && (
+            <div
+              key={`art-${slide.id}`}
+              className="ff-fade-up relative h-[360px] sm:h-[460px] lg:h-[480px] xl:h-[540px] aspect-[2/3] max-w-full"
+            >
               <Image
                 src={slide.image}
                 alt={slide.title}
@@ -152,81 +237,123 @@ export function HeroCarousel({ slides, trustItems, secondaryLabel, secondaryUrl 
 
           {N > 1 && (
             <div
-              className={`hidden xl:flex flex-col gap-3 ${isLandscape ? "w-full max-w-[320px]" : "w-[190px] xl:w-[220px]"}`}
+              className={`hidden flex-col gap-3 ${
+                hasBackground ? "lg:flex w-full max-w-[300px] xl:max-w-[320px]" : "xl:flex w-[210px]"
+              }`}
               role="tablist"
-              aria-label="Choose campaign"
+              aria-label="Choose collection"
             >
-              {activeSlides.map((s, i) => {
-                const selected = i === index;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    onClick={() => go(i)}
-                    className={`group relative ${isLandscape ? "h-[132px]" : "h-[118px] xl:h-[128px]"} w-full overflow-hidden rounded-[10px] border text-left transition-colors ${
-                      selected ? "border-[#F5C518]/70" : "border-white/[0.12] hover:border-white/30"
-                    }`}
-                  >
-                    {s.image && (
-                      <Image
-                        src={s.image}
-                        alt=""
-                        fill
-                        sizes="220px"
-                        className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.06]"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#08090B] via-[#08090B]/55 to-[#08090B]/10" />
-                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
-                      <div className="min-w-0">
-                        <p className="ff-display text-[17px] xl:text-[19px] text-white line-clamp-2">{s.title}</p>
-                        {s.eyebrow && (
-                          <p className="mt-0.5 text-[10px] text-[#F7F7F5]/70 truncate capitalize">
-                            {s.eyebrow.toLowerCase()}
-                          </p>
-                        )}
-                      </div>
-                      <span className="ff-circle-arrow w-7 h-7 shrink-0">
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+              {activeSlides.map((s, i) => (
+                <SelectorCard
+                  key={s.id}
+                  slide={s}
+                  selected={i === index}
+                  onSelect={() => goTo(i, true)}
+                  size={hasBackground ? "lg" : "md"}
+                />
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Mobile / tablet pager */}
+      {/* Mobile / tablet collection rail */}
       {N > 1 && (
-        <div className="xl:hidden flex items-center justify-center gap-2 pb-5 lg:-mt-6" role="tablist" aria-label="Choose campaign">
-          {activeSlides.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              aria-selected={i === index}
-              aria-label={`Show campaign ${i + 1} of ${N}`}
-              onClick={() => go(i)}
-              className="h-6 flex items-center"
-            >
-              <span
-                className={`block h-1 rounded-full transition-all ${i === index ? "w-7 bg-[#F5C518]" : "w-3 bg-white/30"}`}
-              />
-            </button>
-          ))}
+        <div
+          className={`${hasBackground ? "lg:hidden" : "xl:hidden"} ff-container pb-5`}
+          role="tablist"
+          aria-label="Choose collection"
+        >
+          <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 snap-x">
+            {activeSlides.map((s, i) => (
+              <div key={s.id} className="snap-start shrink-0 w-[46%] sm:w-[31%] lg:w-[24%]">
+                <SelectorCard slide={s} selected={i === index} onSelect={() => goTo(i, true)} size="sm" />
+              </div>
+            ))}
+          </div>
         </div>
       )}
-      {/* Mobile / tablet: trust row sits under the artwork so the poster stays near the fold */}
+
+      {/* Mobile / tablet trust row */}
       <div className="lg:hidden ff-container pb-6">
         <div className="pt-5 border-t border-white/[0.08]">
           <TrustStrip items={trustItems} layout="hero" />
         </div>
       </div>
-
     </section>
+  );
+}
+
+function SelectorCard({
+  slide,
+  selected,
+  onSelect,
+  size,
+}: {
+  slide: CarouselSlide;
+  selected: boolean;
+  onSelect: () => void;
+  size: "sm" | "md" | "lg";
+}) {
+  const label = slide.cardLabel || slide.title;
+  const caption = slide.cardCaption || slide.eyebrow;
+  const height = size === "lg" ? "h-[118px] xl:h-[128px]" : size === "md" ? "h-[120px]" : "h-[92px]";
+  const thumb = slide.image || slide.backgroundImage;
+
+  return (
+    <div
+      className={`group relative ${height} w-full overflow-hidden rounded-[10px] border transition-[border-color,box-shadow] duration-300 ${
+        selected
+          ? "border-[#F5C518]/80 shadow-[0_0_0_1px_rgba(245,197,24,0.35),0_12px_30px_-10px_rgba(245,197,24,0.35)]"
+          : "border-white/[0.14] hover:border-white/35"
+      }`}
+    >
+      {thumb && (
+        <Image
+          src={thumb}
+          alt=""
+          fill
+          sizes="(max-width: 1024px) 45vw, 320px"
+          className={`object-cover object-top transition-transform duration-700 group-hover:scale-[1.05] ${
+            selected ? "" : "opacity-80"
+          }`}
+        />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#08090B]/90 via-[#08090B]/45 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#08090B]/80 to-transparent" />
+
+      {/* Whole card selects the slide */}
+      <button
+        type="button"
+        role="tab"
+        aria-selected={selected}
+        aria-label={`Show ${label}`}
+        onClick={onSelect}
+        className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518] rounded-[10px]"
+      />
+
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 pointer-events-none">
+        <div className="min-w-0">
+          <p
+            className={`ff-display text-white line-clamp-2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] ${
+              size === "sm" ? "text-[15px]" : "text-[19px] xl:text-[21px]"
+            }`}
+          >
+            {label}
+          </p>
+          {caption && (
+            <p className="mt-0.5 text-[11px] text-[#F7F7F5]/75 truncate capitalize">{caption.toLowerCase()}</p>
+          )}
+        </div>
+        {/* Arrow navigates straight to the collection */}
+        <Link
+          href={slide.primaryUrl || "/shop"}
+          aria-label={`Open ${label}`}
+          className="pointer-events-auto relative z-20 ff-circle-arrow w-8 h-8 shrink-0 hover:bg-[#F5C518] hover:border-[#F5C518] hover:text-[#08090B]"
+        >
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </div>
   );
 }

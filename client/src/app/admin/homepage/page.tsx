@@ -471,13 +471,13 @@ export default function AdminHomepageCMSPage() {
                         <div className="space-y-4">
                           <div className="p-4 bg-[#F7F7F5] border border-[#E5E5E2] flex items-center justify-between">
                             <span className="text-xs font-mono font-bold uppercase text-[#111111]">
-                              Phase 2 Locked Hero Slides Management
+                              Hero slides, cinematic backgrounds &amp; collection cards
                             </span>
                             <Link
                               href="/admin/settings#hero"
                               className="text-xs font-mono text-[#111111] underline hover:text-[#D4AF37]"
                             >
-                              Manage Hero Slides in Settings
+                              Edit in Settings → Hero Carousel
                             </Link>
                           </div>
                         </div>

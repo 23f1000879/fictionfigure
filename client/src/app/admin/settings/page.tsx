@@ -41,7 +41,18 @@ interface AnnouncementItem {
 
 export interface CarouselSlideItem {
   id: string;
+  /** Foreground artwork (contained; also the selector-card thumbnail). */
   image: string;
+  /** Full-bleed cinematic hero background. */
+  backgroundImage?: string;
+  /** CSS object-position focal point for the background, e.g. "70% center". */
+  backgroundPosition?: string;
+  /** Short selector-card label, e.g. "ONE PIECE". */
+  cardLabel?: string;
+  /** Selector-card caption, e.g. "Collection". */
+  cardCaption?: string;
+  secondaryLabel?: string;
+  secondaryUrl?: string;
   eyebrow: string;
   title: string;
   titleAccent: string;
@@ -283,6 +294,10 @@ export default function AdminSettingsPage() {
     const newSlide: CarouselSlideItem = {
       id: String(Date.now()),
       image: "",
+      backgroundImage: "",
+      backgroundPosition: "70% center",
+      cardLabel: "",
+      cardCaption: "Collection",
       eyebrow: "FEATURED COLLECTION",
       title: "New Promotional Slide",
       titleAccent: "",
@@ -301,11 +316,15 @@ export default function AdminSettingsPage() {
     );
   };
 
-  const handleSlideImageUpload = async (slideId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSlideImageUpload = async (
+    slideId: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "image" | "backgroundImage" = "image"
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploadingSlideImageId(slideId);
+    setUploadingSlideImageId(`${slideId}:${field}`);
     setError("");
     setMessage("");
 
@@ -322,8 +341,12 @@ export default function AdminSettingsPage() {
       if (!res.ok) throw new Error(data.error || "Failed to upload slide image.");
 
       if (data.url) {
-        handleUpdateSlide(slideId, "image", data.url);
-        setMessage("Slide image uploaded to Cloudinary successfully.");
+        handleUpdateSlide(slideId, field, data.url);
+        setMessage(
+          field === "backgroundImage"
+            ? "Hero background uploaded to Cloudinary. Save the carousel to publish it."
+            : "Slide image uploaded to Cloudinary successfully."
+        );
       }
     } catch (err: any) {
       setError(err.message || "Failed to upload slide image.");
@@ -761,7 +784,7 @@ export default function AdminSettingsPage() {
           </div>
 
           {/* SECTION 4: HOMEPAGE HERO & CAROUSEL CMS */}
-          <div className="bg-white border border-[#E5E5E2] p-5 sm:p-6 space-y-6">
+          <div id="hero" className="bg-white border border-[#E5E5E2] p-5 sm:p-6 space-y-6 scroll-mt-24">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#E5E5E2] pb-3 gap-3">
               <div>
                 <h3 className="font-semibold uppercase tracking-wider text-[#111111] text-sm">
@@ -875,7 +898,7 @@ export default function AdminSettingsPage() {
                       {/* Image Thumbnail & Upload Controls */}
                       <div className="md:col-span-1 space-y-2">
                         <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
-                          Slide Image Preview
+                          Foreground / Card Image
                         </label>
                         <div className="relative aspect-[3/4] w-full border border-[#E5E5E2] bg-[#F7F7F5] overflow-hidden">
                           {slide.image ? (
@@ -897,7 +920,7 @@ export default function AdminSettingsPage() {
                         </div>
 
                         <label className="w-full px-3 py-2 bg-white border border-[#E5E5E2] hover:border-[#111111] text-[#111111] font-semibold uppercase text-[10px] tracking-wider cursor-pointer inline-flex items-center justify-center">
-                          {uploadingSlideImageId === slide.id ? (
+                          {uploadingSlideImageId === `${slide.id}:image` ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
                           ) : (
                             <Upload className="w-3.5 h-3.5 mr-1.5" />
@@ -906,8 +929,8 @@ export default function AdminSettingsPage() {
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) => handleSlideImageUpload(slide.id, e)}
-                            disabled={uploadingSlideImageId === slide.id}
+                            onChange={(e) => handleSlideImageUpload(slide.id, e, "image")}
+                            disabled={uploadingSlideImageId === `${slide.id}:image`}
                             className="hidden"
                           />
                         </label>
@@ -1007,6 +1030,163 @@ export default function AdminSettingsPage() {
                               placeholder="/shop?category=figures"
                               className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none text-xs"
                             />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Secondary CTA Label (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.secondaryLabel || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "secondaryLabel", e.target.value)}
+                              placeholder="EXPLORE NEW ARRIVALS"
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Secondary CTA URL (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.secondaryUrl || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "secondaryUrl", e.target.value)}
+                              placeholder="/shop?sortBy=newest"
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] font-mono focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Selector Card Label
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.cardLabel || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "cardLabel", e.target.value)}
+                              placeholder="e.g. ONE PIECE (defaults to Main Title)"
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Selector Card Caption
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.cardCaption || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "cardCaption", e.target.value)}
+                              placeholder="e.g. Collection (defaults to Eyebrow)"
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cinematic hero background (full-bleed, separate from the foreground image) */}
+                    <div className="border-t border-[#E5E5E2] pt-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="font-semibold uppercase text-[#111111] text-[11px] tracking-wider">
+                          Hero Background Image (full-bleed)
+                        </label>
+                        {!slide.backgroundImage && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[#FFF8E1] border border-[#FFE082] text-[#B86E00]">
+                            Background artwork required
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[#6B6B6B]">
+                        Wide, high-resolution cinematic artwork (at least 1920×1080, landscape). It fills the whole
+                        hero behind the text and changes with this slide. Keep the main subject toward the right.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                        <div className="md:col-span-2 space-y-2">
+                          <div className="relative aspect-video w-full border border-[#E5E5E2] bg-[#111111] overflow-hidden">
+                            {slide.backgroundImage ? (
+                              <>
+                                <Image
+                                  src={slide.backgroundImage}
+                                  alt={`${slide.title || "Slide"} background`}
+                                  fill
+                                  sizes="400px"
+                                  className="object-cover"
+                                  style={{ objectPosition: slide.backgroundPosition || "70% center" }}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white text-[11px] font-black uppercase leading-tight max-w-[50%]">
+                                  {slide.title}
+                                </span>
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] text-white/60 uppercase tracking-wider">
+                                No background set
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <label className="flex-1 px-3 py-2 bg-white border border-[#E5E5E2] hover:border-[#111111] text-[#111111] font-semibold uppercase text-[10px] tracking-wider cursor-pointer inline-flex items-center justify-center">
+                              {uploadingSlideImageId === `${slide.id}:backgroundImage` ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                              ) : (
+                                <Upload className="w-3.5 h-3.5 mr-1.5" />
+                              )}
+                              <span>{slide.backgroundImage ? "Change Background" : "Upload Background"}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleSlideImageUpload(slide.id, e, "backgroundImage")}
+                                disabled={uploadingSlideImageId === `${slide.id}:backgroundImage`}
+                                className="hidden"
+                              />
+                            </label>
+                            {slide.backgroundImage && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateSlide(slide.id, "backgroundImage", "")}
+                                className="px-3 py-2 border border-[#E5E5E2] hover:border-[#A83232] text-[#6B6B6B] hover:text-[#A83232] text-[10px] font-semibold uppercase"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="md:col-span-2 space-y-3">
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Background Image URL
+                            </label>
+                            <input
+                              type="url"
+                              value={slide.backgroundImage || ""}
+                              onChange={(e) => handleUpdateSlide(slide.id, "backgroundImage", e.target.value)}
+                              placeholder="https://res.cloudinary.com/..."
+                              className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-[11px] focus:border-[#111111] focus:outline-none"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">
+                              Background Focal Point
+                            </label>
+                            <select
+                              value={slide.backgroundPosition || "70% center"}
+                              onChange={(e) => handleUpdateSlide(slide.id, "backgroundPosition", e.target.value)}
+                              className="w-full p-2 bg-[#F7F7F5] border border-[#E5E5E2] focus:border-[#111111] focus:outline-none text-xs"
+                            >
+                              <option value="70% center">Right-centre (recommended)</option>
+                              <option value="right center">Right</option>
+                              <option value="center center">Centre</option>
+                              <option value="left center">Left</option>
+                              <option value="70% top">Right-top</option>
+                              <option value="center top">Centre-top</option>
+                              <option value="70% bottom">Right-bottom</option>
+                            </select>
                           </div>
                         </div>
                       </div>
