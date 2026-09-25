@@ -107,6 +107,7 @@ export default function AdminSettingsPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingSlideImageId, setUploadingSlideImageId] = useState<string | null>(null);
   const [uploadingQr, setUploadingQr] = useState(false);
+  const [uploadingCollectionsBg, setUploadingCollectionsBg] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -179,6 +180,35 @@ export default function AdminSettingsPage() {
       setError(err.message || "Failed to upload image.");
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleCollectionsBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCollectionsBg(true);
+    setError("");
+    setMessage("");
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await adminFetch(`${API_BASE}/admin/uploads/product-image`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to upload background.");
+      if (data.url) {
+        setSettings((prev) => ({ ...prev, collections_hero_image_url: data.url }));
+        setMessage("Universes page background uploaded. Save the section to publish it.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to upload background.");
+    } finally {
+      setUploadingCollectionsBg(false);
     }
   };
 
@@ -1218,6 +1248,87 @@ export default function AdminSettingsPage() {
                 )}
                 <span>SAVE HERO CAROUSEL</span>
               </button>
+            </div>
+          </div>
+
+          {/* 4b. UNIVERSES (COLLECTIONS) PAGE BACKGROUND */}
+          <div id="universes" className="bg-white border border-[#E5E5E2] p-5 sm:p-6 space-y-4 scroll-mt-24">
+            <div className="border-b border-[#E5E5E2] pb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#111111]">
+                4b. Universes Page Background
+              </h2>
+              <p className="text-xs text-[#6B6B6B] mt-1">
+                Full-width cinematic artwork behind the /collections heading and universe grid. Wide landscape
+                artwork (1920×1080 or larger) works best. When empty, the first homepage hero background is used.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              <div className="relative aspect-video w-full border border-[#E5E5E2] bg-[#111111] overflow-hidden">
+                {settings.collections_hero_image_url ? (
+                  <Image
+                    src={settings.collections_hero_image_url}
+                    alt="Universes page background preview"
+                    fill
+                    sizes="400px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-white/60 uppercase tracking-wider">
+                    Using homepage hero background
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="font-semibold uppercase text-[#6B6B6B] text-[11px] block">Background Image URL</label>
+                  <input
+                    type="url"
+                    value={settings.collections_hero_image_url || ""}
+                    onChange={(e) => setSettings({ ...settings, collections_hero_image_url: e.target.value })}
+                    placeholder="https://res.cloudinary.com/..."
+                    className="w-full p-2.5 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-[11px] focus:border-[#111111] focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <label className="flex-1 px-3 py-2 bg-white border border-[#E5E5E2] hover:border-[#111111] text-[#111111] font-semibold uppercase text-[10px] tracking-wider cursor-pointer inline-flex items-center justify-center">
+                    {uploadingCollectionsBg ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    <span>Upload Background</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCollectionsBgUpload}
+                      disabled={uploadingCollectionsBg}
+                      className="hidden"
+                    />
+                  </label>
+                  {settings.collections_hero_image_url && (
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, collections_hero_image_url: "" })}
+                      className="px-3 py-2 border border-[#E5E5E2] hover:border-[#A83232] text-[#6B6B6B] hover:text-[#A83232] text-[10px] font-semibold uppercase"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSaveSection("Universes Page Background", ["collections_hero_image_url"])}
+                  disabled={savingSection === "Universes Page Background"}
+                  className="w-full px-5 py-2.5 bg-[#111111] text-white text-xs font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50 flex items-center justify-center"
+                >
+                  {savingSection === "Universes Page Background" ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  <span>SAVE UNIVERSES BACKGROUND</span>
+                </button>
+              </div>
             </div>
           </div>
 

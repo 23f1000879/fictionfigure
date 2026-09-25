@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useId } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Search, User, Heart, ShoppingBag, Menu, X, ArrowRight } from "lucide-react";
+import { Search, User, Heart, ShoppingBag, Menu, X, ArrowRight, ChevronDown, FolderTree } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useSettings } from "@/context/SettingsContext";
+import { useStoreCategories } from "@/lib/useStoreCategories";
 
 // Naked 36px icon control used across the header (reference: small, borderless, refined).
 const iconBtn =
-  "relative w-9 h-9 min-w-[36px] rounded-full flex items-center justify-center text-[#F7F7F5]/85 hover:text-white hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]";
+  "relative w-11 h-11 lg:w-9 lg:h-9 min-w-[44px] lg:min-w-[36px] rounded-full flex items-center justify-center text-[#F7F7F5]/85 hover:text-white hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]";
 
 function CountBadge({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -23,35 +24,212 @@ function CountBadge({ count }: { count: number }) {
   );
 }
 
-function HeaderNavLinks({ pathname }: { pathname: string }) {
+// Primary navigation: SHOP · CATEGORIES (real categories, dropdown) · UNIVERSES · ABOUT.
+// New Arrivals stays reachable from the homepage, shop sort and its own route.
+type NavKey = "shop" | "categories" | "universes" | "about" | null;
+
+function useActiveNav(pathname: string): NavKey {
   const searchParams = useSearchParams();
-  const { headerNavigation } = useSettings();
-  const currentQuery = searchParams?.toString() || "";
+  if (pathname.startsWith("/collections")) return "universes";
+  if (pathname === "/about") return "about";
+  if (pathname === "/shop") return searchParams?.get("category") ? "categories" : "shop";
+  return null;
+}
+
+const navText = (active: boolean) =>
+  `relative inline-flex items-center gap-1 h-11 transition-colors focus-visible:outline-none focus-visible:text-[#F5C518] ${
+    active ? "text-white" : "text-[#F7F7F5]/75 hover:text-white"
+  }`;
+
+function ActiveBar({ active }: { active: boolean }) {
+  return (
+    <span
+      className={`absolute bottom-[9px] left-0 h-[2px] rounded-full bg-[#F5C518] transition-all duration-200 ${
+        active ? "w-full" : "w-0"
+      }`}
+    />
+  );
+}
+
+function CategoriesMenu({ active }: { active: boolean }) {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const { categories, loading } = useStoreCategories(open);
+  const panelId = useId();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => setOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    const onPointer = (e: PointerEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onPointer);
+    };
+  }, [open]);
 
   return (
-    <nav className="hidden lg:flex items-center gap-8 xl:gap-10 text-[12px] font-semibold uppercase tracking-[0.1em]">
-      {headerNavigation.map((link) => {
-        const [linkPath, linkQuery = ""] = link.href.split("?");
-        const isActive = linkQuery
-          ? pathname === linkPath && currentQuery.includes(linkQuery)
-          : pathname === linkPath && !(linkPath === "/shop" && currentQuery.includes("sortBy=newest"));
-        return (
-          <Link
-            key={link.id}
-            href={link.href}
-            className={`relative py-1 transition-colors focus-visible:outline-none focus-visible:text-[#F5C518] ${
-              isActive ? "text-white" : "text-[#F7F7F5]/75 hover:text-white"
-            }`}
-          >
-            {link.label}
-            <span
-              className={`absolute -bottom-[3px] left-0 h-[2px] rounded-full bg-[#F5C518] transition-all duration-200 ${
-                isActive ? "w-full" : "w-0"
-              }`}
-            />
-          </Link>
-        );
-      })}
+    <div ref={wrapRef} className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+        className={`${navText(active || open)} uppercase`}
+      >
+        Categories
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden />
+        <ActiveBar active={active} />
+      </button>
+
+      {open && (
+        <div
+          id={panelId}
+          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[min(640px,90vw)] rounded-[12px] border border-white/[0.1] bg-[#0D0E12]/95 backdrop-blur-xl shadow-[0_24px_60px_-12px_rgba(0,0,0,0.8)] p-4 normal-case tracking-normal"
+        >
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.06]">
+            <p className="ff-eyebrow">Shop by category</p>
+            <Link href="/shop" className="ff-link-arrow text-[12px]">
+              View all products <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-3 gap-2" aria-busy="true">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-16 rounded-[8px] bg-white/[0.04] animate-pulse" />
+              ))}
+            </div>
+          ) : categories.length === 0 ? (
+            <p className="py-4 text-center text-[13px] text-[#9A9DA5]">No categories are published yet.</p>
+          ) : (
+            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {categories.map((cat) => {
+                const count = cat._count?.products;
+                return (
+                  <li key={cat.id}>
+                    <Link
+                      href={`/shop?category=${cat.slug}`}
+                      className="group flex items-center gap-3 min-h-[64px] p-2 rounded-[8px] border border-transparent hover:border-[#F5C518]/40 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:border-[#F5C518] transition-colors"
+                    >
+                      <span className="relative w-12 h-12 shrink-0 overflow-hidden rounded-[6px] bg-[#17191F] border border-white/[0.06] flex items-center justify-center">
+                        {cat.imageUrl ? (
+                          <Image src={cat.imageUrl} alt="" fill sizes="48px" className="object-cover object-top" />
+                        ) : (
+                          <FolderTree className="w-4 h-4 text-white/30" aria-hidden />
+                        )}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[13px] font-semibold text-[#F7F7F5] group-hover:text-white truncate">
+                          {cat.name}
+                        </span>
+                        {count !== undefined && (
+                          <span className="block text-[11px] text-[#9A9DA5]">
+                            {count} {count === 1 ? "product" : "products"}
+                          </span>
+                        )}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HeaderNavLinks({ pathname }: { pathname: string }) {
+  const active = useActiveNav(pathname);
+  return (
+    <nav
+      aria-label="Primary"
+      className="hidden lg:flex items-center gap-8 xl:gap-10 text-[12px] font-semibold uppercase tracking-[0.1em]"
+    >
+      <Link href="/shop" className={navText(active === "shop")} aria-current={active === "shop" ? "page" : undefined}>
+        Shop
+        <ActiveBar active={active === "shop"} />
+      </Link>
+      <CategoriesMenu active={active === "categories"} />
+      <Link
+        href="/collections"
+        className={navText(active === "universes")}
+        aria-current={active === "universes" ? "page" : undefined}
+      >
+        Universes
+        <ActiveBar active={active === "universes"} />
+      </Link>
+      <Link href="/about" className={navText(active === "about")} aria-current={active === "about" ? "page" : undefined}>
+        About
+        <ActiveBar active={active === "about"} />
+      </Link>
+    </nav>
+  );
+}
+
+function MobileNav({ onNavigate }: { onNavigate: () => void }) {
+  const [catsOpen, setCatsOpen] = useState(false);
+  const { categories, loading } = useStoreCategories(catsOpen);
+  const row =
+    "flex items-center justify-between w-full h-12 px-3 rounded-md text-[13px] font-bold uppercase tracking-[0.1em] text-[#F7F7F5] hover:bg-white/[0.04] hover:text-[#F5C518] transition-colors text-left";
+
+  return (
+    <nav aria-label="Primary" className="px-3 py-4 border-b border-white/[0.08]">
+      <Link href="/shop" onClick={onNavigate} className={row}>
+        <span>Shop</span>
+        <ArrowRight className="w-4 h-4 text-[#6E717A]" />
+      </Link>
+      <button type="button" className={row} aria-expanded={catsOpen} onClick={() => setCatsOpen((v) => !v)}>
+        <span>Categories</span>
+        <ChevronDown className={`w-4 h-4 text-[#6E717A] transition-transform ${catsOpen ? "rotate-180" : ""}`} />
+      </button>
+      {catsOpen && (
+        <ul className="pl-3 pb-2">
+          {loading ? (
+            <li className="h-11 px-3 flex items-center text-[12px] text-[#6E717A]">Loading…</li>
+          ) : categories.length === 0 ? (
+            <li className="h-11 px-3 flex items-center text-[12px] text-[#6E717A]">No categories yet</li>
+          ) : (
+            categories.map((cat) => (
+              <li key={cat.id}>
+                <Link
+                  href={`/shop?category=${cat.slug}`}
+                  onClick={onNavigate}
+                  className="flex items-center justify-between h-11 px-3 rounded-md text-[13px] text-[#F7F7F5]/90 hover:bg-white/[0.04]"
+                >
+                  <span className="truncate">{cat.name}</span>
+                  {cat._count?.products !== undefined && (
+                    <span className="text-[11px] text-[#6E717A]">{cat._count.products}</span>
+                  )}
+                </Link>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+      <Link href="/collections" onClick={onNavigate} className={row}>
+        <span>Universes</span>
+        <ArrowRight className="w-4 h-4 text-[#6E717A]" />
+      </Link>
+      <Link href="/about" onClick={onNavigate} className={row}>
+        <span>About</span>
+        <ArrowRight className="w-4 h-4 text-[#6E717A]" />
+      </Link>
     </nav>
   );
 }
@@ -60,7 +238,7 @@ export function Header() {
   const pathname = usePathname();
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
   const { wishlistCount } = useWishlist();
-  const { announcements, freeShippingThreshold, headerNavigation } = useSettings();
+  const { announcements, freeShippingThreshold } = useSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -279,19 +457,7 @@ export function Header() {
                 </button>
               </div>
 
-              <nav className="px-3 py-4 border-b border-white/[0.08]">
-                {headerNavigation.map((link) => (
-                  <Link
-                    key={link.id}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between h-12 px-3 rounded-md text-[13px] font-bold uppercase tracking-[0.1em] text-[#F7F7F5] hover:bg-white/[0.04] hover:text-[#F5C518] transition-colors"
-                  >
-                    <span>{link.label}</span>
-                    <ArrowRight className="w-4 h-4 text-[#6E717A]" />
-                  </Link>
-                ))}
-              </nav>
+              <MobileNav onNavigate={() => setMobileMenuOpen(false)} />
 
               <div className="px-3 py-4 space-y-0.5">
                 <Link

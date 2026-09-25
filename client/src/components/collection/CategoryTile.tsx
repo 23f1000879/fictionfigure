@@ -13,6 +13,8 @@ export interface CategoryTileData {
 }
 
 interface CategoryTileProps {
+  /** CSS object-position for the artwork crop. */
+  focus?: string;
   category: CategoryTileData;
   href?: string;
   /** Tailwind aspect class for the poster. */
@@ -27,6 +29,7 @@ export function CategoryTile({
   category,
   href,
   aspect = "aspect-[4/5]",
+  focus = "center top",
   size = "sm",
   priority = false,
   sizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px",
@@ -37,7 +40,7 @@ export function CategoryTile({
   return (
     <Link
       href={href || `/collections/${category.slug}`}
-      className={`group relative block ${aspect} overflow-hidden rounded-[10px] border border-white/[0.1] bg-[#111318] hover:border-white/25 transition-colors`}
+      className={`group relative block ${aspect} overflow-hidden rounded-[10px] border border-white/[0.1] bg-[#111318] hover:border-[#F5C518]/50 focus-visible:outline-none focus-visible:border-[#F5C518] transition-colors duration-200`}
     >
       {imageSrc ? (
         <Image
@@ -46,7 +49,8 @@ export function CategoryTile({
           fill
           priority={priority}
           sizes={sizes}
-          className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+          className="object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          style={{ objectPosition: focus }}
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -71,7 +75,7 @@ export function CategoryTile({
           )}
         </div>
         <span className="ff-circle-arrow shrink-0">
-          <ArrowRight className="w-3.5 h-3.5" />
+          <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
         </span>
       </div>
     </Link>

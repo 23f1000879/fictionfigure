@@ -13,7 +13,12 @@ interface Category {
   slug: string;
 }
 
-export function Footer() {
+interface FooterProps {
+  /** The compact authenticity/packaging/delivery row. Hidden on pages whose reference has no strip. */
+  showValueStrip?: boolean;
+}
+
+export function Footer({ showValueStrip = true }: FooterProps = {}) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const { supportPhone, supportEmail, supportHours, storeLocation, deliveryCoverage } = useSettings();
@@ -43,6 +48,7 @@ export function Footer() {
     <footer className="relative bg-[#060708] border-t border-white/[0.08] text-white overflow-hidden">
       <div className="ff-container relative z-10 py-10 lg:py-12 space-y-10">
         {/* Compact value row */}
+        {showValueStrip && (
         <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pb-8 border-b border-white/[0.08]">
           {[
             { icon: Award, title: "100% Authentic Figures", text: "Sourced from licensed manufacturers and official distributors." },
@@ -60,6 +66,7 @@ export function Footer() {
             </li>
           ))}
         </ul>
+        )}
 
         {/* Main 4-Column Footer Navigation Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 text-xs">
