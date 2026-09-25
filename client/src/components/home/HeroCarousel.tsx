@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { TrustStrip } from "@/components/home/TrustStrip";
+import { AmbientImage } from "@/components/ui/Artwork";
 import type { TrustBenefitItem } from "@/types/cms";
 
 export interface CarouselSlide {
@@ -161,6 +162,23 @@ export function HeroCarousel({
                 className="object-cover"
                 style={{ objectPosition: s.backgroundPosition || "70% center" }}
               />
+              {/*
+                Atmospheric continuation (desktop): the same artwork, mirrored and diffused, screened
+                into the left half so the scene's own light and colour carry on behind the copy.
+                Built from the 64px rendition, so it reads as haze — never as a second image.
+              */}
+              <div
+                data-hero-atmos={s.id}
+                className="hidden lg:block absolute inset-0 pointer-events-none mix-blend-screen"
+                style={{
+                  WebkitMaskImage: "linear-gradient(to right, #000 0%, #000 22%, transparent 60%)",
+                  maskImage: "linear-gradient(to right, #000 0%, #000 22%, transparent 60%)",
+                }}
+              >
+                <div className="absolute inset-0" style={{ transform: "scaleX(-1)" }}>
+                  <AmbientImage src={s.backgroundImage} opacity={0.65} />
+                </div>
+              </div>
             </div>
           );
         })}
@@ -174,10 +192,24 @@ export function HeroCarousel({
         </div>
 
         {/* ── Layers 2–4: readability without flattening the art ── */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#08090B]/[0.92] via-[#08090B]/60 to-[#08090B]/20" />
-        <div className="absolute inset-y-0 left-0 w-full lg:w-[60%] bg-gradient-to-r from-[#08090B]/60 to-transparent" />
+        {/* Desktop: dark but see-through on the left, easing into the artwork on the right */}
+        <div
+          className="hidden lg:block absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(8,9,11,0.80) 0%, rgba(8,9,11,0.66) 28%, rgba(8,9,11,0.42) 50%, rgba(8,9,11,0.16) 72%, rgba(8,9,11,0.10) 100%)",
+          }}
+        />
+        {/* Soft shade that follows the copy block — keeps contrast where the letters are */}
+        <div
+          className="hidden lg:block absolute inset-0"
+          style={{ background: "radial-gradient(ellipse 44% 60% at 24% 52%, rgba(8,9,11,0.6) 0%, transparent 78%)" }}
+        />
         {/* Below lg the copy spans the full width, so the art is dimmed evenly rather than from the left */}
-        <div className="lg:hidden absolute inset-0 bg-[#08090B]/50" />
+        <div
+          className="lg:hidden absolute inset-0"
+          style={{ background: "linear-gradient(90deg, rgba(8,9,11,0.82) 0%, rgba(8,9,11,0.6) 100%)" }}
+        />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#08090B] via-[#08090B]/60 to-transparent" />
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#08090B]/60 to-transparent" />
       </div>
