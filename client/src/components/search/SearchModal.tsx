@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
-import { Search, X, ArrowRight, Loader2 } from "lucide-react";
+import { Search, X, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
@@ -69,7 +69,7 @@ export function SearchModal() {
   if (!isSearchOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-sm transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/80 backdrop-blur-md transition-opacity duration-200">
       {/* Backdrop click listener */}
       <div
         className="fixed inset-0"
@@ -77,23 +77,24 @@ export function SearchModal() {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 w-full max-w-2xl bg-[#F7F7F5] border border-[#E5E5E2] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative z-10 w-full max-w-2xl bg-[#121318] border border-white/10 rounded-2xl shadow-2xl shadow-black overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Input Header */}
-        <div className="relative flex items-center px-3.5 sm:px-4 py-3 sm:py-3.5 border-b border-[#E5E5E2] bg-white">
-          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#6B6B6B] mr-2.5 sm:mr-3 shrink-0" />
+        <div className="relative flex items-center px-4 py-3.5 sm:py-4 border-b border-white/10 bg-[#0E0F13]">
+          <Search className="w-5 h-5 text-[#F5C518] mr-3 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search figures, statues, franchises..."
-            className="w-full bg-transparent text-[#111111] placeholder-[#6B6B6B] focus:outline-none text-xs sm:text-base font-sans"
+            placeholder="Search figures, scale, anime, characters..."
+            className="w-full bg-transparent text-white placeholder-[#64748B] focus:outline-none text-sm sm:text-base font-sans"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="p-1 text-[#6B6B6B] hover:text-[#111111] mr-2 shrink-0"
+              className="p-1 text-[#64748B] hover:text-white mr-2 shrink-0 transition-colors"
+              aria-label="Clear query"
             >
               <X className="w-4 h-4" />
             </button>
@@ -101,37 +102,40 @@ export function SearchModal() {
           <button
             type="button"
             onClick={() => setIsSearchOpen(false)}
-            className="px-2 py-1 text-[11px] uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111] border border-[#E5E5E2] rounded-none shrink-0 font-mono"
+            className="px-2.5 py-1 text-[11px] uppercase tracking-wider text-[#94A3B8] hover:text-white bg-white/[0.04] border border-white/10 rounded-lg shrink-0 font-mono transition-all"
           >
             ESC
           </button>
         </div>
 
-        {/* Clean Results Panel (No hardcoded promo chips/brands) */}
+        {/* Clean Results Panel */}
         <div className="p-4 sm:p-6 max-h-[70vh] overflow-y-auto">
           {isLoading && (
-            <div className="flex items-center justify-center py-10 text-[#6B6B6B]">
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              <span className="text-xs">Searching collection catalog...</span>
+            <div className="flex items-center justify-center py-12 text-[#94A3B8] space-x-2">
+              <Loader2 className="w-5 h-5 animate-spin text-[#F5C518]" />
+              <span className="text-xs font-mono uppercase tracking-wider">Searching Vault Catalog...</span>
             </div>
           )}
 
           {!isLoading && !query && (
-            <div className="text-center py-8 text-[#6B6B6B]">
-              <p className="text-xs">Type a character name, figure title, or franchise to search...</p>
+            <div className="text-center py-10 text-[#64748B] space-y-2">
+              <Sparkles className="w-8 h-8 text-[#F5C518]/40 mx-auto" />
+              <p className="text-xs font-mono uppercase tracking-wider text-[#94A3B8]">
+                Type a character name, series, or scale figure to search
+              </p>
             </div>
           )}
 
           {!isLoading && query && results.length > 0 && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-[#6B6B6B] border-b border-[#E5E5E2] pb-2">
-                <span>{results.length} Products Found</span>
+              <div className="flex items-center justify-between text-xs text-[#94A3B8] border-b border-white/10 pb-2.5">
+                <span className="font-mono">{results.length} Figures Found</span>
                 <Link
                   href={`/shop?query=${encodeURIComponent(query)}`}
                   onClick={() => setIsSearchOpen(false)}
-                  className="hover:text-[#111111] flex items-center gap-1 font-medium"
+                  className="text-[#F5C518] hover:underline flex items-center gap-1 font-semibold"
                 >
-                  View all <ArrowRight className="w-3 h-3" />
+                  View all in Shop <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
@@ -141,31 +145,31 @@ export function SearchModal() {
                     key={product.id}
                     href={`/products/${product.slug}`}
                     onClick={() => setIsSearchOpen(false)}
-                    className="flex items-center space-x-3 p-2 bg-white border border-[#E5E5E2] hover:border-[#111111] transition-colors group min-w-0"
+                    className="flex items-center space-x-3 p-2.5 bg-[#181920] border border-white/[0.08] hover:border-[#F5C518]/40 hover:bg-[#1E202A] rounded-xl transition-all group min-w-0"
                   >
-                    <div className="relative w-14 h-14 bg-[#F0F0ED] shrink-0 overflow-hidden border border-[#E5E5E2]">
+                    <div className="relative w-14 h-14 bg-[#0E0F13] rounded-lg shrink-0 overflow-hidden border border-white/10 flex items-center justify-center p-1">
                       {product.images?.[0]?.url ? (
                         <Image
                           src={product.images[0].url}
                           alt={product.name}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform"
+                          className="object-contain group-hover:scale-105 transition-transform"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[9px] text-[#6B6B6B]">
+                        <div className="w-full h-full flex items-center justify-center text-[9px] text-[#64748B]">
                           No image
                         </div>
                       )}
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-0.5">
-                      <span className="text-[9px] uppercase font-semibold text-[#6B6B6B] block tracking-wide truncate">
-                        {product.brand}
+                      <span className="text-[10px] uppercase font-bold text-[#F5C518] block tracking-wider truncate">
+                        {product.brand || product.category?.name || "COLLECTIBLE"}
                       </span>
-                      <h5 className="text-xs font-semibold text-[#111111] truncate group-hover:underline">
+                      <h5 className="text-xs font-semibold text-white truncate group-hover:text-[#F5C518] transition-colors">
                         {product.name}
                       </h5>
-                      <span className="text-xs font-mono font-semibold text-[#111111] block">
+                      <span className="text-xs font-mono font-bold text-white block">
                         {formatPrice(product.price)}
                       </span>
                     </div>
@@ -176,14 +180,14 @@ export function SearchModal() {
           )}
 
           {!isLoading && query && results.length === 0 && (
-            <div className="text-center py-8 space-y-1">
-              <p className="text-xs text-[#111111] font-semibold">No figures matched your query</p>
-              <p className="text-[11px] text-[#6B6B6B]">
-                Try searching by character name, or browse our{" "}
+            <div className="text-center py-10 space-y-2">
+              <p className="text-sm text-white font-bold">No figures matched "{query}"</p>
+              <p className="text-xs text-[#94A3B8]">
+                Try searching by character name (e.g., Luffy, Gojo, Naruto), or browse our{" "}
                 <Link
                   href="/shop"
                   onClick={() => setIsSearchOpen(false)}
-                  className="underline text-[#111111]"
+                  className="text-[#F5C518] underline hover:brightness-110"
                 >
                   full catalog
                 </Link>

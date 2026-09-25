@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Award, Box, MapPin, Phone, Clock, Truck, ShieldCheck, Mail } from "lucide-react";
+import Image from "next/image";
+import { Award, Box, MapPin, Phone, Clock, Truck, ShieldCheck, Mail, Sparkles } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 import { useSettings } from "@/context/SettingsContext";
 
@@ -39,91 +40,127 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="bg-white border-t border-[#E5E5E2] mt-24 text-[#111111]">
-      <div className="editorial-container py-16 space-y-12">
+    <footer className="relative bg-[#060708] border-t border-white/[0.08] mt-24 text-white overflow-hidden">
+      {/* Ambient subtle gold radial glow behind brand section */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-gradient-to-b from-[#F5C518]/[0.03] to-transparent rounded-full blur-3xl pointer-events-none" />
+
+      <div className="editorial-container relative z-10 py-16 sm:py-20 space-y-16">
+        {/* Value Proposition Cards Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
+          <div className="p-5 rounded-2xl bg-[#121318]/70 border border-white/[0.08] backdrop-blur-sm flex items-start gap-4 hover:border-white/15 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-[#F5C518]/10 border border-[#F5C518]/25 flex items-center justify-center text-[#F5C518] shrink-0">
+              <Award className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                100% Authentic Figures
+              </h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Directly sourced from licensed Japanese manufacturers and official distributors.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-[#121318]/70 border border-white/[0.08] backdrop-blur-sm flex items-start gap-4 hover:border-white/15 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-[#F5C518]/10 border border-[#F5C518]/25 flex items-center justify-center text-[#F5C518] shrink-0">
+              <Box className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                Collector Safe Packaging
+              </h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Multi-layer bubble wrap & reinforced outer boxes to guarantee mint box condition.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-[#121318]/70 border border-white/[0.08] backdrop-blur-sm flex items-start gap-4 hover:border-white/15 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-[#F5C518]/10 border border-[#F5C518]/25 flex items-center justify-center text-[#F5C518] shrink-0">
+              <Truck className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                Pan-India Express Delivery
+              </h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Fast, insured delivery across India with end-to-end real-time tracking.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main 4-Column Footer Navigation Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 text-xs">
-          {/* Column 1: Brand & Value Statements */}
-          <div className="space-y-6">
-            <div>
-              <Link
-                href="/"
-                className="text-lg font-bold tracking-tighter uppercase text-[#111111] font-mono block mb-2"
-              >
-                FICTIONFIGURE
-              </Link>
-              <p className="text-xs text-[#6B6B6B] leading-relaxed">
-                Curated figures, statues, and collectibles for people who never stopped loving the characters that shaped them.
+          {/* Column 1: Brand & Tagline */}
+          <div className="space-y-5">
+            <Link href="/" className="inline-block">
+              <Image
+                src="/fictionfigure-logo.svg"
+                alt="FictionFigure"
+                width={180}
+                height={40}
+                className="h-8 w-auto object-contain"
+              />
+            </Link>
+
+            <div className="space-y-2">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-[#F5C518] block">
+                COLLECT YOUR FICTION.
+              </span>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.
               </p>
             </div>
 
-            <div className="space-y-4 pt-2 border-t border-[#E5E5E2]/60">
-              <div className="flex items-start space-x-2.5">
-                <Award className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <h5 className="font-semibold uppercase tracking-wider text-[11px] text-[#111111]">
-                    Authentic Collectibles
-                  </h5>
-                  <p className="text-[11px] text-[#6B6B6B] leading-normal">
-                    Carefully selected collectibles from trusted makers and studios.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-2.5">
-                <Box className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <h5 className="font-semibold uppercase tracking-wider text-[11px] text-[#111111]">
-                    Secure Packaging
-                  </h5>
-                  <p className="text-[11px] text-[#6B6B6B] leading-normal">
-                    Every order is packed carefully to help your collection arrive safely.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-2.5">
-                <Truck className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
-                <div>
-                  <h5 className="font-semibold uppercase tracking-wider text-[11px] text-[#111111]">
-                    Delivering Across India
-                  </h5>
-                  <p className="text-[11px] text-[#6B6B6B] leading-normal">
-                    Based in Bikaner, Rajasthan, delivering collectibles across India.
-                  </p>
-                </div>
-              </div>
+            <div className="pt-2">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-[10px] font-mono text-[#94A3B8]">
+                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                <span>Vault Active & Dispatching</span>
+              </span>
             </div>
           </div>
 
           {/* Column 2: Dynamic Explore Catalog */}
           <div>
-            <h4 className="text-xs uppercase font-semibold text-[#111111] tracking-widest mb-4 border-b border-[#E5E5E2] pb-2">
-              Explore Catalog
+            <h4 className="text-xs uppercase font-bold text-white tracking-widest mb-4 border-b border-white/10 pb-2.5 flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-[#F5C518]" />
+              <span>Explore Catalog</span>
             </h4>
             {loadingCategories ? (
-              <div className="space-y-2 text-[#6B6B6B]">
-                <div className="h-3 bg-[#F7F7F5] w-24 animate-pulse"></div>
-                <div className="h-3 bg-[#F7F7F5] w-32 animate-pulse"></div>
-                <div className="h-3 bg-[#F7F7F5] w-28 animate-pulse"></div>
+              <div className="space-y-2.5">
+                <div className="h-3.5 bg-white/[0.05] rounded-md w-28 animate-pulse" />
+                <div className="h-3.5 bg-white/[0.05] rounded-md w-36 animate-pulse" />
+                <div className="h-3.5 bg-white/[0.05] rounded-md w-32 animate-pulse" />
               </div>
             ) : categories.length > 0 ? (
-              <ul className="space-y-2.5 text-xs text-[#6B6B6B]">
+              <ul className="space-y-2.5 text-xs text-[#94A3B8]">
                 {categories.map((cat) => (
                   <li key={cat.id}>
                     <Link
                       href={`/shop?category=${cat.slug}`}
-                      className="hover:text-[#111111] transition-colors block truncate max-w-[200px]"
+                      className="hover:text-[#F5C518] transition-colors block truncate max-w-[220px]"
                     >
                       {cat.name}
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <Link href="/shop" className="text-white hover:text-[#F5C518] font-semibold transition-colors block pt-1">
+                    View All Categories →
+                  </Link>
+                </li>
               </ul>
             ) : (
-              <ul className="space-y-2.5 text-xs text-[#6B6B6B]">
+              <ul className="space-y-2.5 text-xs text-[#94A3B8]">
                 <li>
-                  <Link href="/shop" className="hover:text-[#111111] transition-colors">
+                  <Link href="/shop" className="hover:text-[#F5C518] transition-colors">
                     Shop All Collectibles
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/collections" className="hover:text-[#F5C518] transition-colors">
+                    Featured Collections
                   </Link>
                 </li>
               </ul>
@@ -132,61 +169,65 @@ export function Footer() {
 
           {/* Column 3: Collector Care Links */}
           <div>
-            <h4 className="text-xs uppercase font-semibold text-[#111111] tracking-widest mb-4 border-b border-[#E5E5E2] pb-2">
-              Collector Care
+            <h4 className="text-xs uppercase font-bold text-white tracking-widest mb-4 border-b border-white/10 pb-2.5">
+              Collector Sanctuary
             </h4>
-            <ul className="space-y-2.5 text-xs text-[#6B6B6B]">
+            <ul className="space-y-2.5 text-xs text-[#94A3B8]">
               <li>
-                <Link href="/shipping" className="hover:text-[#111111] transition-colors">
+                <Link href="/shipping" className="hover:text-[#F5C518] transition-colors">
                   Shipping Information
                 </Link>
               </li>
               <li>
-                <Link href="/returns" className="hover:text-[#111111] transition-colors">
+                <Link href="/returns" className="hover:text-[#F5C518] transition-colors">
                   Returns & Replacements
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-[#111111] transition-colors">
+                <Link href="/privacy" className="hover:text-[#F5C518] transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-[#111111] transition-colors">
+                <Link href="/terms" className="hover:text-[#F5C518] transition-colors">
                   Terms & Conditions
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-[#111111] transition-colors">
+                <Link href="/about" className="hover:text-[#F5C518] transition-colors">
                   About FictionFigure
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-[#111111] transition-colors">
-                  Contact Us
+                <Link href="/contact" className="hover:text-[#F5C518] transition-colors">
+                  Contact Support
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Support & Contact Details */}
-          {(Boolean(supportPhone?.trim()) || Boolean(supportEmail?.trim()) || Boolean(supportHours?.trim()) || Boolean(storeLocation?.trim()) || Boolean(deliveryCoverage?.trim())) && (
+          {/* Column 4: Dynamic Support & Contact Details from StoreSettings */}
+          {(Boolean(supportPhone?.trim()) ||
+            Boolean(supportEmail?.trim()) ||
+            Boolean(supportHours?.trim()) ||
+            Boolean(storeLocation?.trim()) ||
+            Boolean(deliveryCoverage?.trim())) && (
             <div className="space-y-4">
-              <h4 className="text-xs uppercase font-semibold text-[#111111] tracking-widest mb-4 border-b border-[#E5E5E2] pb-2">
-                Support & Contact
+              <h4 className="text-xs uppercase font-bold text-white tracking-widest mb-4 border-b border-white/10 pb-2.5">
+                Support & Vault
               </h4>
 
-              <div className="space-y-3.5 text-xs text-[#6B6B6B]">
+              <div className="space-y-3.5 text-xs text-[#94A3B8]">
                 {Boolean(supportPhone?.trim()) && (
                   <div className="flex items-start space-x-2.5">
-                    <Phone className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <Phone className="w-4 h-4 text-[#F5C518] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                      <span className="font-semibold text-white/90 block uppercase text-[10px] tracking-wider font-mono">
                         Phone Support
                       </span>
                       <a
                         href={`tel:${supportPhone.replace(/\s+/g, "")}`}
-                        className="font-mono text-xs text-[#111111] hover:underline font-semibold block"
+                        className="font-mono text-xs text-white hover:text-[#F5C518] font-semibold block transition-colors"
                       >
                         {supportPhone}
                       </a>
@@ -196,14 +237,14 @@ export function Footer() {
 
                 {Boolean(supportEmail?.trim()) && (
                   <div className="flex items-start space-x-2.5">
-                    <Mail className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <Mail className="w-4 h-4 text-[#F5C518] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                      <span className="font-semibold text-white/90 block uppercase text-[10px] tracking-wider font-mono">
                         Email Support
                       </span>
                       <a
                         href={`mailto:${supportEmail.trim()}`}
-                        className="font-mono text-xs text-[#111111] hover:underline font-semibold block"
+                        className="font-mono text-xs text-white hover:text-[#F5C518] font-semibold block transition-colors"
                       >
                         {supportEmail}
                       </a>
@@ -213,36 +254,36 @@ export function Footer() {
 
                 {Boolean(supportHours?.trim()) && (
                   <div className="flex items-start space-x-2.5">
-                    <Clock className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <Clock className="w-4 h-4 text-[#F5C518] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                      <span className="font-semibold text-white/90 block uppercase text-[10px] tracking-wider font-mono">
                         Support Hours
                       </span>
-                      <span className="block text-[#111111]">{supportHours}</span>
+                      <span className="block text-white/90">{supportHours}</span>
                     </div>
                   </div>
                 )}
 
                 {Boolean(storeLocation?.trim()) && (
                   <div className="flex items-start space-x-2.5">
-                    <MapPin className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <MapPin className="w-4 h-4 text-[#F5C518] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
+                      <span className="font-semibold text-white/90 block uppercase text-[10px] tracking-wider font-mono">
                         Location
                       </span>
-                      <span className="block text-[#111111]">{storeLocation}</span>
+                      <span className="block text-white/90">{storeLocation}</span>
                     </div>
                   </div>
                 )}
 
                 {Boolean(deliveryCoverage?.trim()) && (
                   <div className="flex items-start space-x-2.5 pt-1">
-                    <Truck className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                    <Truck className="w-4 h-4 text-[#F5C518] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-semibold text-[#111111] block uppercase text-[10px] tracking-wider">
-                        Coverage
+                      <span className="font-semibold text-white/90 block uppercase text-[10px] tracking-wider font-mono">
+                        Delivery Coverage
                       </span>
-                      <span className="block text-[#111111]">{deliveryCoverage}</span>
+                      <span className="block text-white/90">{deliveryCoverage}</span>
                     </div>
                   </div>
                 )}
@@ -252,18 +293,18 @@ export function Footer() {
         </div>
 
         {/* Footer Bottom Bar */}
-        <div className="pt-8 border-t border-[#E5E5E2] flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-[#6B6B6B]">
+        <div className="pt-8 border-t border-white/[0.08] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#94A3B8]">
           <div>© {new Date().getFullYear()} FictionFigure. All rights reserved.</div>
 
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[#111111]">
+          <div className="font-mono text-[11px] uppercase tracking-wider text-[#64748B]">
             Based in Bikaner, delivering across India.
           </div>
 
-          <div className="flex items-center space-x-2 text-[10px] font-mono uppercase tracking-wider text-[#6B6B6B]">
-            <span className="px-2 py-0.5 bg-[#F7F7F5] border border-[#E5E5E2]">UPI</span>
-            <span className="px-2 py-0.5 bg-[#F7F7F5] border border-[#E5E5E2]">Cards</span>
-            <span className="px-2 py-0.5 bg-[#F7F7F5] border border-[#E5E5E2]">Razorpay</span>
-            <span className="px-2 py-0.5 bg-[#F7F7F5] border border-[#E5E5E2]">COD</span>
+          <div className="flex items-center space-x-2 text-[10px] font-mono uppercase tracking-wider text-[#94A3B8]">
+            <span className="px-2.5 py-1 bg-[#121318] border border-white/10 rounded-md">UPI</span>
+            <span className="px-2.5 py-1 bg-[#121318] border border-white/10 rounded-md">Cards</span>
+            <span className="px-2.5 py-1 bg-[#121318] border border-white/10 rounded-md">Razorpay</span>
+            <span className="px-2.5 py-1 bg-[#121318] border border-white/10 rounded-md">COD</span>
           </div>
         </div>
       </div>
