@@ -354,7 +354,6 @@ export default async function HomePage() {
         {heroEnabled && (
           <HeroCarousel
             slides={slides}
-            trustItems={cmsConfig?.trustStrip?.items}
             secondaryLabel={settings.homepage_hero_secondary_label}
             secondaryUrl={settings.homepage_hero_secondary_url}
           />

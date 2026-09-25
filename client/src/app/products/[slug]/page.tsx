@@ -184,7 +184,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 linkText={product.category?.slug ? `View all ${product.category.name}` : undefined}
                 linkUrl={product.category?.slug ? `/collections/${product.category.slug}` : undefined}
               />
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 gap-3 lg:gap-4">
                 {relatedProducts.map((relProduct: any) => (
                   <ProductCard key={relProduct.id} product={relProduct} />
                 ))}

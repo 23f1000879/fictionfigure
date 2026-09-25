@@ -4,9 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { TrustStrip } from "@/components/home/TrustStrip";
 import { AmbientImage } from "@/components/ui/Artwork";
-import type { TrustBenefitItem } from "@/types/cms";
 
 export interface CarouselSlide {
   id: string;
@@ -34,7 +32,6 @@ export interface CarouselSlide {
 
 interface HeroCarouselProps {
   slides: CarouselSlide[];
-  trustItems?: TrustBenefitItem[];
   /** Store-level secondary CTA used when a slide does not define its own. */
   secondaryLabel?: string;
   secondaryUrl?: string;
@@ -58,7 +55,6 @@ function usePrefersReducedMotion() {
 
 export function HeroCarousel({
   slides,
-  trustItems,
   secondaryLabel,
   secondaryUrl,
   intervalMs = 6000,
@@ -215,9 +211,9 @@ export function HeroCarousel({
       </div>
 
       {/* ── Layer 5: foreground ── */}
-      <div className="ff-container grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center pt-10 pb-6 sm:pt-14 lg:py-0 lg:min-h-[clamp(520px,calc(100svh-110px),650px)]">
+      <div className="ff-container grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center pt-10 pb-6 sm:pt-14 lg:py-0 lg:min-h-[520px] xl:min-h-[560px]">
         {/* Copy */}
-        <div key={slide.id} className="ff-fade-up lg:col-span-7 flex flex-col gap-5 lg:py-12" aria-live="polite">
+        <div key={slide.id} className="ff-fade-up lg:col-span-6 flex flex-col gap-5 lg:py-12" aria-live="polite">
           {slide.eyebrow && <p className="ff-eyebrow text-[11px]">{slide.eyebrow}</p>}
 
           <h1 className="font-black uppercase leading-[0.94] tracking-[-0.025em] text-[40px] sm:text-[56px] lg:text-[60px] xl:text-[72px] drop-shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
@@ -243,13 +239,10 @@ export function HeroCarousel({
             )}
           </div>
 
-          <div className="hidden lg:block mt-3 pt-5 border-t border-white/[0.1] max-w-[620px]">
-            <TrustStrip items={trustItems} layout="hero" />
-          </div>
         </div>
 
         {/* Foreground artwork + collection selector */}
-        <div className="lg:col-span-5 flex items-center justify-center lg:justify-end gap-4 xl:gap-5 lg:py-10">
+        <div className="lg:col-span-6 flex items-center justify-center lg:justify-end gap-4 xl:gap-5 lg:py-10">
           {/* Contained foreground art is shown only while a slide has no background plate */}
           {!hasBackground && slide.image && (
             <div
@@ -270,7 +263,7 @@ export function HeroCarousel({
           {N > 1 && (
             <div
               className={`hidden flex-col gap-3 ${
-                hasBackground ? "lg:flex w-full max-w-[300px] xl:max-w-[320px]" : "xl:flex w-[210px]"
+                hasBackground ? "lg:flex w-full max-w-[320px] xl:max-w-[360px] 3xl:max-w-[400px]" : "xl:flex w-[220px]"
               }`}
               role="tablist"
               aria-label="Choose collection"
@@ -306,12 +299,6 @@ export function HeroCarousel({
         </div>
       )}
 
-      {/* Mobile / tablet trust row */}
-      <div className="lg:hidden ff-container pb-6">
-        <div className="pt-5 border-t border-white/[0.08]">
-          <TrustStrip items={trustItems} layout="hero" />
-        </div>
-      </div>
     </section>
   );
 }
