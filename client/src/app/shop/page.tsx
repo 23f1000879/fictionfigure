@@ -127,7 +127,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       <SearchModal />
       <CartDrawer />
 
-      <main className="flex-1 bg-[#F7F7F5] min-h-screen">
+      <main className="flex-1 bg-[#0A0A0C] text-[#F8FAFC] min-h-screen">
         <CollectionListingView
           title={activeCategoryObj ? activeCategoryObj.name : "ALL FIGURES & COLLECTIBLES"}
           eyebrow={activeCategoryObj ? "CATEGORY COLLECTION" : "STOREFRONT CATALOG"}

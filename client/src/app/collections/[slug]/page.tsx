@@ -115,7 +115,7 @@ export default async function CollectionSlugPage({
       <SearchModal />
       <CartDrawer />
 
-      <main className="flex-1 bg-[#F7F7F5] min-h-screen">
+      <main className="flex-1 bg-[#0A0A0C] text-[#F8FAFC] min-h-screen">
         <CollectionListingView
           title={cat?.name ? `${cat.name} COLLECTION` : slug.toUpperCase()}
           eyebrow="CATEGORY COLLECTION"
