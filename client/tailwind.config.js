@@ -8,29 +8,77 @@ module.exports = {
   theme: {
     screens: {
       xs: "480px",
-      sm: "690px",
+      sm: "640px",
       md: "768px",
-      lg: "1000px",
+      lg: "1024px",
       xl: "1280px",
-      "2xl": "1350px",
+      "2xl": "1440px",
+      "3xl": "1920px",
     },
     extend: {
       colors: {
-        background: "#F7F7F5",
-        surface: "#FFFFFF",
-        foreground: "#111111",
-        secondary: "#6B6B6B",
-        border: "#E5E5E2",
-        muted: "#F0F0ED",
-        accent: "#111111",
+        // Core Cinematic Backgrounds
+        background: {
+          DEFAULT: "#0A0A0C",
+          deep: "#060708",
+          charcoal: "#0F1014",
+        },
+        // Layered Dark Surfaces
+        surface: {
+          DEFAULT: "#121318",
+          elevated: "#181920",
+          soft: "#1F212A",
+          glass: "rgba(18, 19, 24, 0.75)",
+          card: "#13141B",
+          input: "#0E0F13",
+        },
+        // High-Contrast Foregrounds
+        foreground: {
+          DEFAULT: "#F8FAFC",
+          primary: "#FFFFFF",
+          secondary: "#94A3B8",
+          muted: "#64748B",
+          subtle: "#475569",
+        },
+        // Subtle Low-Contrast Borders
+        border: {
+          DEFAULT: "rgba(255, 255, 255, 0.08)",
+          light: "rgba(255, 255, 255, 0.14)",
+          subtle: "rgba(255, 255, 255, 0.04)",
+          gold: "rgba(212, 175, 55, 0.3)",
+          glow: "rgba(245, 197, 24, 0.4)",
+        },
+        // FICTIONFIGURE Brand Gold / Radiant Yellow
         gold: {
           DEFAULT: "#D4AF37",
-          hover: "#B5932D",
+          bright: "#F5C518",
+          radiant: "#FFD700",
+          hover: "#E5B50D",
+          muted: "#997F29",
           light: "rgba(212, 175, 55, 0.12)",
+          glow: "rgba(245, 197, 24, 0.25)",
         },
-        success: "#2E6B44",
-        warning: "#B86E00",
-        error: "#A83232",
+        // Semantic Palette
+        success: {
+          DEFAULT: "#10B981",
+          soft: "rgba(16, 185, 129, 0.15)",
+          border: "rgba(16, 185, 129, 0.3)",
+        },
+        warning: {
+          DEFAULT: "#F59E0B",
+          soft: "rgba(245, 158, 11, 0.15)",
+          border: "rgba(245, 158, 11, 0.3)",
+        },
+        error: {
+          DEFAULT: "#EF4444",
+          soft: "rgba(239, 68, 68, 0.15)",
+          border: "rgba(239, 68, 68, 0.3)",
+        },
+        // Curated Accents
+        accent: {
+          purple: "#8B5CF6",
+          cyan: "#06B6D4",
+        },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "-apple-system", "sans-serif"],
@@ -41,20 +89,29 @@ module.exports = {
         tightest: "-0.03em",
       },
       borderRadius: {
-        "3px": "3px",
-        "8px": "8px",
+        sm: "8px",
+        md: "12px",
+        lg: "16px",
+        xl: "20px",
+        "2xl": "24px",
+        full: "9999px",
       },
       boxShadow: {
-        subtle: "0px 2px 3px 0px rgba(0, 0, 0, 0.12)",
-        outlined: "6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0)",
+        card: "0 4px 20px -2px rgba(0, 0, 0, 0.5)",
+        cardHover: "0 10px 30px -4px rgba(0, 0, 0, 0.8), 0 0 15px 0 rgba(212, 175, 55, 0.12)",
+        goldGlow: "0 0 25px -3px rgba(245, 197, 24, 0.35)",
+        goldGlowLg: "0 0 40px -5px rgba(245, 197, 24, 0.45)",
+        subtleGlow: "0 0 20px -3px rgba(255, 255, 255, 0.06)",
+        surfaceGlow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
       },
       transitionDuration: {
-        120: "120ms",
         150: "150ms",
-        180: "180ms",
+        200: "200ms",
+        250: "250ms",
+        300: "300ms",
       },
       transitionTimingFunction: {
-        theme: "cubic-bezier(0.455, 0.03, 0.515, 0.955)",
+        theme: "cubic-bezier(0.16, 1, 0.3, 1)",
       },
     },
   },

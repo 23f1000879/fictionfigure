@@ -7,6 +7,7 @@ import { Heart, ShoppingBag, ChevronLeft, ChevronRight, Star } from "lucide-reac
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { Badge } from "@/components/ui/Badge";
 
 export interface ProductCardProps {
   product: {
@@ -40,6 +41,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
+  const [isAdding, setIsAdding] = useState(false);
 
   const variants = product.variants || [];
   const hasVariants = Boolean(
@@ -94,11 +96,12 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
     setImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const handleQuickAdd = (e: React.MouseEvent) => {
+  const handleQuickAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!inStock) return;
+    if (!inStock || isAdding) return;
 
+    setIsAdding(true);
     const variantToAdd = currentVariant || {
       id: `${product.id}-default`,
       title: "Standard Edition",
@@ -118,12 +121,18 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
       sku: variantToAdd.sku || "",
       brand: product.brand || product.category?.name || "FictionFigure",
     });
+
+    setTimeout(() => {
+      setIsAdding(false);
+    }, 400);
   };
 
+  const brandOrCategory = product.brand || product.category?.name || "COLLECTIBLE";
+
   return (
-    <div className="group bg-white rounded-lg border border-[#E5E5E2] hover:border-[#111111] hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between text-[#111111] box-border h-full">
+    <div className="group relative bg-[#121318] rounded-2xl border border-white/[0.08] hover:border-[#F5C518]/40 hover:shadow-cardHover transition-all duration-300 overflow-hidden flex flex-col justify-between text-white box-border h-full">
       {/* Edge-to-Edge Product Image Area */}
-      <div className="relative w-full aspect-[3/4] bg-white overflow-hidden rounded-t-lg flex items-center justify-center">
+      <div className="relative w-full aspect-[3/4] bg-[#0E0F13] overflow-hidden rounded-t-2xl flex items-center justify-center">
         <Link href={`/products/${product.slug}`} className="block w-full h-full relative">
           {primaryImage ? (
             <>
@@ -133,7 +142,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
                 alt={product.name}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className={`object-contain object-center transition-opacity duration-200 ${
+                className={`object-contain object-center transition-all duration-300 group-hover:scale-[1.03] ${
                   secondaryImage ? "group-hover:opacity-0" : ""
                 }`}
               />
@@ -145,18 +154,18 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
                   alt={`${product.name} alternate view`}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  className="object-contain object-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                  className="object-contain object-center opacity-0 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-300 pointer-events-none"
                 />
               )}
             </>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-xs text-[#6B6B6B] font-mono">
-              Image unavailable
+            <div className="w-full h-full flex items-center justify-center text-xs text-[#64748B] font-mono">
+              Artwork unavailable
             </div>
           )}
         </Link>
 
-        {/* Floating Wishlist Heart Button */}
+        {/* Floating Wishlist Heart Button with dark glass backdrop */}
         <button
           type="button"
           onClick={async (e) => {
@@ -164,12 +173,12 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
             e.stopPropagation();
             await toggleWishlist(product.id);
           }}
-          className="absolute top-2.5 right-2.5 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-xs border border-[#E5E5E2] shadow-xs hover:scale-110 hover:bg-white text-[#111111] transition-all flex items-center justify-center cursor-pointer"
+          className="absolute top-3 right-3 z-20 w-9 h-9 rounded-xl bg-[#121318]/80 backdrop-blur-md border border-white/10 shadow-md hover:scale-110 hover:border-white/25 text-white transition-all flex items-center justify-center cursor-pointer"
           aria-label={isWishlisted ? "Remove from Wishlist" : "Save to Wishlist"}
         >
           <Heart
-            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
-              isWishlisted ? "fill-[#A83232] text-[#A83232]" : "text-[#111111]"
+            className={`w-4 h-4 transition-colors ${
+              isWishlisted ? "fill-rose-500 text-rose-500" : "text-white/80 hover:text-white"
             }`}
           />
         </button>
@@ -180,7 +189,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
             <button
               type="button"
               onClick={prevImage}
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/90 border border-[#E5E5E2] text-[#111111] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-white shadow-xs"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-xl bg-[#121318]/80 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-[#1A1C24] shadow-sm"
               aria-label="Previous product image"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -188,7 +197,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
             <button
               type="button"
               onClick={nextImage}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/90 border border-[#E5E5E2] text-[#111111] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-white shadow-xs"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-xl bg-[#121318]/80 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-[#1A1C24] shadow-sm"
               aria-label="Next product image"
             >
               <ChevronRight className="w-4 h-4" />
@@ -197,78 +206,79 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
         )}
 
         {/* Stock & Discount Badges */}
-        {!inStock ? (
-          <span className="absolute bottom-2 left-2 bg-[#A83232] text-white text-[9px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 z-10 rounded">
-            Sold Out
-          </span>
-        ) : isLowStock ? (
-          <span className="absolute bottom-2 left-2 bg-[#B86E00] text-white text-[9px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 z-10 rounded">
-            Only {currentStock} Left
-          </span>
-        ) : isOnSale && discountPercent > 0 ? (
-          <span className="absolute bottom-2 left-2 bg-[#111111] text-white text-[9px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 z-10 rounded">
-            {discountPercent}% OFF
-          </span>
-        ) : null}
+        <div className="absolute bottom-2.5 left-2.5 z-10 flex flex-wrap gap-1.5 pointer-events-none">
+          {!inStock ? (
+            <Badge variant="danger" size="sm">Sold Out</Badge>
+          ) : isLowStock ? (
+            <Badge variant="warning" size="sm">Only {currentStock} Left</Badge>
+          ) : isOnSale && discountPercent > 0 ? (
+            <Badge variant="gold" size="sm">{discountPercent}% OFF</Badge>
+          ) : null}
+        </div>
       </div>
 
       {/* Product Details & Purchase Actions Container */}
-      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
-        <div className="space-y-2.5">
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-3 bg-[#121318]">
+        <div className="space-y-1.5">
+          {/* Brand/Category Micro-Label */}
+          <div className="flex items-center justify-between text-[11px] uppercase tracking-wider font-semibold text-[#F5C518]">
+            <span className="truncate">{brandOrCategory}</span>
+            {product.rating && product.rating > 0 ? (
+              <span className="flex items-center gap-1 text-white/90 text-xs font-mono ml-2 shrink-0">
+                <Star className="w-3 h-3 fill-[#F5C518] text-[#F5C518]" />
+                <span>{product.rating.toFixed(1)}</span>
+                {product.reviewCount ? (
+                  <span className="text-[#64748B] text-[10px]">({product.reviewCount})</span>
+                ) : null}
+              </span>
+            ) : null}
+          </div>
+
+          {/* Product Name */}
+          <Link
+            href={`/products/${product.slug}`}
+            className="block font-semibold text-sm sm:text-base text-white hover:text-[#F5C518] transition-colors line-clamp-2 leading-snug"
+          >
+            {product.name}
+          </Link>
+
           {/* Dynamic Generic Variant Selector */}
           {hasVariants && (
-            <div className="flex flex-wrap gap-1.5">
-              {variants.map((v, idx) => {
-                const isSelected = selectedVariantIndex === idx;
-                const isOut = v.inventoryCount <= 0;
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {variants.map((variant, idx) => {
+                const isSelected = idx === selectedVariantIndex;
+                const isVariantInStock = variant.inventoryCount > 0;
                 return (
                   <button
-                    key={v.id || idx}
+                    key={variant.id || idx}
                     type="button"
-                    disabled={isOut}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       setSelectedVariantIndex(idx);
                     }}
-                    className={`px-2 py-1 text-[10px] font-mono font-bold rounded border transition-all ${
+                    className={`text-[10px] px-2 py-1 rounded-md border font-medium transition-all ${
                       isSelected
-                        ? "bg-[#111111] text-white border-[#111111] shadow-xs"
-                        : isOut
-                        ? "bg-[#F7F7F5] text-[#A0A0A0] border-[#E5E5E2] line-through cursor-not-allowed opacity-50"
-                        : "bg-white text-[#111111] border-[#E5E5E2] hover:border-[#111111]"
-                    }`}
-                    title={`${v.title}${v.price && v.price !== product.price ? ` - ${formatPrice(v.price)}` : ""}${isOut ? " (Sold Out)" : ""}`}
+                        ? "border-[#F5C518] bg-[#F5C518]/10 text-[#F5C518] font-bold"
+                        : "border-white/10 bg-white/[0.04] text-[#94A3B8] hover:border-white/20"
+                    } ${!isVariantInStock ? "opacity-40 line-through" : ""}`}
                   >
-                    {v.title}
+                    {variant.title}
                   </button>
                 );
               })}
             </div>
           )}
-
-          {/* Brand & Product Title */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-[#6B6B6B] block truncate">
-              {product.brand || product.category?.name || "FICTIONFIGURE"}
-            </span>
-
-            <Link href={`/products/${product.slug}`} className="block">
-              <h3 className="text-xs sm:text-sm font-semibold text-[#111111] line-clamp-2 leading-snug group-hover:text-[#D4AF37] transition-colors">
-                {product.name}
-              </h3>
-            </Link>
-          </div>
         </div>
 
-        {/* Pricing & Add to Cart Button */}
-        <div className="pt-2 space-y-2.5 border-t border-[#F0F0EE]">
-          <div className="flex items-baseline space-x-2">
-            <span className="text-sm sm:text-base font-bold font-mono text-[#111111]">
+        {/* Pricing and Action Button */}
+        <div className="space-y-3 pt-2 border-t border-white/[0.06]">
+          <div className="flex items-baseline gap-2">
+            <span className="text-base sm:text-lg font-bold text-white tracking-tight">
               {formatPrice(currentPrice)}
             </span>
             {isOnSale && currentCompareAt && (
-              <span className="text-xs text-[#6B6B6B] line-through font-mono">
+              <span className="text-xs sm:text-sm text-[#64748B] line-through">
                 {formatPrice(currentCompareAt)}
               </span>
             )}
@@ -276,16 +286,21 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
 
           <button
             type="button"
-            disabled={!inStock}
             onClick={handleQuickAdd}
-            className={`w-full py-2.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded transition-all flex items-center justify-center space-x-1.5 ${
-              inStock
-                ? "bg-[#111111] hover:bg-[#2A2A2A] text-white shadow-xs cursor-pointer"
-                : "bg-[#E5E5E2] text-[#999999] cursor-not-allowed"
-            }`}
+            disabled={!inStock || isAdding}
+            className={`
+              w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-wide uppercase transition-all duration-200 flex items-center justify-center gap-2
+              ${
+                !inStock
+                  ? "bg-white/[0.04] text-[#64748B] border border-white/5 cursor-not-allowed"
+                  : isAdding
+                  ? "bg-[#F5C518] text-[#0A0A0C] scale-95"
+                  : "bg-white/[0.06] hover:bg-[#F5C518] text-white hover:text-[#0A0A0C] border border-white/10 hover:border-[#F5C518] shadow-sm hover:shadow-goldGlow active:scale-95"
+              }
+            `}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
-            <span>{inStock ? "ADD TO CART" : "SOLD OUT"}</span>
+            <span>{!inStock ? "Sold Out" : isAdding ? "Added to Bag" : "Add to Bag"}</span>
           </button>
         </div>
       </div>

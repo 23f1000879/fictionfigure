@@ -5,15 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Package,
-  Heart,
   LogOut,
   Loader2,
   CheckCircle2,
   ShoppingBag,
-  MapPin,
   ArrowRight,
-  User,
-  Edit3,
 } from "lucide-react";
 import { formatDisplayPhone } from "@/lib/phone";
 import { formatPrice, formatDate } from "@/lib/utils";
@@ -92,7 +88,7 @@ export default function AccountPage() {
       <SearchModal />
       <CartDrawer />
       <main className="min-h-[75vh] bg-[#F7F7F5] py-8 sm:py-16 text-[#111111] overflow-x-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-10 sm:space-y-14 box-border">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-10 sm:space-y-12 box-border">
           
           {/* 1. WELCOME / IDENTITY SECTION */}
           <div className="space-y-6">
@@ -155,50 +151,50 @@ export default function AccountPage() {
             isAdmin={user.role === "ADMIN"}
           />
 
-          {/* 3. QUICK ACCESS SECTION */}
-          <div className="space-y-4">
+          {/* 3. QUICK ACCESS SECTION (Editorial Divided List) */}
+          <div className="space-y-3">
             <h2 className="text-xs font-bold uppercase tracking-widest text-[#111111]">
               QUICK ACCESS
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+            <div className="bg-white border border-[#E5E5E2] rounded-xl divide-y divide-[#E5E5E2] text-xs shadow-2xs">
               <Link
                 href="/account/orders"
-                className="bg-white border border-[#E5E5E2] hover:border-[#111111] p-5 rounded-xl transition-all shadow-2xs group flex flex-col justify-between min-h-[105px]"
+                className="p-4 sm:p-5 flex items-center justify-between group hover:bg-[#F7F7F5] transition-colors cursor-pointer min-h-[64px]"
               >
-                <div className="flex items-center justify-between text-[#111111]">
-                  <span className="font-semibold text-sm">Orders</span>
-                  <ArrowRight className="w-4 h-4 text-[#6B6B6B] group-hover:text-[#111111] group-hover:translate-x-1 transition-all" />
+                <div className="space-y-0.5">
+                  <span className="font-semibold text-sm text-[#111111] block">Orders</span>
+                  <span className="text-xs text-[#6B6B6B] block">
+                    {orderCount} {orderCount === 1 ? "order" : "orders"}
+                  </span>
                 </div>
-                <span className="text-xs text-[#6B6B6B] block">
-                  {orderCount} {orderCount === 1 ? "order" : "orders"}
-                </span>
+                <ArrowRight className="w-4 h-4 text-[#6B6B6B] group-hover:text-[#111111] group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
 
               <Link
                 href="/account/addresses"
-                className="bg-white border border-[#E5E5E2] hover:border-[#111111] p-5 rounded-xl transition-all shadow-2xs group flex flex-col justify-between min-h-[105px]"
+                className="p-4 sm:p-5 flex items-center justify-between group hover:bg-[#F7F7F5] transition-colors cursor-pointer min-h-[64px]"
               >
-                <div className="flex items-center justify-between text-[#111111]">
-                  <span className="font-semibold text-sm">Saved addresses</span>
-                  <ArrowRight className="w-4 h-4 text-[#6B6B6B] group-hover:text-[#111111] group-hover:translate-x-1 transition-all" />
+                <div className="space-y-0.5">
+                  <span className="font-semibold text-sm text-[#111111] block">Saved addresses</span>
+                  <span className="text-xs text-[#6B6B6B] block">
+                    {addressCount} saved {addressCount === 1 ? "address" : "addresses"}
+                  </span>
                 </div>
-                <span className="text-xs text-[#6B6B6B] block">
-                  {addressCount} saved {addressCount === 1 ? "address" : "addresses"}
-                </span>
+                <ArrowRight className="w-4 h-4 text-[#6B6B6B] group-hover:text-[#111111] group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
 
               <Link
                 href="/account/wishlist"
-                className="bg-white border border-[#E5E5E2] hover:border-[#111111] p-5 rounded-xl transition-all shadow-2xs group flex flex-col justify-between min-h-[105px]"
+                className="p-4 sm:p-5 flex items-center justify-between group hover:bg-[#F7F7F5] transition-colors cursor-pointer min-h-[64px]"
               >
-                <div className="flex items-center justify-between text-[#111111]">
-                  <span className="font-semibold text-sm">Wishlist</span>
-                  <ArrowRight className="w-4 h-4 text-[#6B6B6B] group-hover:text-[#111111] group-hover:translate-x-1 transition-all" />
+                <div className="space-y-0.5">
+                  <span className="font-semibold text-sm text-[#111111] block">Wishlist</span>
+                  <span className="text-xs text-[#6B6B6B] block">
+                    {wishlistCount} saved {wishlistCount === 1 ? "item" : "items"}
+                  </span>
                 </div>
-                <span className="text-xs text-[#6B6B6B] block">
-                  {wishlistCount} saved {wishlistCount === 1 ? "item" : "items"}
-                </span>
+                <ArrowRight className="w-4 h-4 text-[#6B6B6B] group-hover:text-[#111111] group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
             </div>
           </div>
@@ -231,8 +227,6 @@ export default function AccountPage() {
             ) : (
               <div className="bg-white border border-[#E5E5E2] rounded-xl divide-y divide-[#E5E5E2] text-xs shadow-2xs">
                 {recentOrders.map((o: any) => {
-                  const isCod = o.paymentMethod === "COD";
-                  const isPaid = o.paymentStatus === "PAID" || o.status === "DELIVERED";
                   const itemCount = o.items?.length || 1;
 
                   return (
@@ -287,21 +281,6 @@ export default function AccountPage() {
                 })}
               </div>
             )}
-          </div>
-
-          {/* 5. PROFILE QUICK ACTION FOOTER */}
-          <div className="pt-4 border-t border-[#E5E5E2] flex flex-col sm:flex-row items-center justify-between text-xs text-[#6B6B6B] gap-3">
-            <div className="flex items-center space-x-2">
-              <User className="w-4 h-4 text-[#6B6B6B]" />
-              <span>Need to update profile details or email?</span>
-            </div>
-            <Link
-              href="/account/profile"
-              className="font-semibold text-[#111111] hover:underline flex items-center space-x-1"
-            >
-              <Edit3 className="w-3.5 h-3.5 mr-1" />
-              <span>Edit Profile Details →</span>
-            </Link>
           </div>
 
         </div>

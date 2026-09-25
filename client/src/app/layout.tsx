@@ -31,8 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[#F7F7F5] text-[#111111] font-sans selection:bg-[#111111] selection:text-white">
+    <html lang="en" className={`${inter.variable} h-full antialiased dark`}>
+      <body className="min-h-full flex flex-col bg-[#0A0A0C] text-[#F8FAFC] font-sans selection:bg-[#F5C518] selection:text-[#0A0A0C]">
         <SettingsProvider>
           <CartProvider>
             <WishlistProvider>
