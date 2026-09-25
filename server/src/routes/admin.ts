@@ -137,12 +137,12 @@ router.get("/media", async (_req: any, res: any) => {
         id: true,
         url: true,
         altText: true,
-        createdAt: true,
+        // ProductImage has no timestamp of its own; the parent product's creation date is used.
         product: {
-          select: { id: true, name: true, slug: true },
+          select: { id: true, name: true, slug: true, createdAt: true },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { product: { createdAt: "desc" } },
     });
 
     const categories = await prisma.category.findMany({
@@ -161,7 +161,7 @@ router.get("/media", async (_req: any, res: any) => {
       if (!img.url) return;
       const existing = mediaMap.get(img.url) || {
         url: img.url,
-        createdAt: img.createdAt,
+        createdAt: img.product.createdAt,
         usage: [],
       };
       existing.usage.push({
