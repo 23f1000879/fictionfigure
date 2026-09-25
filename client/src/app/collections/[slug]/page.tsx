@@ -115,10 +115,10 @@ export default async function CollectionSlugPage({
       <SearchModal />
       <CartDrawer />
 
-      <main className="flex-1 bg-[#0A0A0C] text-[#F8FAFC] min-h-screen">
+      <main className="flex-1 bg-[#08090B] text-[#F7F7F5] pb-10 lg:pb-14">
         <CollectionListingView
-          title={cat?.name ? `${cat.name} COLLECTION` : slug.toUpperCase()}
-          eyebrow="CATEGORY COLLECTION"
+          title={cat?.name || slug.toUpperCase()}
+          eyebrow="Collection"
           description={
             cat?.description ||
             `Explore products in the ${cat?.name || slug} collection currently available in the FICTIONFIGURE catalog.`

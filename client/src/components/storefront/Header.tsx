@@ -4,17 +4,63 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { Search, User, Heart, ShoppingBag, Menu, X, ArrowRight, Sparkles } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Search, User, Heart, ShoppingBag, Menu, X, ArrowRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useSettings } from "@/context/SettingsContext";
+
+// Naked 36px icon control used across the header (reference: small, borderless, refined).
+const iconBtn =
+  "relative w-9 h-9 min-w-[36px] rounded-full flex items-center justify-center text-[#F7F7F5]/85 hover:text-white hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]";
+
+function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#F5C518] text-[#08090B] text-[9px] font-extrabold flex items-center justify-center ring-2 ring-[#08090B]">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+function HeaderNavLinks({ pathname }: { pathname: string }) {
+  const searchParams = useSearchParams();
+  const { headerNavigation } = useSettings();
+  const currentQuery = searchParams?.toString() || "";
+
+  return (
+    <nav className="hidden lg:flex items-center gap-8 xl:gap-10 text-[12px] font-semibold uppercase tracking-[0.1em]">
+      {headerNavigation.map((link) => {
+        const [linkPath, linkQuery = ""] = link.href.split("?");
+        const isActive = linkQuery
+          ? pathname === linkPath && currentQuery.includes(linkQuery)
+          : pathname === linkPath && !(linkPath === "/shop" && currentQuery.includes("sortBy=newest"));
+        return (
+          <Link
+            key={link.id}
+            href={link.href}
+            className={`relative py-1 transition-colors focus-visible:outline-none focus-visible:text-[#F5C518] ${
+              isActive ? "text-white" : "text-[#F7F7F5]/75 hover:text-white"
+            }`}
+          >
+            {link.label}
+            <span
+              className={`absolute -bottom-[3px] left-0 h-[2px] rounded-full bg-[#F5C518] transition-all duration-200 ${
+                isActive ? "w-full" : "w-0"
+              }`}
+            />
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 export function Header() {
   const pathname = usePathname();
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
   const { wishlistCount } = useWishlist();
-  const { announcements, freeShippingThreshold } = useSettings();
+  const { announcements, freeShippingThreshold, headerNavigation } = useSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -24,27 +70,20 @@ export function Header() {
 
   useEffect(() => {
     setMounted(true);
-    // Check if token exists in localStorage
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("fictionfigure_token");
       setIsLoggedIn(Boolean(token));
     }
   }, []);
 
-  // Scroll listener for dynamic header elevation
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 8);
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Announcement auto-rotation interval with subtle fade transition
+  // Announcement auto-rotation with a subtle fade
   useEffect(() => {
     if (announcements.length <= 1) return;
     const interval = setInterval(() => {
@@ -57,6 +96,20 @@ export function Header() {
     return () => clearInterval(interval);
   }, [announcements.length]);
 
+  // "/" opens search from anywhere outside a text field
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [setIsSearchOpen]);
+
   const rawAnnouncement = announcements[currentAnnouncementIdx]?.text || "";
   const activeAnnouncement = rawAnnouncement.replace(
     /\{\{FREE_SHIPPING_THRESHOLD\}\}/g,
@@ -64,200 +117,152 @@ export function Header() {
   );
   const showTopBar = announcements.length > 0 && activeAnnouncement.trim().length > 0;
 
-  // Body scroll lock & ESC key listener for mobile menu
+  // Body scroll lock & ESC listener for the mobile drawer
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMobileMenuOpen(false);
-      }
+      if (e.key === "Escape") setMobileMenuOpen(false);
     };
-
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleKeyDown);
     } else {
       document.body.style.overflow = "";
     }
-
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [mobileMenuOpen]);
 
-  // Close mobile drawer upon route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  const navLinks = [
-    { href: "/shop", label: "Shop" },
-    { href: "/collections", label: "Collections" },
-    { href: "/shop?sortBy=newest", label: "New Arrivals" },
-    { href: "/about", label: "About" },
-  ];
-
   return (
     <header
-      className={`sticky top-0 z-40 w-full max-w-full box-border transition-all duration-300 ${
+      className={`sticky top-0 z-40 w-full max-w-full transition-colors duration-300 border-b ${
         scrolled
-          ? "bg-[#0A0A0C]/90 backdrop-blur-xl border-b border-white/[0.12] shadow-lg shadow-black/50"
-          : "bg-[#0A0A0C]/75 backdrop-blur-md border-b border-white/[0.06]"
+          ? "bg-[#08090B]/92 backdrop-blur-xl border-white/[0.08]"
+          : "bg-[#08090B]/70 backdrop-blur-md border-white/[0.05]"
       }`}
     >
-      {/* Top Banner Announcement Strip */}
+      {/* Thin CMS announcement strip */}
       {showTopBar && (
-        <div className="bg-[#060708] text-white text-[10px] sm:text-[11px] font-semibold tracking-[0.18em] text-center py-2 uppercase px-3 sm:px-4 w-full overflow-hidden whitespace-nowrap border-b border-white/[0.06]">
-          <div className="editorial-container flex items-center justify-center space-x-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#F5C518] shrink-0 shadow-[0_0_8px_rgba(245,197,24,0.6)]" />
+        <div className="h-7 bg-[#060708] border-b border-white/[0.05] flex items-center">
+          <div className="ff-container flex items-center justify-center gap-2 overflow-hidden">
+            <span className="w-1 h-1 rounded-full bg-[#F5C518] shrink-0" />
             <p
-              className={`truncate font-mono transition-opacity duration-300 ease-in-out motion-reduce:transition-none text-white/90 ${
+              className={`truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-[#F7F7F5]/80 transition-opacity duration-300 motion-reduce:transition-none ${
                 isFading ? "opacity-0" : "opacity-100"
               }`}
             >
               {activeAnnouncement}
             </p>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#F5C518] shrink-0 hidden sm:inline-block shadow-[0_0_8px_rgba(245,197,24,0.6)]" />
+            <span className="w-1 h-1 rounded-full bg-[#F5C518] shrink-0" />
           </div>
         </div>
       )}
 
-      {/* Main Navbar Container (64–76px Height) */}
-      <div className="editorial-container flex items-center justify-between h-16 sm:h-20">
-        {/* Left: Mobile Menu Toggle & FICTIONFIGURE Brand Logo */}
-        <div className="flex items-center space-x-3 sm:space-x-6 shrink-0 min-w-0">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white/[0.04] border border-white/10 text-white/90 hover:text-white hover:border-white/25 active:scale-95 flex items-center justify-center shrink-0 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+      {/* Main bar — 64px */}
+      <div className="ff-container h-header flex items-center justify-between gap-4">
+        {/* Logo */}
+        <Link
+          href="/"
+          className="flex items-center shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
+          aria-label="FictionFigure home"
+        >
+          <Image
+            src="/fictionfigure-logo-dark.svg"
+            alt="FictionFigure"
+            width={200}
+            height={44}
+            priority
+            className="h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[160px] object-contain"
+          />
+        </Link>
 
-          {/* FICTIONFIGURE Brand Logo */}
-          <Link href="/" className="flex items-center group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518] rounded-lg">
-            <Image
-              src="/fictionfigure-logo.svg"
-              alt="FictionFigure"
-              width={200}
-              height={44}
-              priority
-              className="h-8 sm:h-9 w-auto object-contain max-w-[125px] sm:max-w-[190px] group-hover:brightness-110 transition-all"
-            />
-          </Link>
-        </div>
+        {/* Centre navigation */}
+        <React.Suspense fallback={<nav className="hidden lg:flex" />}>
+          <HeaderNavLinks pathname={pathname || "/"} />
+        </React.Suspense>
 
-        {/* Center: Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center space-x-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#94A3B8]">
-          {navLinks.map((link) => {
-            const isActive =
-              link.href === "/shop"
-                ? pathname === "/shop" && !link.href.includes("?")
-                : pathname === link.href || (link.href.includes("?") && pathname === "/shop");
-            return (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={`py-1 relative group transition-colors duration-200 focus-visible:outline-none focus-visible:text-[#F5C518] ${
-                  isActive ? "text-white font-bold" : "hover:text-white"
-                }`}
-              >
-                <span>{link.label}</span>
-                {/* Active/Hover Gold Accent Underline */}
-                <span
-                  className={`absolute -bottom-1 left-0 h-[2px] bg-gradient-to-r from-[#F5C518] to-[#D4AF37] rounded-full transition-all duration-200 ${
-                    isActive ? "w-full shadow-[0_0_8px_rgba(245,197,24,0.5)]" : "w-0 group-hover:w-full"
-                  }`}
-                />
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right: Search, Account, Wishlist, Cart */}
-        <div className="flex items-center space-x-2 sm:space-x-3 text-white shrink-0">
-          {/* Compact Search Trigger */}
+        {/* Right cluster */}
+        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+          {/* Search pill (desktop) */}
           <button
             type="button"
             onClick={() => setIsSearchOpen(true)}
-            className="h-11 min-h-[44px] px-3 sm:px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-[#94A3B8] hover:text-white transition-all flex items-center gap-2 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
-            aria-label="Search collectibles catalog"
+            className="hidden md:flex items-center gap-2.5 h-9 w-[210px] xl:w-[250px] mr-2 px-3.5 rounded-full bg-white/[0.04] border border-white/[0.1] text-left text-[#9A9DA5] hover:border-white/20 hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
+            aria-label="Search figures, anime and series"
           >
-            <Search className="w-4 h-4 text-[#94A3B8] group-hover:text-[#F5C518] group-hover:scale-105 transition-all" />
-            <span className="hidden sm:inline text-xs font-mono uppercase tracking-wider text-[#64748B] group-hover:text-[#94A3B8]">
-              Search
-            </span>
-            <kbd className="hidden md:inline-flex items-center text-[10px] font-mono font-medium text-[#64748B] bg-white/[0.06] border border-white/10 rounded px-1.5 py-0.5 ml-1">
-              /
-            </kbd>
+            <Search className="w-3.5 h-3.5 shrink-0" />
+            <span className="flex-1 truncate text-[12px]">Search figures, anime, series…</span>
+            <kbd className="hidden xl:inline text-[10px] font-mono text-[#6E717A] border border-white/10 rounded px-1">/</kbd>
           </button>
 
-          {/* Account Icon Button */}
+          {/* Search icon (mobile) */}
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className={`${iconBtn} md:hidden`}
+            aria-label="Search"
+          >
+            <Search className="w-[18px] h-[18px]" />
+          </button>
+
           <Link
             href={isLoggedIn ? "/account" : "/login"}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-white/90 hover:text-[#F5C518] active:scale-95 hidden sm:flex items-center justify-center transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
-            aria-label={isLoggedIn ? "Customer Account" : "Sign In"}
+            className={`${iconBtn} hidden sm:flex`}
+            aria-label={isLoggedIn ? "Account" : "Sign in"}
           >
-            <User className="w-4 h-4" />
+            <User className="w-[18px] h-[18px]" />
             {isLoggedIn && (
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#10B981] ring-2 ring-[#0A0A0C]" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#10B981]" />
             )}
           </Link>
 
-          {/* Wishlist Icon Button with count badge */}
-          <Link
-            href="/account/wishlist"
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-white/90 hover:text-[#F5C518] active:scale-95 flex items-center justify-center transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
-            aria-label="Saved to Wishlist"
-          >
-            <Heart className="w-4 h-4" />
-            {wishlistCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-[#F5C518] to-[#D4AF37] text-[#0A0A0C] text-[10px] font-bold rounded-full flex items-center justify-center font-mono border border-[#0A0A0C] shadow-sm">
-                {wishlistCount}
-              </span>
-            )}
+          <Link href="/account/wishlist" className={iconBtn} aria-label="Wishlist">
+            <Heart className="w-[18px] h-[18px]" />
+            <CountBadge count={wishlistCount} />
           </Link>
 
-          {/* Cart Icon Button with count badge */}
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-white/90 hover:text-[#F5C518] active:scale-95 flex items-center justify-center transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
-            aria-label="Shopping Cart Drawer"
+            className={iconBtn}
+            aria-label="Open cart"
           >
-            <ShoppingBag className="w-4 h-4" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#F5C518] text-[#0A0A0C] text-[10px] font-bold rounded-full flex items-center justify-center font-mono border border-[#0A0A0C] shadow-sm">
-                {cartCount}
-              </span>
-            )}
+            <ShoppingBag className="w-[18px] h-[18px]" />
+            <CountBadge count={cartCount} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className={`${iconBtn} lg:hidden ml-0.5`}
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer & Portal */}
-      {mounted && mobileMenuOpen && createPortal(
-        <>
-          {/* Dark Overlay Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998] lg:hidden transition-opacity duration-300 animate-in fade-in"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-hidden="true"
-          />
-
-          {/* Slide-in Mobile Drawer */}
-          <div className="fixed top-0 left-0 bottom-0 w-[85%] max-w-sm z-[9999] bg-[#0E0F14] border-r border-white/10 px-6 py-6 lg:hidden shadow-2xl shadow-black overflow-y-auto flex flex-col justify-between animate-in slide-in-from-left duration-300">
-            {/* Drawer Header */}
-            <div>
-              <div className="flex items-center justify-between pb-6 border-b border-white/10">
-                <Link
-                  href="/"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center"
-                >
+      {/* Mobile drawer */}
+      {mounted &&
+        mobileMenuOpen &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[9998] lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="fixed top-0 right-0 bottom-0 w-[86%] max-w-[340px] z-[9999] bg-[#0C0D10] border-l border-white/[0.08] lg:hidden overflow-y-auto flex flex-col">
+              <div className="h-header px-5 flex items-center justify-between border-b border-white/[0.08]">
+                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
                   <Image
-                    src="/fictionfigure-logo.svg"
+                    src="/fictionfigure-logo-dark.svg"
                     alt="FictionFigure"
                     width={160}
                     height={36}
@@ -267,130 +272,62 @@ export function Header() {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-white/[0.05] border border-white/10 text-white/80 hover:text-white flex items-center justify-center cursor-pointer"
+                  className={iconBtn}
                   aria-label="Close navigation menu"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Primary Navigation Section with Numbered Tags */}
-              <div className="py-6 space-y-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#64748B] block mb-3 font-bold">
-                  NAVIGATE
-                </span>
-                <Link
-                  href="/shop"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-3.5 px-3 rounded-xl hover:bg-white/[0.04] text-white hover:text-[#F5C518] transition-all flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-[#64748B] group-hover:text-[#F5C518]">01</span>
-                    <span className="text-sm font-bold uppercase tracking-wider">Shop All Figures</span>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-[#64748B] group-hover:text-[#F5C518] group-hover:translate-x-1 transition-all" />
-                </Link>
+              <nav className="px-3 py-4 border-b border-white/[0.08]">
+                {headerNavigation.map((link) => (
+                  <Link
+                    key={link.id}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between h-12 px-3 rounded-md text-[13px] font-bold uppercase tracking-[0.1em] text-[#F7F7F5] hover:bg-white/[0.04] hover:text-[#F5C518] transition-colors"
+                  >
+                    <span>{link.label}</span>
+                    <ArrowRight className="w-4 h-4 text-[#6E717A]" />
+                  </Link>
+                ))}
+              </nav>
 
+              <div className="px-3 py-4 space-y-0.5">
                 <Link
-                  href="/collections"
+                  href={isLoggedIn ? "/account" : "/login"}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="py-3.5 px-3 rounded-xl hover:bg-white/[0.04] text-white hover:text-[#F5C518] transition-all flex items-center justify-between group"
+                  className="flex items-center gap-3 h-11 px-3 rounded-md text-[13px] text-[#F7F7F5]/90 hover:bg-white/[0.04]"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-[#64748B] group-hover:text-[#F5C518]">02</span>
-                    <span className="text-sm font-bold uppercase tracking-wider">Collections</span>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-[#64748B] group-hover:text-[#F5C518] group-hover:translate-x-1 transition-all" />
+                  <User className="w-4 h-4 text-[#9A9DA5]" />
+                  <span>{isLoggedIn ? "My Account" : "Sign In"}</span>
                 </Link>
-
-                <Link
-                  href="/shop?sortBy=newest"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-3.5 px-3 rounded-xl hover:bg-white/[0.04] text-white hover:text-[#F5C518] transition-all flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-[#64748B] group-hover:text-[#F5C518]">03</span>
-                    <span className="text-sm font-bold uppercase tracking-wider">New Arrivals</span>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-[#64748B] group-hover:text-[#F5C518] group-hover:translate-x-1 transition-all" />
-                </Link>
-
-                <Link
-                  href="/about"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-3.5 px-3 rounded-xl hover:bg-white/[0.04] text-white hover:text-[#F5C518] transition-all flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-[#64748B] group-hover:text-[#F5C518]">04</span>
-                    <span className="text-sm font-bold uppercase tracking-wider">About FictionFigure</span>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-[#64748B] group-hover:text-[#F5C518] group-hover:translate-x-1 transition-all" />
-                </Link>
-              </div>
-
-              {/* Secondary Navigation Section */}
-              <div className="pt-4 border-t border-white/10 space-y-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#64748B] block mb-3 font-bold">
-                  COLLECTOR SANCTUARY
-                </span>
-                <Link
-                  href="/account"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-3 px-3 rounded-xl hover:bg-white/[0.04] text-white/90 hover:text-white transition-all flex items-center justify-between text-xs uppercase font-semibold tracking-wider"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <User className="w-4 h-4 text-[#94A3B8]" />
-                    <span>Customer Account</span>
-                  </div>
-                  {isLoggedIn && <span className="w-2 h-2 rounded-full bg-[#10B981]" />}
-                </Link>
-
                 <Link
                   href="/account/wishlist"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="py-3 px-3 rounded-xl hover:bg-white/[0.04] text-white/90 hover:text-white transition-all flex items-center justify-between text-xs uppercase font-semibold tracking-wider"
+                  className="flex items-center gap-3 h-11 px-3 rounded-md text-[13px] text-[#F7F7F5]/90 hover:bg-white/[0.04]"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Heart className="w-4 h-4 text-[#94A3B8]" />
-                    <span>Saved Wishlist</span>
-                  </div>
-                  {wishlistCount > 0 && (
-                    <span className="text-[10px] font-mono bg-[#F5C518]/15 text-[#F5C518] px-2 py-0.5 rounded-md font-bold">
-                      {wishlistCount} items
-                    </span>
-                  )}
+                  <Heart className="w-4 h-4 text-[#9A9DA5]" />
+                  <span className="flex-1">Wishlist</span>
+                  {wishlistCount > 0 && <span className="text-[11px] text-[#F5C518] font-bold">{wishlistCount}</span>}
                 </Link>
-
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     setIsCartOpen(true);
                   }}
-                  className="w-full py-3 px-3 rounded-xl hover:bg-white/[0.04] text-white/90 hover:text-white transition-all flex items-center justify-between text-xs uppercase font-semibold tracking-wider text-left cursor-pointer"
+                  className="w-full flex items-center gap-3 h-11 px-3 rounded-md text-[13px] text-[#F7F7F5]/90 hover:bg-white/[0.04] text-left"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <ShoppingBag className="w-4 h-4 text-[#94A3B8]" />
-                    <span>Shopping Cart</span>
-                  </div>
-                  {cartCount > 0 && (
-                    <span className="text-[10px] font-mono bg-white/[0.08] text-white px-2 py-0.5 rounded-md font-bold">
-                      {cartCount} items
-                    </span>
-                  )}
+                  <ShoppingBag className="w-4 h-4 text-[#9A9DA5]" />
+                  <span className="flex-1">Cart</span>
+                  {cartCount > 0 && <span className="text-[11px] text-[#F5C518] font-bold">{cartCount}</span>}
                 </button>
               </div>
             </div>
-
-            {/* Drawer Footer */}
-            <div className="pt-6 border-t border-white/10 text-[10px] uppercase font-mono tracking-widest text-[#64748B] text-center flex items-center justify-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#F5C518]" />
-              <span>FICTIONFIGURE — AUTHENTIC COLLECTIBLES</span>
-            </div>
-          </div>
-        </>,
-        document.body
-      )}
+          </>,
+          document.body
+        )}
     </header>
   );
 }

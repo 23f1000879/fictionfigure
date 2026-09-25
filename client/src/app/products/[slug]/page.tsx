@@ -3,13 +3,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
+import { SectionHeading } from "@/components/home/SectionHeading";
 import { ProductCard } from "@/components/product/ProductCard";
 import { ProductDetailClient } from "@/components/product/ProductDetailClient";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { getProductBySlug } from "@/lib/services/productService";
-import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
 
 export const revalidate = 0;
 
@@ -173,36 +172,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <SearchModal />
       <CartDrawer />
 
-      <main className="bg-[#0A0A0C] text-[#F8FAFC] min-h-screen py-8 sm:py-12">
-        <div className="editorial-container space-y-16">
+      <main className="bg-[#08090B] text-[#F7F7F5] pt-5 pb-16 lg:pt-6 lg:pb-20">
+        <div className="ff-container space-y-14 lg:space-y-16">
           <ProductDetailClient product={product} />
 
-          {/* Related Products Section */}
           {relatedProducts && relatedProducts.length > 0 && (
-            <section className="space-y-6 pt-12 border-t border-white/10" aria-label="Related Figures">
-              <div className="flex justify-between items-end border-b border-white/10 pb-4">
-                <div>
-                  <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#F5C518] mb-1">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>SAME UNIVERSE COLLECTION</span>
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-bold uppercase tracking-tight text-white">
-                    YOU MAY ALSO LIKE
-                  </h3>
-                </div>
-
-                {product.category?.slug && (
-                  <Link
-                    href={`/shop?category=${product.category.slug}`}
-                    className="text-xs font-mono font-bold uppercase tracking-wider text-[#94A3B8] hover:text-[#F5C518] transition-colors flex items-center group"
-                  >
-                    <span>View all in {product.category.name}</span>
-                    <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            <section className="space-y-4 lg:space-y-5" aria-label="Related figures">
+              <SectionHeading
+                eyebrow="Same Universe"
+                title="You May Also Like"
+                linkText={product.category?.slug ? `View all ${product.category.name}` : undefined}
+                linkUrl={product.category?.slug ? `/collections/${product.category.slug}` : undefined}
+              />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
                 {relatedProducts.map((relProduct: any) => (
                   <ProductCard key={relProduct.id} product={relProduct} />
                 ))}

@@ -1,148 +1,68 @@
-"use client";
+import React from "react";
+import { SectionHeading } from "@/components/home/SectionHeading";
+import { CategoryTile, ViewAllTile, CategoryTileData } from "@/components/collection/CategoryTile";
 
-import React, { useRef } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, ChevronLeft, ChevronRight, FolderTree, Sparkles } from "lucide-react";
-
-export interface CategoryItem {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  imageUrl?: string | null;
-  image?: string | null;
-  _count?: {
-    products?: number;
-  };
-}
+export type CategoryItem = CategoryTileData & { description?: string | null };
 
 interface CategoryShowcaseProps {
   categories: CategoryItem[];
   eyebrow?: string;
   title?: string;
+  description?: string;
   viewAllText?: string;
   viewAllUrl?: string;
+  /** full = six-up poster row; compact = sits beside another editorial block */
+  layout?: "full" | "compact";
 }
 
 export function CategoryShowcase({
   categories,
-  eyebrow = "COLLECT YOUR UNIVERSE",
-  title = "SHOP BY ANIME SERIES & SCALE",
-  viewAllText = "VIEW ALL COLLECTIONS",
+  eyebrow = "CURATED UNIVERSE",
+  title = "SHOP BY CATEGORY",
+  description,
+  viewAllText = "View All",
   viewAllUrl = "/collections",
+  layout = "full",
 }: CategoryShowcaseProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   if (!categories || categories.length === 0) return null;
 
-  const scroll = (direction: "left" | "right") => {
-    if (!scrollRef.current) return;
-    const distance = 460;
-    scrollRef.current.scrollBy({
-      left: direction === "right" ? distance : -distance,
-      behavior: "smooth",
-    });
-  };
+  const isCompact = layout === "compact";
+  const shown = categories.slice(0, isCompact ? 6 : 12);
+  const cols = isCompact ? Math.min(shown.length + 1, 3) : 6;
+  const needsFiller = shown.length % cols !== 0;
+
+  const gridCols = isCompact
+    ? cols === 2
+      ? "grid-cols-2"
+      : "grid-cols-2 sm:grid-cols-3"
+    : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6";
 
   return (
-    <section className="editorial-container space-y-6" aria-label="Shop By Category and Series">
-      {/* Editorial Section Header */}
-      <div className="flex items-end justify-between border-b border-white/10 pb-4">
-        <div>
-          <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#F5C518] mb-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{eyebrow}</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight uppercase">
-            {title}
-          </h2>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          {/* Scroll Chevrons for Desktop Carousel */}
-          <div className="hidden sm:flex items-center space-x-2">
-            <button
-              onClick={() => scroll("left")}
-              type="button"
-              aria-label="Previous categories"
-              className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center bg-white/[0.04] border border-white/10 hover:border-white/25 hover:bg-white/[0.08] text-white transition-all rounded-xl cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => scroll("right")}
-              type="button"
-              aria-label="Next categories"
-              className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center bg-white/[0.04] border border-white/10 hover:border-white/25 hover:bg-white/[0.08] text-white transition-all rounded-xl cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <Link
+    <section aria-label={title} className="h-full flex flex-col gap-4 lg:gap-5">
+      <SectionHeading
+        eyebrow={eyebrow}
+        title={title}
+        description={description}
+        linkText={viewAllText}
+        linkUrl={viewAllUrl}
+      />
+      <div className={`grid ${gridCols} gap-3 lg:gap-4 flex-1`}>
+        {shown.map((cat, i) => (
+          <CategoryTile
+            key={cat.id}
+            category={cat}
+            priority={i < 3}
+            aspect={isCompact && shown.length < 3 ? "h-full min-h-[260px]" : "aspect-[4/5]"}
+          />
+        ))}
+        {needsFiller && (
+          <ViewAllTile
             href={viewAllUrl}
-            className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] hover:text-[#F5C518] transition-colors flex items-center group font-mono"
-          >
-            <span>{viewAllText}</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Horizontal Merchandising Category Strip */}
-      <div
-        ref={scrollRef}
-        className="flex flex-nowrap gap-4 sm:gap-5 overflow-x-auto scrollbar-none no-scrollbar [&::-webkit-scrollbar]:hidden py-2 select-none"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {categories.map((cat) => {
-          const imageSrc = cat.imageUrl || cat.image;
-          const productCount = cat._count?.products;
-
-          return (
-            <Link
-              key={cat.id}
-              href={`/shop?category=${cat.slug}`}
-              className="group flex-none w-[170px] sm:w-[210px] lg:w-[240px] block transition-all duration-300"
-            >
-              {/* Image-First Poster Display */}
-              <div className="relative aspect-[3/4] bg-[#121318] border border-white/[0.08] group-hover:border-[#F5C518]/40 group-hover:shadow-cardHover rounded-2xl p-3.5 overflow-hidden transition-all duration-300 flex flex-col justify-between">
-                {/* Artwork Area */}
-                <div className="relative w-full h-[75%] rounded-xl overflow-hidden bg-[#0E0F13] flex items-center justify-center p-2">
-                  {imageSrc ? (
-                    <Image
-                      src={imageSrc}
-                      alt={cat.name}
-                      fill
-                      sizes="(max-width: 640px) 170px, (max-width: 1024px) 210px, 240px"
-                      className="object-contain object-center group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[#64748B]">
-                      <FolderTree className="w-10 h-10 text-white/20" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Typography Label inside Card */}
-                <div className="pt-2 px-1">
-                  <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#F5C518] transition-colors uppercase tracking-wider truncate">
-                    {cat.name}
-                  </h3>
-                  <div className="flex items-center justify-between text-[10px] font-mono text-[#64748B] mt-0.5">
-                    <span>
-                      {productCount !== undefined ? `${productCount} Products` : "Universe Collection"}
-                    </span>
-                    <div className="w-6 h-6 rounded-full bg-white/[0.04] group-hover:bg-[#F5C518] group-hover:text-[#0A0A0C] flex items-center justify-center text-[#94A3B8] transition-all">
-                      <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
+            eyebrow="Explore"
+            title="All Collections"
+            aspect={isCompact && shown.length < 3 ? "min-h-[260px]" : "aspect-[4/5]"}
+          />
+        )}
       </div>
     </section>
   );

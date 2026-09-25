@@ -40,55 +40,26 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="relative bg-[#060708] border-t border-white/[0.08] mt-24 text-white overflow-hidden">
-      {/* Ambient subtle gold radial glow behind brand section */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-gradient-to-b from-[#F5C518]/[0.03] to-transparent rounded-full blur-3xl pointer-events-none" />
-
-      <div className="editorial-container relative z-10 py-16 sm:py-20 space-y-16">
-        {/* Value Proposition Cards Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
-          <div className="p-5 rounded-2xl bg-[#121318]/70 border border-white/[0.08] backdrop-blur-sm flex items-start gap-4 hover:border-white/15 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F5C518]/10 border border-[#F5C518]/25 flex items-center justify-center text-[#F5C518] shrink-0">
-              <Award className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-                100% Authentic Figures
-              </h4>
-              <p className="text-xs text-[#94A3B8] leading-relaxed">
-                Directly sourced from licensed Japanese manufacturers and official distributors.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-[#121318]/70 border border-white/[0.08] backdrop-blur-sm flex items-start gap-4 hover:border-white/15 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F5C518]/10 border border-[#F5C518]/25 flex items-center justify-center text-[#F5C518] shrink-0">
-              <Box className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-                Collector Safe Packaging
-              </h4>
-              <p className="text-xs text-[#94A3B8] leading-relaxed">
-                Multi-layer bubble wrap & reinforced outer boxes to guarantee mint box condition.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-[#121318]/70 border border-white/[0.08] backdrop-blur-sm flex items-start gap-4 hover:border-white/15 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F5C518]/10 border border-[#F5C518]/25 flex items-center justify-center text-[#F5C518] shrink-0">
-              <Truck className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-                Pan-India Express Delivery
-              </h4>
-              <p className="text-xs text-[#94A3B8] leading-relaxed">
-                Fast, insured delivery across India with end-to-end real-time tracking.
-              </p>
-            </div>
-          </div>
-        </div>
+    <footer className="relative bg-[#060708] border-t border-white/[0.08] text-white overflow-hidden">
+      <div className="ff-container relative z-10 py-10 lg:py-12 space-y-10">
+        {/* Compact value row */}
+        <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pb-8 border-b border-white/[0.08]">
+          {[
+            { icon: Award, title: "100% Authentic Figures", text: "Sourced from licensed manufacturers and official distributors." },
+            { icon: Box, title: "Collector-Safe Packaging", text: "Bubble wrap and reinforced outer boxes for mint delivery." },
+            { icon: Truck, title: "Pan-India Delivery", text: "Insured shipping with end-to-end tracking." },
+          ].map(({ icon: Icon, title, text }) => (
+            <li key={title} className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-full border border-white/[0.12] flex items-center justify-center shrink-0">
+                <Icon className="w-4 h-4 text-[#F5C518]" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold text-[#F7F7F5]">{title}</p>
+                <p className="text-[11px] text-[#9A9DA5] leading-snug">{text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
 
         {/* Main 4-Column Footer Navigation Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 text-xs">
@@ -96,7 +67,7 @@ export function Footer() {
           <div className="space-y-5">
             <Link href="/" className="inline-block">
               <Image
-                src="/fictionfigure-logo.svg"
+                src="/fictionfigure-logo-dark.svg"
                 alt="FictionFigure"
                 width={180}
                 height={40}
@@ -297,7 +268,7 @@ export function Footer() {
           <div>© {new Date().getFullYear()} FictionFigure. All rights reserved.</div>
 
           <div className="font-mono text-[11px] uppercase tracking-wider text-[#64748B]">
-            Based in Bikaner, delivering across India.
+            {deliveryCoverage || "Delivering across India"}
           </div>
 
           <div className="flex items-center space-x-2 text-[10px] font-mono uppercase tracking-wider text-[#94A3B8]">

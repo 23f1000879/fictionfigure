@@ -9,7 +9,7 @@ import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { ProductCard } from "@/components/product/ProductCard";
-import { AccountTabNav } from "@/components/account/AccountTabNav";
+import { AccountShell } from "@/components/account/AccountShell";
 import { useWishlist } from "@/context/WishlistContext";
 
 export default function AccountWishlistPage() {
@@ -36,9 +36,9 @@ export default function AccountWishlistPage() {
         <Header />
         <SearchModal />
         <CartDrawer />
-        <main className="editorial-container py-16 text-[#111111] min-h-[60vh] flex items-center justify-center">
-          <div className="text-center text-xs text-[#6B6B6B] space-y-2">
-            <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#111111]" />
+        <main className="editorial-container py-16 text-[#F7F7F5] min-h-[60vh] flex items-center justify-center">
+          <div className="text-center text-xs text-[#9A9DA5] space-y-2">
+            <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#F7F7F5]" />
             <span>Accessing Collector Vault...</span>
           </div>
         </main>
@@ -53,39 +53,38 @@ export default function AccountWishlistPage() {
       <SearchModal />
       <CartDrawer />
 
-      <main className="editorial-container py-10 sm:py-16 space-y-8 text-[#111111] min-h-[70vh]">
+      <AccountShell>
         {/* Page Header */}
-        <div className="flex items-center space-x-3 border-b border-[#E5E5E2] pb-6">
+        <div className="flex items-center space-x-3 border-b border-white/[0.08] pb-6">
           <Link
             href="/account"
-            className="p-2 border border-[#E5E5E2] hover:border-[#111111] transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 border border-white/[0.08] hover:border-white/30 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
-            <ArrowLeft className="w-4 h-4 text-[#111111]" />
+            <ArrowLeft className="w-4 h-4 text-[#F7F7F5]" />
           </Link>
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-[#6B6B6B] block">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-[#9A9DA5] block">
               Collector Vault
             </span>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#111111]">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#F7F7F5]">
               Saved Wishlist ({wishlistCount})
             </h1>
           </div>
         </div>
 
         {/* Account Tab Navigation */}
-        <AccountTabNav activeTab="wishlist" wishlistCount={wishlistCount} />
 
         {/* Wishlist Grid / Empty State */}
         {wishlistProducts.length === 0 ? (
-          <div className="p-8 sm:p-12 text-center bg-white border border-[#E5E5E2] space-y-4 text-xs">
-            <Heart className="w-8 h-8 text-[#6B6B6B] mx-auto opacity-40" />
+          <div className="p-8 sm:p-12 text-center bg-[#111318] border border-white/[0.08] space-y-4 text-xs">
+            <Heart className="w-8 h-8 text-[#9A9DA5] mx-auto opacity-40" />
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-[#111111]">Your saved wishlist is empty right now.</h3>
-              <p className="text-[#6B6B6B]">Explore our catalog to add scale figures and statues to your sanctuary.</p>
+              <h3 className="text-sm font-semibold text-[#F7F7F5]">Your saved wishlist is empty right now.</h3>
+              <p className="text-[#9A9DA5]">Explore our catalog to add scale figures and statues to your sanctuary.</p>
             </div>
             <Link
               href="/shop"
-              className="inline-flex items-center justify-center px-6 py-3 bg-[#111111] text-white text-xs font-semibold uppercase tracking-widest hover:bg-black transition-colors"
+              className="inline-flex items-center justify-center px-6 py-3 bg-[#F5C518] text-[#08090B] text-xs font-semibold uppercase tracking-widest hover:bg-[#FFD43B] transition-colors"
             >
               <ShoppingBag className="w-3.5 h-3.5 mr-2" /> Explore Catalog
             </Link>
@@ -97,7 +96,7 @@ export default function AccountWishlistPage() {
             ))}
           </div>
         )}
-      </main>
+      </AccountShell>
 
       <Footer />
     </>

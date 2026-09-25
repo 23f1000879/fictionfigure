@@ -1,66 +1,79 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { ArtworkFrame } from "@/components/ui/Artwork";
 
 interface PromoBannerProps {
-  categoryName?: string;
-  categorySlug?: string;
-  imageUrl?: string;
+  eyebrow?: string;
+  headline: string;
   description?: string;
+  ctaText?: string;
+  ctaUrl: string;
+  imageUrl?: string;
+  /** 0–100 from the CMS; strength of the readability gradient over the artwork. */
+  overlayStrength?: number;
+  textAlign?: "left" | "center" | "right";
 }
 
+/** Artwork banner: campaign art + gradient + eyebrow / headline / copy / CTA (reference: "Fresh Drops for Collectors"). */
 export function PromoBanner({
-  categoryName = "POSTERS & APPAREL",
-  categorySlug = "posters",
+  eyebrow = "NEW ARRIVALS",
+  headline,
+  description,
+  ctaText = "SHOP NOW",
+  ctaUrl,
   imageUrl,
-  description = "Explore high-definition posters, keychains, and graphic merchandise.",
+  overlayStrength = 60,
+  textAlign = "left",
 }: PromoBannerProps) {
+  const strength = Math.min(Math.max(overlayStrength, 0), 100) / 100;
+  const alignment =
+    textAlign === "center"
+      ? "items-center text-center mx-auto"
+      : textAlign === "right"
+      ? "items-end text-right ml-auto"
+      : "items-start text-left";
+  const artAlign = textAlign === "right" ? "left" : "right";
+
   return (
-    <section className="editorial-container" aria-label="Merchandising Promo Banner">
-      <div className="relative bg-[#121318] border border-white/10 rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl shadow-black/60 overflow-hidden group">
-        {/* Subtle background gradient highlight */}
-        <div className="absolute top-0 right-1/3 w-64 h-64 bg-[#F5C518]/[0.04] rounded-full blur-2xl pointer-events-none" />
+    <section
+      aria-label={headline}
+      className="group relative h-full min-h-[240px] sm:min-h-[260px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#111318]"
+    >
+      {imageUrl && (
+        <ArtworkFrame
+          src={imageUrl}
+          alt={headline}
+          align={artAlign}
+          containClassName="w-[42%] sm:w-[34%] py-4"
+          coverPosition="70% center"
+          hoverZoom
+        />
+      )}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            textAlign === "right"
+              ? `linear-gradient(270deg, rgba(8,9,11,${0.55 + strength * 0.4}) 0%, rgba(8,9,11,${0.2 + strength * 0.4}) 55%, rgba(8,9,11,0) 100%)`
+              : `linear-gradient(90deg, rgba(8,9,11,${0.55 + strength * 0.4}) 0%, rgba(8,9,11,${0.2 + strength * 0.4}) 55%, rgba(8,9,11,0) 100%)`,
+        }}
+      />
 
-        {/* Left Category Info & Thumbnail */}
-        <div className="flex items-center space-x-4 min-w-0 z-10">
-          {imageUrl && (
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-[#0E0F13] border border-white/10 rounded-xl shrink-0 p-1.5 flex items-center justify-center overflow-hidden">
-              <Image
-                src={imageUrl}
-                alt={categoryName}
-                fill
-                sizes="80px"
-                className="object-contain object-center group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
+      <div className="relative h-full flex p-6 sm:p-8">
+        <div className={`flex flex-col justify-center gap-3 max-w-[62%] sm:max-w-[58%] ${alignment}`}>
+          <p className="ff-eyebrow">{eyebrow}</p>
+          <h2 className="text-[22px] sm:text-[28px] font-extrabold leading-[1.1] tracking-[-0.01em] text-white">
+            {headline}
+          </h2>
+          {description && (
+            <p className="text-[13px] leading-relaxed text-[#F7F7F5]/75 line-clamp-2">{description}</p>
           )}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#F5C518]">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>FRESH DROPS FOR COLLECTORS</span>
-            </div>
-            <h3 className="text-base sm:text-xl font-bold uppercase tracking-tight text-white truncate">
-              {categoryName}
-            </h3>
-            {description && (
-              <p className="text-xs text-[#94A3B8] line-clamp-1 max-w-md">
-                {description}
-              </p>
-            )}
-          </div>
+          <Link href={ctaUrl} className="ff-btn ff-btn-gold ff-btn-sm mt-2">
+            <span>{ctaText}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
-
-        {/* Right CTA Button */}
-        <Link
-          href={`/shop?category=${categorySlug}`}
-          className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-white/[0.06] hover:bg-[#F5C518] text-white hover:text-[#0A0A0C] border border-white/15 hover:border-[#F5C518] text-xs font-bold uppercase tracking-wider transition-all duration-200 shrink-0 min-h-[44px] shadow-sm group/btn z-10"
-        >
-          <span>EXPLORE DROPS</span>
-          <ArrowRight className="w-3.5 h-3.5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-        </Link>
       </div>
     </section>
   );

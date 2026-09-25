@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 120" width="100%" height="100%">
+  <!-- FictionFigure Full Horizontal Logo (dark-background variant) -->
+  <g transform="translate(10, 5)">
+    <!-- FF Icon Emblem (Scale ~0.55) -->
+    <g transform="translate(0, 5) scale(0.65)">
+      <!-- Top-Right Metallic Gold Arc -->
+      <path d="M 104, 22 A 66,66 0 0,1 142, 44 L 128, 56 A 48,48 0 0,0 98, 38 Z" fill="#D4AF37"/>
+      <!-- Bottom-Right Metallic Gold Arc -->
+      <path d="M 144, 136 A 66,66 0 0,1 96, 160 L 94, 144 A 48,48 0 0,0 130, 124 Z" fill="#D4AF37"/>
+      <!-- Top-Left Black Arc -->
+      <path d="M 40, 44 A 66,66 0 0,1 84, 22 L 86, 38 A 48,48 0 0,0 54, 56 Z" fill="#F7F7F5"/>
+      <!-- Bottom-Left Black Arc -->
+      <path d="M 38, 136 A 66,66 0 0,1 50, 108 L 64, 116 A 48,48 0 0,0 56, 136 Z" fill="#F7F7F5"/>
+      
+      <!-- Left Black Stylized 'F' -->
+      <path d="M 36, 94 L 84, 36 L 78, 62 L 62, 62 L 58, 78 L 76, 78 L 70, 96 L 54, 96 L 34, 154 L 50, 154 L 62, 114 L 88, 114 L 92, 98 L 66, 98 Z" fill="#F7F7F5"/>
+      <!-- Right Metallic Gold Stylized 'F' -->
+      <path d="M 80, 68 L 148, 68 L 142, 86 L 98, 86 L 92, 104 L 120, 104 L 114, 122 L 88, 122 L 74, 160 L 58, 160 L 76, 104 L 102, 104 Z" fill="#D4AF37"/>
+    </g>
+
+    <!-- Vertical Thin Divider Line -->
+    <line x1="120" y1="18" x2="120" y2="92" stroke="#3A3D45" stroke-width="1.5" />
+
+    <!-- Wordmark Typography -->
+    <!-- FICTION in Off-White #F7F7F5 -->
+    <text x="142" y="44" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" letter-spacing="4.5" fill="#F7F7F5">FICTION</text>
+
+    <!-- FIGURES in Metallic Gold #D4AF37 -->
+    <text x="142" y="74" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" letter-spacing="4.5" fill="#D4AF37">FIGURES</text>
+
+    <!-- COLLECT . IMAGINE . OWN . Tagline -->
+    <text x="144" y="94" font-family="'Courier New', Courier, monospace" font-size="9" font-weight="600" letter-spacing="3.5" fill="#9A9DA5">COLLECT . IMAGINE . OWN .</text>
+  </g>
+</svg>

@@ -10,6 +10,35 @@ export interface AnnouncementItem {
   sortOrder: number;
 }
 
+export interface HeaderNavLink {
+  id: string;
+  label: string;
+  href: string;
+}
+
+export const DEFAULT_HEADER_NAV: HeaderNavLink[] = [
+  { id: "1", label: "Shop", href: "/shop" },
+  { id: "2", label: "Collections", href: "/collections" },
+  { id: "3", label: "New Arrivals", href: "/shop?sortBy=newest" },
+  { id: "4", label: "About", href: "/about" },
+];
+
+// Resolves a CMS header navigation entry (homepage_cms_config_json.headerNavigation) to a storefront href.
+function resolveNavHref(type: string, destination: string): string {
+  const dest = (destination || "").trim();
+  if (!dest) return "/";
+  switch (type) {
+    case "category":
+      return dest.startsWith("/") ? dest : `/shop?category=${dest}`;
+    case "collection":
+      return dest.startsWith("/") ? dest : `/collections/${dest}`;
+    case "product":
+      return dest.startsWith("/") ? dest : `/products/${dest}`;
+    default:
+      return dest;
+  }
+}
+
 export interface StoreSettingsContextType {
   shippingFee: number;
   freeShippingThreshold: number;
@@ -19,6 +48,8 @@ export interface StoreSettingsContextType {
   supportEmail: string;
   supportHours: string;
   announcements: AnnouncementItem[];
+  headerNavigation: HeaderNavLink[];
+  heroImageUrl: string;
   upiId: string;
   upiQrUrl: string;
   isLoading: boolean;
@@ -38,6 +69,8 @@ const DEFAULT_CONTEXT: StoreSettingsContextType = {
     { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
     { id: "3", text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.", enabled: true, sortOrder: 3 },
   ],
+  headerNavigation: DEFAULT_HEADER_NAV,
+  heroImageUrl: "",
   upiId: "fictionfigure@upi",
   upiQrUrl: "",
   isLoading: true,
@@ -59,6 +92,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     { id: "2", text: "FREE SHIPPING ON ORDERS OF ₹500 OR MORE.", enabled: true, sortOrder: 2 },
     { id: "3", text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.", enabled: true, sortOrder: 3 },
   ]);
+  const [headerNavigation, setHeaderNavigation] = useState<HeaderNavLink[]>(DEFAULT_HEADER_NAV);
+  const [heroImageUrl, setHeroImageUrl] = useState<string>("");
   const [upiId, setUpiId] = useState<string>("fictionfigure@upi");
   const [upiQrUrl, setUpiQrUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -92,6 +127,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       if (Array.isArray(data.announcements)) {
         setAnnouncements(data.announcements);
       }
+      if (typeof data.settings?.homepage_hero_image_url === "string") {
+        setHeroImageUrl(data.settings.homepage_hero_image_url);
+      }
+      const cmsNav = data.homepageCmsConfig?.headerNavigation;
+      if (Array.isArray(cmsNav)) {
+        const links = cmsNav
+          .filter((item: any) => item && item.enabled !== false && item.label)
+          .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+          .map((item: any) => ({
+            id: String(item.id),
+            label: String(item.label),
+            href: resolveNavHref(item.type, item.destination),
+          }));
+        if (links.length > 0) setHeaderNavigation(links);
+      }
       if (typeof data.upiId === "string") {
         setUpiId(data.upiId);
       } else if (data.settings && typeof data.settings.upi_id === "string") {
@@ -124,6 +174,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         supportEmail,
         supportHours,
         announcements,
+        headerNavigation,
+        heroImageUrl,
         upiId,
         upiQrUrl,
         isLoading,

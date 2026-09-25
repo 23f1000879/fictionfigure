@@ -19,26 +19,26 @@ module.exports = {
       colors: {
         // Core Cinematic Backgrounds
         background: {
-          DEFAULT: "#0A0A0C",
+          DEFAULT: "#08090B",
           deep: "#060708",
-          charcoal: "#0F1014",
+          charcoal: "#0C0D10",
         },
         // Layered Dark Surfaces
         surface: {
-          DEFAULT: "#121318",
-          elevated: "#181920",
-          soft: "#1F212A",
-          glass: "rgba(18, 19, 24, 0.75)",
-          card: "#13141B",
-          input: "#0E0F13",
+          DEFAULT: "#111318",
+          elevated: "#17191F",
+          soft: "#1E2027",
+          glass: "rgba(17, 19, 24, 0.75)",
+          card: "#111318",
+          input: "#0D0E12",
         },
         // High-Contrast Foregrounds
         foreground: {
-          DEFAULT: "#F8FAFC",
+          DEFAULT: "#F7F7F5",
           primary: "#FFFFFF",
-          secondary: "#94A3B8",
-          muted: "#64748B",
-          subtle: "#475569",
+          secondary: "#9A9DA5",
+          muted: "#6E717A",
+          subtle: "#4A4D55",
         },
         // Subtle Low-Contrast Borders
         border: {
@@ -82,11 +82,18 @@ module.exports = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "-apple-system", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-inter)", "system-ui", "sans-serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
       letterSpacing: {
         widest: "0.2em",
         tightest: "-0.03em",
+      },
+      maxWidth: {
+        shell: "1440px",
+      },
+      height: {
+        header: "64px",
       },
       borderRadius: {
         sm: "8px",

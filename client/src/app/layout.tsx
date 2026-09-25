@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { CartProvider } from "@/context/CartContext";
@@ -9,6 +9,13 @@ import { SettingsProvider } from "@/context/SettingsContext";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+// Condensed display face for collection-poster titles (reference: "ONE PIECE", "NARUTO").
+const oswald = Oswald({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-display",
 });
 
 export const metadata: Metadata = {
@@ -31,8 +38,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-[#0A0A0C] text-[#F8FAFC] font-sans selection:bg-[#F5C518] selection:text-[#0A0A0C]">
+    <html lang="en" className={`${inter.variable} ${oswald.variable} h-full antialiased dark`}>
+      <body className="min-h-full flex flex-col bg-[#08090B] text-[#F7F7F5] font-sans selection:bg-[#F5C518] selection:text-[#0A0A0C]">
         <SettingsProvider>
           <CartProvider>
             <WishlistProvider>

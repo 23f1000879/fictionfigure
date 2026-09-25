@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import React, { useRef } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "@/components/product/ProductCard";
+import { SectionHeading } from "@/components/home/SectionHeading";
+import { ViewAllTile } from "@/components/collection/CategoryTile";
 
 export interface ProductItem {
   id: string;
@@ -22,50 +23,101 @@ export interface ProductItem {
 interface ProductSectionProps {
   eyebrow?: string;
   title: string;
+  description?: string;
   viewAllUrl?: string;
   viewAllText?: string;
   products: ProductItem[];
+  /** full = compact cards on a horizontal rail; compact = grid beside another editorial block */
+  layout?: "full" | "compact";
 }
 
 export function ProductSection({
   eyebrow = "FEATURED FIGURES",
   title,
+  description,
   viewAllUrl = "/shop",
-  viewAllText = "VIEW ALL",
+  viewAllText = "View All",
   products,
+  layout = "full",
 }: ProductSectionProps) {
+  const railRef = useRef<HTMLDivElement>(null);
+
   if (!products || products.length === 0) return null;
 
-  return (
-    <section className="editorial-container space-y-6" aria-label={title}>
-      {/* Editorial Section Header */}
-      <div className="flex items-end justify-between border-b border-white/10 pb-4">
-        <div>
-          {eyebrow && (
-            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#F5C518] mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{eyebrow}</span>
-            </div>
+  const scroll = (dir: -1 | 1) => {
+    const el = railRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+
+  if (layout === "compact") {
+    const shown = products.slice(0, 6);
+    const needsFiller = shown.length % 3 !== 0;
+    return (
+      <section aria-label={title} className="h-full flex flex-col gap-4 lg:gap-5">
+        <SectionHeading
+          eyebrow={eyebrow}
+          title={title}
+          description={description}
+          linkText={viewAllText}
+          linkUrl={viewAllUrl}
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 lg:gap-4">
+          {shown.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+          {needsFiller && viewAllUrl && (
+            <ViewAllTile href={viewAllUrl} eyebrow="The Vault" title="Shop All Figures" />
           )}
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight uppercase">
-            {title}
-          </h2>
         </div>
-        {viewAllUrl && (
-          <Link
-            href={viewAllUrl}
-            className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] hover:text-[#F5C518] transition-colors flex items-center group font-mono"
-          >
-            <span>{viewAllText}</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
-          </Link>
+      </section>
+    );
+  }
+
+  return (
+    <section aria-label={title} className="flex flex-col gap-4 lg:gap-5">
+      <div className="flex items-end justify-between gap-4">
+        <SectionHeading
+          eyebrow={eyebrow}
+          title={title}
+          description={description}
+          linkText={viewAllText}
+          linkUrl={viewAllUrl}
+          className="flex-1 min-w-0"
+        />
+        {products.length > 5 && (
+          <div className="hidden md:flex items-center gap-1.5 pb-0.5">
+            <button
+              type="button"
+              onClick={() => scroll(-1)}
+              aria-label="Scroll products left"
+              className="w-8 h-8 rounded-full border border-white/15 text-white/80 hover:border-white/40 hover:text-white flex items-center justify-center transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scroll(1)}
+              aria-label="Scroll products right"
+              className="w-8 h-8 rounded-full border border-white/15 text-white/80 hover:border-white/40 hover:text-white flex items-center justify-center transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Product Responsive Grid (4 Desktop, 3 Tablet, 2 Mobile) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div
+        ref={railRef}
+        className="flex gap-3 lg:gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+      >
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <div
+            key={product.id}
+            className="snap-start shrink-0 w-[46%] sm:w-[31%] md:w-[23.5%] lg:w-[calc((100%-4*16px)/5)] 2xl:w-[calc((100%-5*16px)/6)]"
+          >
+            <ProductCard product={product} />
+          </div>
         ))}
       </div>
     </section>
