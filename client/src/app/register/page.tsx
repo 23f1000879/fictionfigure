@@ -2,12 +2,12 @@
 
 import React, { useState, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, ArrowLeft, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { normalizeIndianPhone, formatDisplayPhone } from "@/lib/phone";
 import { MSG91OTPWidget, MSG91VerificationPayload } from "@/components/auth/MSG91OTPWidget";
 import { API_BASE } from "@/lib/api";
+import { AuthShell, AuthHeading } from "@/components/auth/AuthShell";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -128,50 +128,23 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center p-4 sm:p-6 text-[#111111]">
-      <div className="w-full max-w-[460px] bg-white border border-[#E5E5E2] p-8 shadow-xs space-y-6">
-        {/* Top Navigation Bar: Back to Store */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E2]">
-          <Link
-            href="/shop"
-            className="inline-flex items-center text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to Store
-          </Link>
-          <Link
-            href="/"
-            className="text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111] transition-colors"
-          >
-            Home
-          </Link>
-        </div>
-
+    <AuthShell
+      asideEyebrow="Join the collector's club"
+      asideTitle="Create your"
+      asideAccent="collection."
+      asideText="One account for your wishlist, orders, saved addresses and restock alerts."
+    >
         {step === "FORM" ? (
           <>
-            {/* Header Branding */}
-            <div className="text-center space-y-2 flex flex-col items-center">
-              <Link href="/" className="inline-block hover:opacity-85 transition-opacity mb-1">
-                <Image
-                  src="/fictionfigure-icon.svg"
-                  alt="FictionFigure Emblem"
-                  width={44}
-                  height={44}
-                  priority
-                  className="h-11 w-auto mx-auto object-contain"
-                />
-              </Link>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-[#111111]">
-                CREATE YOUR COLLECTOR ACCOUNT
-              </h2>
-              <p className="text-xs text-[#6B6B6B]">
-                Create an account to save your collection, wishlist and orders.
-              </p>
-            </div>
+            <AuthHeading
+              eyebrow="New collector"
+              title="Create your collection"
+              text="Create an account to save your collection, wishlist and orders."
+            />
 
-            <div className="border-b border-[#E5E5E2]"></div>
 
             {error && (
-              <div className="p-3.5 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center space-x-2">
+              <div className="p-3.5 bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -180,7 +153,7 @@ export default function RegisterPage() {
             <form onSubmit={handleInitialSubmit} className="space-y-4 text-xs" noValidate>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="font-semibold uppercase tracking-wider text-[#6B6B6B] block">
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5] block">
                     FIRST NAME *
                   </label>
                   <input
@@ -190,12 +163,12 @@ export default function RegisterPage() {
                     value={form.firstName}
                     onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                     placeholder="First name"
-                    className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                    className="w-full h-12 px-4 bg-[#17191F] border border-white/[0.08] text-[#F7F7F5] focus:border-[#F5C518]/60 focus:outline-none rounded-[8px] placeholder:text-[#6E717A] transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold uppercase tracking-wider text-[#6B6B6B] block">
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5] block">
                     LAST NAME *
                   </label>
                   <input
@@ -205,18 +178,18 @@ export default function RegisterPage() {
                     value={form.lastName}
                     onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                     placeholder="Last name"
-                    className="w-full p-3 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                    className="w-full h-12 px-4 bg-[#17191F] border border-white/[0.08] text-[#F7F7F5] focus:border-[#F5C518]/60 focus:outline-none rounded-[8px] placeholder:text-[#6E717A] transition-colors"
                   />
                 </div>
               </div>
 
               {/* Mobile Number Field */}
               <div className="space-y-1.5">
-                <label className="font-semibold uppercase tracking-wider text-[#6B6B6B] block">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5] block">
                   MOBILE NUMBER *
                 </label>
-                <div className="flex bg-[#F7F7F5] border border-[#E5E5E2] focus-within:border-[#111111] transition-colors">
-                  <span className="p-3 font-mono font-semibold text-[#6B6B6B] border-r border-[#E5E5E2] select-none">
+                <div className="flex overflow-hidden bg-[#17191F] border border-white/[0.08] focus-within:border-[#F5C518]/60 transition-colors rounded-[8px] placeholder:text-[#6E717A] transition-colors">
+                  <span className="px-4 flex items-center font-mono font-semibold text-[#9A9DA5] border-r border-white/[0.08] select-none">
                     +91
                   </span>
                   <input
@@ -226,14 +199,14 @@ export default function RegisterPage() {
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     placeholder="98765 43210"
-                    className="w-full p-3 bg-transparent text-[#111111] font-mono focus:outline-none"
+                    className="w-full h-12 px-3 bg-transparent text-[#F7F7F5] font-mono focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Password Field */}
               <div className="space-y-1.5">
-                <label className="font-semibold uppercase tracking-wider text-[#6B6B6B] block">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5] block">
                   PASSWORD *
                 </label>
                 <div className="relative flex items-center">
@@ -244,23 +217,23 @@ export default function RegisterPage() {
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="Password"
-                    className="w-full p-3 pr-10 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                    className="w-full h-12 px-4 pr-11 bg-[#17191F] border border-white/[0.08] text-[#F7F7F5] focus:border-[#F5C518]/60 focus:outline-none rounded-[8px] placeholder:text-[#6E717A] transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 text-[#6B6B6B] hover:text-[#111111] p-1"
+                    className="absolute right-3 text-[#9A9DA5] hover:text-white p-1"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-[11px] text-[#6B6B6B]">Use at least 8 characters.</p>
+                <p className="text-[11px] text-[#9A9DA5]">Use at least 8 characters.</p>
               </div>
 
               {/* Confirm Password Field */}
               <div className="space-y-1.5">
-                <label className="font-semibold uppercase tracking-wider text-[#6B6B6B] block">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5] block">
                   CONFIRM PASSWORD *
                 </label>
                 <div className="relative flex items-center">
@@ -271,19 +244,19 @@ export default function RegisterPage() {
                     value={form.confirmPassword}
                     onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                     placeholder="Confirm password"
-                    className="w-full p-3 pr-10 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                    className="w-full h-12 px-4 pr-11 bg-[#17191F] border border-white/[0.08] text-[#F7F7F5] focus:border-[#F5C518]/60 focus:outline-none rounded-[8px] placeholder:text-[#6E717A] transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 text-[#6B6B6B] hover:text-[#111111] p-1"
+                    className="absolute right-3 text-[#9A9DA5] hover:text-white p-1"
                     aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 {form.confirmPassword && form.password !== form.confirmPassword && (
-                  <p className="text-[11px] text-[#A83232] font-medium">Passwords do not match.</p>
+                  <p className="text-[11px] text-rose-300 font-medium">Passwords do not match.</p>
                 )}
               </div>
 
@@ -291,7 +264,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-4 bg-[#111111] text-white font-semibold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-all flex items-center justify-center space-x-2"
+                className="ff-btn ff-btn-gold w-full h-12 disabled:opacity-50 disabled:pointer-events-none"
               >
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
@@ -307,45 +280,34 @@ export default function RegisterPage() {
               </button>
             </form>
 
-            <div className="pt-4 border-t border-[#E5E5E2] text-center text-xs text-[#6B6B6B]">
+            <div className="pt-4 border-t border-white/[0.08] text-center text-xs text-[#9A9DA5]">
               Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-[#111111] hover:underline ml-1">
+              <Link href="/login" className="font-semibold text-[#F7F7F5] hover:underline ml-1">
                 Sign in →
               </Link>
             </div>
           </>
         ) : (
           <>
-            <div className="text-center space-y-2 flex flex-col items-center">
+            <div className="space-y-2 flex flex-col items-start">
               <button
                 onClick={() => setStep("FORM")}
-                className="text-xs text-[#6B6B6B] hover:text-[#111111] flex items-center mb-1 self-start"
+                className="min-h-[44px] text-xs text-[#9A9DA5] hover:text-white flex items-center self-start"
               >
                 <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Change details
               </button>
-              <Link href="/" className="inline-block hover:opacity-85 transition-opacity mb-1">
-                <Image
-                  src="/fictionfigure-icon.svg"
-                  alt="FictionFigure Emblem"
-                  width={44}
-                  height={44}
-                  priority
-                  className="h-11 w-auto mx-auto object-contain"
-                />
-              </Link>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-[#111111]">
-                VERIFY YOUR MOBILE
-              </h2>
-              <p className="text-xs text-[#6B6B6B] leading-relaxed">
+              <p className="ff-eyebrow">One last step</p>
+              <h1 className="text-[26px] font-extrabold tracking-[-0.02em] text-white">Verify your mobile</h1>
+              <p className="text-xs text-[#9A9DA5] leading-relaxed">
                 We sent a 6-digit verification code to{" "}
-                <strong className="text-[#111111] font-mono">{formatDisplayPhone(normalizedPhone)}</strong>
+                <strong className="text-[#F7F7F5] font-mono">{formatDisplayPhone(normalizedPhone)}</strong>
               </p>
             </div>
 
-            <div className="border-b border-[#E5E5E2]"></div>
+            <div className="border-b border-white/[0.08]"></div>
 
             {error && (
-              <div className="p-3.5 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center space-x-2">
+              <div className="p-3.5 bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -358,7 +320,6 @@ export default function RegisterPage() {
             />
           </>
         )}
-      </div>
-    </div>
+    </AuthShell>
   );
 }

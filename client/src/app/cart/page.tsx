@@ -4,7 +4,6 @@ import { Footer } from "@/components/storefront/Footer";
 import { CartPageClient } from "@/components/cart/CartPageClient";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { CartProvider } from "@/context/CartContext";
 
 export default function CartPage() {
   return (
@@ -13,11 +12,13 @@ export default function CartPage() {
       <SearchModal />
       <CartDrawer />
 
-      <main className="editorial-container py-12">
-        <CartPageClient />
+      <main className="flex-1 bg-[#08090B] text-[#F7F7F5]">
+        <div className="ff-container py-8 lg:py-12">
+          <CartPageClient />
+        </div>
       </main>
 
-      <Footer />
+      <Footer showValueStrip={false} />
     </>
   );
 }

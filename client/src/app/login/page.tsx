@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { normalizeIndianPhone } from "@/lib/phone";
 import { API_BASE } from "@/lib/api";
+import { AuthShell, AuthHeading } from "@/components/auth/AuthShell";
 
 function LoginForm() {
   const router = useRouter();
@@ -138,57 +138,21 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] flex flex-col items-center justify-center p-4 sm:p-6 text-[#111111]">
-      <div className="w-full max-w-[460px] bg-white border border-[#E5E5E2] p-6 sm:p-8 shadow-xs space-y-6">
-        
-        {/* Top Navigation Bar: Back to Store */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E2]">
-          <Link
-            href="/shop"
-            className="inline-flex items-center text-xs font-semibold text-[#6B6B6B] hover:text-[#111111] transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to Store
-          </Link>
-          <Link
-            href="/"
-            className="text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111] transition-colors"
-          >
-            Home
-          </Link>
-        </div>
+    <AuthShell>
 
-        {/* Header Branding */}
-        <div className="text-center space-y-2 flex flex-col items-center pt-2">
-          <Link href="/" className="inline-block hover:opacity-85 transition-opacity mb-1">
-            <Image
-              src="/fictionfigure-icon.svg"
-              alt="FictionFigure Emblem"
-              width={44}
-              height={44}
-              priority
-              className="h-11 w-auto mx-auto object-contain"
-            />
-          </Link>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-[#111111]">
-            WELCOME BACK
-          </h2>
-          <p className="text-xs text-[#6B6B6B]">
-            Sign in to continue to your collection.
-          </p>
-        </div>
+        <AuthHeading eyebrow="Member sign in" title="Welcome back." text="Sign in to continue to your collection." />
 
-        <div className="border-b border-[#E5E5E2]"></div>
 
         {/* Server Alert Message */}
         {serverError && (
-          <div className="p-3.5 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] text-xs font-semibold flex items-center space-x-2">
+          <div className="p-3.5 bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{serverError}</span>
           </div>
         )}
 
         {forgotMessage && (
-          <div className="p-3.5 bg-[#2E6B44]/10 border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold flex items-center space-x-2">
+          <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 text-xs font-semibold flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
             <span>{forgotMessage}</span>
           </div>
@@ -198,12 +162,12 @@ function LoginForm() {
           <form onSubmit={handleLogin} className="space-y-5 text-xs" noValidate>
             {/* Mobile Number / Email Field */}
             <div className="space-y-1.5">
-              <label className="font-semibold uppercase tracking-wider text-[#6B6B6B] block">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5] block">
                 MOBILE NUMBER *
               </label>
-              <div className="flex bg-[#F7F7F5] border border-[#E5E5E2] focus-within:border-[#111111] transition-colors">
+              <div className="flex overflow-hidden bg-[#17191F] border border-white/[0.08] focus-within:border-[#F5C518]/60 transition-colors rounded-[8px] placeholder:text-[#6E717A] transition-colors">
                 {!identifier.includes("@") && (
-                  <span className="p-3 font-mono font-semibold text-[#6B6B6B] border-r border-[#E5E5E2] select-none">
+                  <span className="px-4 flex items-center font-mono font-semibold text-[#9A9DA5] border-r border-white/[0.08] select-none">
                     +91
                   </span>
                 )}
@@ -217,24 +181,24 @@ function LoginForm() {
                     if (fieldErrors.identifier) setFieldErrors({ ...fieldErrors, identifier: undefined });
                   }}
                   placeholder="98765 43210"
-                  className="w-full p-3 bg-transparent text-[#111111] font-mono focus:outline-none"
+                  className="w-full h-12 px-3 bg-transparent text-[#F7F7F5] font-mono focus:outline-none"
                 />
               </div>
               {fieldErrors.identifier && (
-                <p className="text-[11px] text-[#A83232] font-medium">{fieldErrors.identifier}</p>
+                <p className="text-[11px] text-rose-300 font-medium">{fieldErrors.identifier}</p>
               )}
             </div>
 
             {/* Password Field with Eye Toggle Icon */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="font-semibold uppercase tracking-wider text-[#6B6B6B]">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5]">
                   PASSWORD *
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowForgot(true)}
-                  className="text-[11px] text-[#6B6B6B] hover:text-[#111111] hover:underline"
+                  className="text-[11px] text-[#9A9DA5] hover:text-white hover:underline"
                 >
                   Forgot password?
                 </button>
@@ -251,19 +215,19 @@ function LoginForm() {
                     if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined });
                   }}
                   placeholder="••••••••••••"
-                  className="w-full p-3 pr-10 bg-[#F7F7F5] border border-[#E5E5E2] text-[#111111] focus:border-[#111111] focus:outline-none"
+                  className="w-full h-12 px-4 pr-11 bg-[#17191F] border border-white/[0.08] text-[#F7F7F5] focus:border-[#F5C518]/60 focus:outline-none rounded-[8px] placeholder:text-[#6E717A] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-[#6B6B6B] hover:text-[#111111] p-1"
+                  className="absolute right-3 text-[#9A9DA5] hover:text-white p-1"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {fieldErrors.password && (
-                <p className="text-[11px] text-[#A83232] font-medium">{fieldErrors.password}</p>
+                <p className="text-[11px] text-rose-300 font-medium">{fieldErrors.password}</p>
               )}
             </div>
 
@@ -271,7 +235,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 bg-[#111111] text-white font-semibold uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-all flex items-center justify-center space-x-2"
+              className="ff-btn ff-btn-gold w-full h-12 disabled:opacity-50 disabled:pointer-events-none"
             >
               {isLoading ? (
                 <div className="flex items-center space-x-2">
@@ -289,11 +253,11 @@ function LoginForm() {
         ) : (
           <form onSubmit={handleForgotPassword} className="space-y-4 text-xs">
             <div className="space-y-1.5">
-              <label className="font-semibold uppercase tracking-wider text-[#6B6B6B]">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5]">
                 REGISTERED MOBILE NUMBER *
               </label>
-              <div className="flex bg-[#F7F7F5] border border-[#E5E5E2] focus-within:border-[#111111] transition-colors">
-                <span className="p-3 font-mono font-semibold text-[#6B6B6B] border-r border-[#E5E5E2] select-none">
+              <div className="flex overflow-hidden bg-[#17191F] border border-white/[0.08] focus-within:border-[#F5C518]/60 transition-colors rounded-[8px] placeholder:text-[#6E717A] transition-colors">
+                <span className="px-4 flex items-center font-mono font-semibold text-[#9A9DA5] border-r border-white/[0.08] select-none">
                   +91
                 </span>
                 <input
@@ -303,7 +267,7 @@ function LoginForm() {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="98765 43210"
-                  className="w-full p-3 bg-transparent text-[#111111] font-mono focus:outline-none"
+                  className="w-full h-12 px-3 bg-transparent text-[#F7F7F5] font-mono focus:outline-none"
                 />
               </div>
             </div>
@@ -311,7 +275,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 bg-[#111111] text-white font-semibold uppercase tracking-wider hover:bg-black disabled:opacity-50 transition-colors flex items-center justify-center space-x-2"
+              className="ff-btn ff-btn-gold w-full h-12 disabled:opacity-50 disabled:pointer-events-none"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>VERIFY ACCOUNT</span>}
             </button>
@@ -319,27 +283,26 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setShowForgot(false)}
-              className="w-full text-center text-xs text-[#6B6B6B] hover:text-[#111111] hover:underline"
+              className="w-full text-center text-xs text-[#9A9DA5] hover:text-white hover:underline"
             >
               Back to Sign In
             </button>
           </form>
         )}
 
-        <div className="pt-4 border-t border-[#E5E5E2] text-center text-xs text-[#6B6B6B]">
+        <div className="pt-4 border-t border-white/[0.08] text-center text-xs text-[#9A9DA5]">
           Don't have an account?{" "}
-          <Link href="/register" className="font-semibold text-[#111111] hover:underline ml-1">
+          <Link href="/register" className="font-semibold text-[#F7F7F5] hover:underline ml-1">
             Register →
           </Link>
         </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-[#6B6B6B]">Loading login...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-xs text-[#9A9DA5]">Loading login...</div>}>
       <LoginForm />
     </Suspense>
   );

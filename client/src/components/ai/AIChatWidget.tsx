@@ -423,7 +423,7 @@ ${itemsList}`;
       {/* Floating Launcher Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-2.5 sm:p-3.5 bg-[#111111] text-white shadow-2xl hover:bg-black transition-all duration-200 flex items-center space-x-2 border border-[#E5E5E2] rounded-none"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-2.5 sm:p-3.5 bg-[#111318]/95 backdrop-blur text-white border border-white/15 rounded-[10px] shadow-2xl hover:border-[#F5C518]/60 transition-all duration-200 flex items-center space-x-2 border border-white/[0.08] rounded-none"
         aria-label="Open Shopping Assistant"
       >
         <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4AF37]" />
@@ -434,17 +434,19 @@ ${itemsList}`;
 
       {/* Chat Drawer Overlay */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 sm:right-6 z-50 w-[92vw] sm:w-[400px] h-[520px] bg-[#F7F7F5] border border-[#E5E5E2] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-20 right-4 sm:right-6 z-50 w-[92vw] sm:w-[400px] h-[520px] bg-[#0D0E12] border border-white/[0.1] rounded-[14px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
           {/* Header */}
-          <div className="p-4 bg-[#111111] text-white flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Bot className="w-5 h-5 text-white" />
+          <div className="p-4 bg-[#111318] text-white border-b border-white/[0.08] flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <span className="w-8 h-8 rounded-full bg-[#F5C518]/10 border border-[#F5C518]/30 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-[#F5C518]" />
+              </span>
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider">FictionFigure Store Concierge</h4>
-                <span className="text-[10px] text-white/70 block">Live Store & Catalog Assistant</span>
+                <span className="text-[11px] text-[#9A9DA5] block">Live Store & Catalog Assistant</span>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-white/70 hover:text-white p-1">
+            <button onClick={() => setIsOpen(false)} className="w-11 h-11 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/[0.06]" aria-label="Close store concierge">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -457,7 +459,7 @@ ${itemsList}`;
                 className={`flex space-x-2.5 ${msg.sender === "USER" ? "justify-end" : "justify-start"}`}
               >
                 {msg.sender === "ASSISTANT" && (
-                  <div className="w-6 h-6 rounded-full bg-[#111111] text-white flex items-center justify-center shrink-0 mt-1">
+                  <div className="w-6 h-6 rounded-full bg-[#F5C518] text-[#08090B] flex items-center justify-center shrink-0 mt-1">
                     <Bot className="w-3.5 h-3.5" />
                   </div>
                 )}
@@ -466,9 +468,9 @@ ${itemsList}`;
                   <div
                     className={`p-3 border ${
                       msg.sender === "USER"
-                        ? "bg-[#111111] text-white border-[#111111]"
-                        : "bg-white text-[#111111] border-[#E5E5E2]"
-                    }`}
+                        ? "bg-[#F5C518] text-[#08090B] border-[#F5C518]"
+                        : "bg-[#111318] text-[#F7F7F5] border-white/[0.08]"
+                    } rounded-[6px]`}
                   >
                     <p className="whitespace-pre-line leading-relaxed">{msg.content}</p>
                   </div>
@@ -483,29 +485,29 @@ ${itemsList}`;
                             key={p.id}
                             href={`/products/${p.slug}`}
                             onClick={() => setIsOpen(false)}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-[#E5E5E2] hover:border-[#111111] transition-all duration-200 group gap-3"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-[#111318] border border-white/[0.08] hover:border-white/30 transition-all duration-200 group gap-3"
                           >
                             <div className="flex items-center space-x-3 min-w-0 flex-1">
-                              <div className="relative w-12 h-12 bg-[#F0F0ED] shrink-0 border border-[#E5E5E2] overflow-hidden">
+                              <div className="relative w-12 h-12 bg-[#17191F] shrink-0 border border-white/[0.08] overflow-hidden">
                                 {p.imageUrl && <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <span className="text-[9px] uppercase font-bold text-[#6B6B6B] block">{p.brand}</span>
-                                <h5 className="text-[11px] font-semibold text-[#111111] truncate group-hover:underline">{p.name}</h5>
+                                <span className="text-[9px] uppercase font-bold text-[#9A9DA5] block">{p.brand}</span>
+                                <h5 className="text-[11px] font-semibold text-[#F7F7F5] truncate group-hover:underline">{p.name}</h5>
                                 <div className="flex items-center space-x-2 mt-0.5">
-                                  <span className="text-[11px] font-mono font-bold text-[#111111]">{formatPrice(p.price)}</span>
+                                  <span className="text-[11px] font-mono font-bold text-[#F7F7F5]">{formatPrice(p.price)}</span>
                                   <span className="text-[9px] font-bold">
                                     {inStock ? (
-                                      <span className="text-[#2E6B44]">In Stock</span>
+                                      <span className="text-emerald-400">In Stock</span>
                                     ) : (
-                                      <span className="text-[#A83232]">Out of Stock</span>
+                                      <span className="text-rose-300">Out of Stock</span>
                                     )}
                                   </span>
                                 </div>
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className="px-2.5 py-1 bg-[#111111] text-white text-[9px] font-bold uppercase tracking-wider group-hover:bg-black transition-colors block sm:inline-block">
+                              <span className="px-2.5 py-1 bg-[#F5C518] text-[#08090B] text-[9px] font-bold uppercase tracking-wider group-hover:bg-[#FFD43B] transition-colors block sm:inline-block rounded-[6px]">
                                 View Product
                               </span>
                             </div>
@@ -517,7 +519,7 @@ ${itemsList}`;
                 </div>
 
                 {msg.sender === "USER" && (
-                  <div className="w-6 h-6 rounded-full bg-[#E5E5E2] text-[#111111] flex items-center justify-center shrink-0 mt-1">
+                  <div className="w-6 h-6 rounded-full bg-white/[0.08] text-[#F7F7F5] flex items-center justify-center shrink-0 mt-1">
                     <User className="w-3.5 h-3.5" />
                   </div>
                 )}
@@ -525,8 +527,8 @@ ${itemsList}`;
             ))}
 
             {isLoading && (
-              <div className="flex items-center space-x-2 text-xs text-[#6B6B6B]">
-                <Loader2 className="w-4 h-4 animate-spin text-[#111111]" />
+              <div className="flex items-center space-x-2 text-xs text-[#9A9DA5]">
+                <Loader2 className="w-4 h-4 animate-spin text-[#F7F7F5]" />
                 <span>Consulting live store catalog...</span>
               </div>
             )}
@@ -534,22 +536,22 @@ ${itemsList}`;
           </div>
 
           {/* Quick Prompt Pills */}
-          <div className="px-4 py-2 bg-white border-t border-[#E5E5E2] flex space-x-2 overflow-x-auto text-[10px]">
+          <div className="px-4 py-2 bg-[#111318] border-t border-white/[0.08] flex space-x-2 overflow-x-auto text-[10px]">
             <button
               onClick={() => handleSend("Recommend anime figures under ₹10,000")}
-              className="px-2.5 py-1 bg-[#F7F7F5] border border-[#E5E5E2] hover:border-[#111111] text-[#111111] whitespace-nowrap font-medium"
+              className="px-2.5 py-1 bg-[#17191F] border border-white/[0.08] hover:border-white/30 text-[#F7F7F5] whitespace-nowrap font-medium"
             >
               Anime figures under ₹10k
             </button>
             <button
               onClick={() => handleSend("Where is my order #FF-1001?")}
-              className="px-2.5 py-1 bg-[#F7F7F5] border border-[#E5E5E2] hover:border-[#111111] text-[#111111] whitespace-nowrap font-medium"
+              className="px-2.5 py-1 bg-[#17191F] border border-white/[0.08] hover:border-white/30 text-[#F7F7F5] whitespace-nowrap font-medium"
             >
               Track #FF-1001
             </button>
             <button
               onClick={() => handleSend("What is your return policy?")}
-              className="px-2.5 py-1 bg-[#F7F7F5] border border-[#E5E5E2] hover:border-[#111111] text-[#111111] whitespace-nowrap font-medium"
+              className="px-2.5 py-1 bg-[#17191F] border border-white/[0.08] hover:border-white/30 text-[#F7F7F5] whitespace-nowrap font-medium"
             >
               Return policy
             </button>
@@ -561,19 +563,19 @@ ${itemsList}`;
               e.preventDefault();
               handleSend();
             }}
-            className="p-3 bg-white border-t border-[#E5E5E2] flex items-center space-x-2"
+            className="p-3 bg-[#111318] border-t border-white/[0.08] flex items-center space-x-2"
           >
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about figures, orders, policies..."
-              className="w-full px-3 py-2 bg-[#F7F7F5] border border-[#E5E5E2] text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
+              className="w-full px-3 py-2 bg-[#17191F] border border-white/[0.08] text-xs text-[#F7F7F5] focus:border-[#F5C518]/60 focus:outline-none rounded-[8px] placeholder:text-[#6E717A] transition-colors"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="p-2 bg-[#111111] text-white hover:bg-black disabled:opacity-50 transition-colors shrink-0"
+              className="p-2 bg-[#F5C518] text-[#08090B] hover:bg-[#FFD43B] disabled:opacity-50 transition-colors shrink-0 rounded-[6px]"
             >
               <Send className="w-4 h-4" />
             </button>

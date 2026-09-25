@@ -20,6 +20,8 @@ export interface StoreSettingsContextType {
   supportHours: string;
   announcements: AnnouncementItem[];
   heroImageUrl: string;
+  /** Existing cinematic campaign art for atmospheric page backgrounds (auth, about). */
+  cinematicBackgroundUrl: string;
   upiId: string;
   upiQrUrl: string;
   isLoading: boolean;
@@ -40,6 +42,7 @@ const DEFAULT_CONTEXT: StoreSettingsContextType = {
     { id: "3", text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.", enabled: true, sortOrder: 3 },
   ],
   heroImageUrl: "",
+  cinematicBackgroundUrl: "",
   upiId: "fictionfigure@upi",
   upiQrUrl: "",
   isLoading: true,
@@ -62,6 +65,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     { id: "3", text: "LIMITED EDITION COLLECTIBLES AVAILABLE NOW.", enabled: true, sortOrder: 3 },
   ]);
   const [heroImageUrl, setHeroImageUrl] = useState<string>("");
+  const [cinematicBackgroundUrl, setCinematicBackgroundUrl] = useState<string>("");
   const [upiId, setUpiId] = useState<string>("fictionfigure@upi");
   const [upiQrUrl, setUpiQrUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -98,6 +102,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       if (typeof data.settings?.homepage_hero_image_url === "string") {
         setHeroImageUrl(data.settings.homepage_hero_image_url);
       }
+      // Universes-page background (admin setting) first, then the first hero slide's cinematic background.
+      const configuredBackdrop = data.settings?.collections_hero_image_url;
+      const slideBackdrop = Array.isArray(data.carouselSlides)
+        ? data.carouselSlides.find((s: any) => s && s.backgroundImage)?.backgroundImage
+        : "";
+      setCinematicBackgroundUrl(
+        (typeof configuredBackdrop === "string" && configuredBackdrop.trim()) || slideBackdrop || ""
+      );
       if (typeof data.upiId === "string") {
         setUpiId(data.upiId);
       } else if (data.settings && typeof data.settings.upi_id === "string") {
@@ -131,6 +143,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         supportHours,
         announcements,
         heroImageUrl,
+        cinematicBackgroundUrl,
         upiId,
         upiQrUrl,
         isLoading,

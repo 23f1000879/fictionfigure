@@ -279,18 +279,18 @@ export function MSG91OTPWidget({ phone, onSuccess, onError }: MSG91OTPWidgetProp
   const fullCodeLength = otpDigits.join("").length;
 
   return (
-    <div className="space-y-6 text-[#111111]">
+    <div className="space-y-6 text-[#F7F7F5]">
       <div id="msg91-otp-container" className="w-full"></div>
 
       {loading ? (
-        <div className="p-8 text-center text-xs text-[#6B6B6B]">
-          <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#111111]" /> Initializing MSG91 OTP Gateway...
+        <div className="p-8 text-center text-xs text-[#9A9DA5]">
+          <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#F7F7F5]" /> Initializing MSG91 OTP Gateway...
         </div>
       ) : (
         <form onSubmit={handleManualVerifySubmit} className="space-y-6">
           {/* Segmented 6 OTP Digit Boxes */}
           <div className="space-y-2">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6B6B] block text-center">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#9A9DA5] block text-center">
               ENTER 6-DIGIT VERIFICATION CODE
             </label>
 
@@ -309,7 +309,7 @@ export function MSG91OTPWidget({ phone, onSuccess, onError }: MSG91OTPWidgetProp
                   onChange={(e) => handleDigitChange(idx, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
                   onPaste={handlePaste}
-                  className="w-11 h-13 sm:w-13 sm:h-14 bg-[#F7F7F5] border border-[#E5E5E2] font-mono text-center text-xl font-bold text-[#111111] focus:border-[#111111] focus:bg-white focus:outline-none transition-all rounded-none"
+                  className="w-11 h-13 sm:w-13 sm:h-14 bg-[#17191F] border border-white/[0.08] font-mono text-center text-xl font-bold text-[#F7F7F5] focus:border-[#F5C518]/60 focus:bg-[#111318] focus:outline-none transition-all rounded-none"
                 />
               ))}
             </div>
@@ -318,7 +318,7 @@ export function MSG91OTPWidget({ phone, onSuccess, onError }: MSG91OTPWidgetProp
           <button
             type="submit"
             disabled={verifying || fullCodeLength !== 6}
-            className="w-full py-4 bg-[#111111] text-white font-semibold text-xs uppercase tracking-widest hover:bg-black disabled:opacity-40 transition-colors flex items-center justify-center space-x-2"
+            className="w-full py-4 bg-[#F5C518] text-[#08090B] font-semibold text-xs uppercase tracking-widest hover:bg-[#FFD43B] disabled:opacity-40 transition-colors flex items-center justify-center space-x-2 rounded-[6px]"
           >
             {verifying ? (
               <div className="flex items-center space-x-2">
@@ -336,18 +336,18 @@ export function MSG91OTPWidget({ phone, onSuccess, onError }: MSG91OTPWidgetProp
       )}
 
       {/* Resend Controls & Timer */}
-      <div className="flex justify-between items-center text-xs text-[#6B6B6B] pt-4 border-t border-[#E5E5E2]">
+      <div className="flex justify-between items-center text-xs text-[#9A9DA5] pt-4 border-t border-white/[0.08]">
         <span>Didn't receive the code?</span>
         {resendTimer > 0 ? (
-          <span className="font-mono text-[#6B6B6B]">
-            Resend available in <strong className="text-[#111111]">{resendTimer}s</strong>
+          <span className="font-mono text-[#9A9DA5]">
+            Resend available in <strong className="text-[#F7F7F5]">{resendTimer}s</strong>
           </span>
         ) : (
           <button
             type="button"
             onClick={handleResend}
             disabled={resendAttempts <= 0}
-            className="font-semibold text-[#111111] hover:underline disabled:opacity-40 uppercase tracking-wider text-[11px] flex items-center space-x-1"
+            className="font-semibold text-[#F7F7F5] hover:underline disabled:opacity-40 uppercase tracking-wider text-[11px] flex items-center space-x-1"
           >
             <RefreshCw className="w-3 h-3 mr-1" />
             <span>RESEND SMS</span>
