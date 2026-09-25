@@ -227,12 +227,12 @@ export default async function HomePage() {
       <SearchModal />
       <CartDrawer />
 
-      <main className="flex-1 flex flex-col min-h-0 p-0 m-0 bg-[#F7F7F5]">
-        {/* Phase 2 Finished Hero Carousel */}
+      <main className="flex-1 flex flex-col min-h-0 p-0 m-0 bg-[#0A0A0C] text-[#F8FAFC]">
+        {/* Phase 8.2 Cinematic Hero Carousel */}
         {heroEnabled && <HeroCarousel slides={slides} />}
 
         {/* Dynamic Section Rendering based on Saved Section Order & Visibility */}
-        <div className="space-y-10 sm:space-y-14 py-8 sm:py-12">
+        <div className="space-y-14 sm:space-y-20 py-10 sm:py-16">
           {sectionsOrder
             .filter((sec: any) => sec.id !== "hero" && sec.enabled)
             .map((sec: any) => renderSection(sec.id))}

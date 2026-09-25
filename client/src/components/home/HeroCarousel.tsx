@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export interface CarouselSlide {
   id: string;
@@ -45,11 +45,10 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
   const isDraggingRef = useRef(false);
   const isInfiniteAdjustingRef = useRef(false);
 
-  // Helper to measure panel width + 2px gap
+  // Helper to measure panel width + 0px gap (single full viewport slides)
   const getPanelFullWidth = useCallback(() => {
-    if (!scrollRef.current || !scrollRef.current.firstElementChild) return 0;
-    const firstChild = scrollRef.current.firstElementChild as HTMLElement;
-    return firstChild.offsetWidth + 2; // width + gap
+    if (!scrollRef.current) return 0;
+    return scrollRef.current.offsetWidth;
   }, []);
 
   // Initialize scroll position to center set (Set 1, slide 0 -> index N)
@@ -232,29 +231,34 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
 
   return (
     <section
-      className="relative w-full max-w-full overflow-hidden bg-[#111111] select-none p-0 m-0 flex flex-col justify-center h-[calc(100dvh-97px)] sm:h-[calc(100dvh-113px)] min-h-[480px] max-h-[970px]"
-      aria-label="Homepage Featured Merchandising Poster Wall"
+      className="relative w-full max-w-full overflow-hidden bg-[#0A0A0C] select-none p-0 m-0 min-h-[560px] sm:min-h-[620px] lg:min-h-[700px] flex items-center justify-center border-b border-white/[0.08]"
+      aria-label="Homepage Featured Merchandising Hero"
     >
-      {/* Edge Chevron Controls */}
+      {/* Ambient background radial highlight */}
+      <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-[#F5C518]/[0.08] via-transparent to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-gradient-to-tr from-purple-500/[0.04] to-transparent rounded-full blur-3xl pointer-events-none" />
+
+      {/* Left Navigation Chevron */}
       <button
         type="button"
         onClick={() => stepSlide("left")}
-        aria-label="Previous poster panel"
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-10 sm:h-10 bg-black/60 backdrop-blur-xs hover:bg-black/90 text-white flex items-center justify-center rounded-none transition-all duration-150 focus:outline-none"
+        aria-label="Previous slide"
+        className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 min-w-[44px] min-h-[44px] bg-[#121318]/80 backdrop-blur-md hover:bg-[#181920] border border-white/10 hover:border-[#F5C518]/40 text-white flex items-center justify-center rounded-2xl transition-all duration-200 shadow-lg shadow-black/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
 
+      {/* Right Navigation Chevron */}
       <button
         type="button"
         onClick={() => stepSlide("right")}
-        aria-label="Next poster panel"
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-10 sm:h-10 bg-black/60 backdrop-blur-xs hover:bg-black/90 text-white flex items-center justify-center rounded-none transition-all duration-150 focus:outline-none"
+        aria-label="Next slide"
+        className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 min-w-[44px] min-h-[44px] bg-[#121318]/80 backdrop-blur-md hover:bg-[#181920] border border-white/10 hover:border-[#F5C518]/40 text-white flex items-center justify-center rounded-2xl transition-all duration-200 shadow-lg shadow-black/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
       >
         <ChevronRight className="w-5 h-5" />
       </button>
 
-      {/* Infinite Seamless Merchandise Track with 2px gaps */}
+      {/* Infinite Seamless Slide Track */}
       <div
         ref={scrollRef}
         tabIndex={0}
@@ -270,59 +274,106 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
           scrollbarWidth: "none",
           msOverflowStyle: "none",
         }}
-        className={`w-full h-full flex flex-nowrap gap-[2px] items-center m-0 p-0 overflow-x-auto scrollbar-none no-scrollbar [&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:h-0 select-none outline-none ${
+        className={`w-full h-full flex flex-nowrap items-center m-0 p-0 overflow-x-auto scrollbar-none no-scrollbar [&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:h-0 select-none outline-none ${
           isCursorGrabbing ? "cursor-grabbing" : "cursor-grab"
         }`}
       >
         {extendedSlides.map((slide, extIdx) => {
           const realIdx = extIdx % N;
+          const eyebrowText = slide.eyebrow || "PREMIUM ANIME COLLECTIBLES";
+          const titleText = slide.title || "BRING YOUR FAVOURITE STORIES TO LIFE";
+          const descriptionText =
+            slide.description ||
+            "Curated figures, scale statues, and collectible pieces for people who never stopped loving the characters that shaped them.";
+          const primaryBtnLabel = slide.primaryLabel || "SHOP COLLECTIONS";
+          const primaryBtnUrl = slide.primaryUrl || "/shop";
+
           return (
             <div
               key={`${slide.id || realIdx}-ext-${extIdx}`}
               role="group"
-              aria-label={`Poster panel ${realIdx + 1} of ${N}`}
+              aria-label={`Featured slide ${realIdx + 1} of ${N}`}
               style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
-              className="relative flex-none h-full aspect-[596.562/969.641] m-0 p-0 rounded-none border-none shadow-none overflow-hidden bg-[#111111]"
+              className="relative flex-none w-full min-w-full h-full min-h-[560px] sm:min-h-[620px] lg:min-h-[700px] flex items-center overflow-hidden py-12 sm:py-16"
             >
-              {/* Entire Artwork Visible — Zero Crop */}
-              {slide.image ? (
-                <Image
-                  src={slide.image}
-                  alt={slide.title || "Poster Panel"}
-                  fill
-                  priority={extIdx >= N && extIdx < N + 4}
-                  sizes="(max-width: 689px) 100vw, (max-width: 999px) 50vw, 33vw"
-                  className="object-contain object-center rounded-none border-none pointer-events-none"
-                />
-              ) : (
-                <div className="w-full h-full bg-[#1A1A1A] flex items-center justify-center text-white/40 text-xs font-mono uppercase tracking-widest">
-                  FICTIONFIGURE POSTER
+              <div className="editorial-container w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+                {/* Left Text & Editorial Content (7 cols on desktop) */}
+                <div className="lg:col-span-6 xl:col-span-7 space-y-5 sm:space-y-6 text-left order-2 lg:order-1">
+                  {/* Eyebrow badge */}
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#F5C518]/10 border border-[#F5C518]/25 text-[#F5C518] text-[11px] font-mono font-bold tracking-widest uppercase shadow-[0_0_12px_rgba(245,197,24,0.15)]">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{eyebrowText}</span>
+                  </div>
+
+                  {/* Main Campaign Headline */}
+                  <div className="space-y-1">
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black uppercase tracking-tight text-white leading-[1.08] drop-shadow-md">
+                      {titleText}
+                    </h1>
+                    {slide.titleAccent && (
+                      <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#F5C518] via-[#FFD700] to-[#D4AF37] uppercase tracking-tight">
+                        {slide.titleAccent}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed max-w-xl font-sans">
+                    {descriptionText}
+                  </p>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-3.5 pt-2">
+                    <Link
+                      href={primaryBtnUrl}
+                      onClick={handleLinkClick}
+                      className="inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#F5C518] to-[#D4AF37] text-[#0A0A0C] text-xs sm:text-sm font-bold uppercase tracking-wider hover:brightness-110 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:-translate-y-0.5 active:scale-95 transition-all min-h-[44px] group/btn"
+                    >
+                      <span>{primaryBtnLabel}</span>
+                      <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
+
+                    <Link
+                      href="/collections"
+                      onClick={handleLinkClick}
+                      className="inline-flex items-center justify-center px-5 py-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 hover:border-white/30 text-white text-xs sm:text-sm font-semibold uppercase tracking-wider hover:-translate-y-0.5 active:scale-95 transition-all min-h-[44px]"
+                    >
+                      <span>Explore Vault</span>
+                    </Link>
+                  </div>
+
+                  {/* Trust Micro-Badges */}
+                  <div className="pt-4 flex flex-wrap items-center gap-4 text-[11px] font-mono text-[#64748B] border-t border-white/[0.06]">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#F5C518]" />
+                      <span>100% Authentic Japanese Imports</span>
+                    </span>
+                    <span className="hidden sm:inline text-white/20">•</span>
+                    <span>Mint Condition Guarantee</span>
+                  </div>
                 </div>
-              )}
 
-              {/* Minimal Bottom CTA Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent flex flex-col justify-end p-4 sm:p-5 lg:p-6 pointer-events-none">
-                {slide.eyebrow && (
-                  <span className="text-[10px] sm:text-xs font-sans font-bold uppercase tracking-[0.2em] text-[#D4AF37] mb-1 block drop-shadow-sm">
-                    {slide.eyebrow}
-                  </span>
-                )}
+                {/* Right Artwork Showcase (5 cols on desktop) */}
+                <div className="lg:col-span-6 xl:col-span-5 relative order-1 lg:order-2 flex items-center justify-center">
+                  <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/4] max-w-[480px] lg:max-w-none rounded-3xl overflow-hidden bg-gradient-to-br from-[#121318] to-[#181920] border border-white/10 p-4 sm:p-6 shadow-2xl shadow-black/80 flex items-center justify-center group">
+                    {/* Glowing highlight ring */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-[#F5C518]/10 via-transparent to-purple-500/10 opacity-60 rounded-3xl pointer-events-none" />
 
-                {slide.title && (
-                  <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-white tracking-tight drop-shadow-sm line-clamp-1 max-w-[90%] mb-2">
-                    {slide.title}
-                  </h3>
-                )}
-
-                <div className="pointer-events-auto">
-                  <Link
-                    href={slide.primaryUrl || "/shop"}
-                    onClick={handleLinkClick}
-                    className="inline-flex items-center px-3 py-1.5 bg-white text-[#111111] hover:bg-[#D4AF37] hover:text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-colors duration-150 shadow-sm rounded-none group/btn"
-                  >
-                    <span>{slide.primaryLabel || "SHOP NOW"}</span>
-                    <ArrowRight className="w-3 h-3 ml-1 group-hover/btn:translate-x-1 transition-transform duration-150" />
-                  </Link>
+                    {slide.image ? (
+                      <Image
+                        src={slide.image}
+                        alt={slide.title || "Featured Collectible Artwork"}
+                        fill
+                        priority={extIdx >= N && extIdx < N + 2}
+                        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 50vw, 40vw"
+                        className="object-contain object-center p-2 group-hover:scale-105 transition-all duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs font-mono uppercase tracking-widest text-[#64748B]">
+                        FICTIONFIGURE VAULT ARTWORK
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -330,11 +381,11 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         })}
       </div>
 
-      {/* Swiper-Style Pagination Indicator Overlay */}
+      {/* Swiper-Style Pagination Indicator Bar */}
       <div
-        className="absolute bottom-4 sm:bottom-6 lg:bottom-7 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center gap-[6px] pointer-events-auto"
+        className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center gap-2 pointer-events-auto bg-[#121318]/70 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full shadow-lg"
         role="tablist"
-        aria-label="Hero carousel pagination"
+        aria-label="Hero slide pagination"
       >
         {activeSlides.map((_, realIdx) => {
           const isActive = realIdx === activeRealIndex;
@@ -346,10 +397,10 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
               aria-selected={isActive}
               aria-label={`Go to slide ${realIdx + 1} of ${N}`}
               onClick={() => goToRealSlide(realIdx)}
-              className={`h-1.5 rounded-full transition-all duration-180 ease-in-out cursor-pointer border-none outline-none p-0 focus:outline-none focus:ring-1 focus:ring-[#D4AF37] ${
+              className={`h-2 rounded-full transition-all duration-250 ease-in-out cursor-pointer border-none outline-none p-0 focus:outline-none focus:ring-1 focus:ring-[#F5C518] ${
                 isActive
-                  ? "w-6 bg-[#D4AF37] opacity-100"
-                  : "w-1.5 bg-white/70 opacity-60 hover:opacity-100 hover:bg-white"
+                  ? "w-7 bg-gradient-to-r from-[#F5C518] to-[#D4AF37] shadow-[0_0_8px_rgba(245,197,24,0.6)]"
+                  : "w-2 bg-white/40 hover:bg-white/70"
               }`}
             />
           );
@@ -358,8 +409,3 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
     </section>
   );
 }
-
-
-
-
-

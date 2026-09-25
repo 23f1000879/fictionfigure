@@ -1,55 +1,56 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, Truck, CreditCard, PhoneCall } from "lucide-react";
+import { ShieldCheck, Truck, CreditCard, Box } from "lucide-react";
 
 export function TrustStrip() {
   const trustItems = [
     {
       icon: ShieldCheck,
-      title: "AUTHENTIC PRODUCTS",
-      description: "Directly sourced from trusted global studios & makers.",
+      title: "100% AUTHENTIC FIGURES",
+      description: "Directly sourced from licensed Japanese manufacturers & studios.",
+    },
+    {
+      icon: Box,
+      title: "COLLECTOR SAFE PACKAGING",
+      description: "Reinforced outer boxes & bubble cushioning for mint box delivery.",
     },
     {
       icon: CreditCard,
       title: "SECURE PAYMENTS",
-      description: "Encrypted Razorpay, UPI & Cash on Delivery options.",
+      description: "Encrypted Razorpay, UPI, Cards & Cash on Delivery options.",
     },
     {
       icon: Truck,
-      title: "PAN-INDIA SHIPPING",
-      description: "Dispatched with protective outer box packaging.",
-    },
-    {
-      icon: PhoneCall,
-      title: "CUSTOMER SUPPORT",
-      description: "Dedicated WhatsApp & phone assistance: +91 97974 94639.",
+      title: "PAN-INDIA EXPRESS SHIPPING",
+      description: "Insured express delivery with end-to-end real-time tracking.",
     },
   ];
 
   return (
-    <section className="bg-white border-y border-[#E5E5E2] py-8 sm:py-10" aria-label="Store Benefits & Guarantees">
-      <div className="editorial-container">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {trustItems.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div key={index} className="flex items-start space-x-3 text-left">
-                <div className="p-2 bg-[#F7F7F5] border border-[#E5E5E2] shrink-0 text-[#111111]">
-                  <Icon className="w-5 h-5 text-[#111111]" />
-                </div>
-                <div className="space-y-0.5 min-w-0">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#111111]">
-                    {item.title}
-                  </h4>
-                  <p className="text-[11px] text-[#6B6B6B] leading-relaxed line-clamp-2">
-                    {item.description}
-                  </p>
-                </div>
+    <section className="editorial-container" aria-label="Collector Reassurance & Benefits">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {trustItems.map((item, index) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={index}
+              className="p-5 rounded-2xl bg-[#121318] border border-white/[0.08] hover:border-white/15 transition-all flex items-start space-x-3.5 text-left group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#F5C518]/10 border border-[#F5C518]/25 flex items-center justify-center text-[#F5C518] shrink-0 group-hover:scale-105 transition-transform">
+                <Icon className="w-5 h-5" />
               </div>
-            );
-          })}
-        </div>
+              <div className="space-y-1 min-w-0">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                  {item.title}
+                </h4>
+                <p className="text-xs text-[#94A3B8] leading-relaxed line-clamp-2">
+                  {item.description}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
