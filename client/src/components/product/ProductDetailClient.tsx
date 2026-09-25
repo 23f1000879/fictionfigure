@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,11 +23,17 @@ import {
   Headphones,
   Sparkles,
   ChevronDown,
+  Box,
+  CheckCircle2,
+  Clock,
+  Layers,
+  ArrowRight,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { API_BASE, safeApiFetch } from "@/lib/api";
+import { Badge } from "@/components/ui/Badge";
 import { ProductReviews } from "./ProductReviews";
 
 interface ProductDetailProps {
@@ -80,6 +86,8 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
 
   // Accordion open states
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
@@ -93,7 +101,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
     setOpenAccordions((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Helper to retrieve token from all supported localStorage keys
+  // Helper to retrieve auth token
   const getAuthToken = () => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("fictionfigure_token") || localStorage.getItem("token");
@@ -112,11 +120,11 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
   const hasVariants = Boolean(
     product.variants &&
-    (product.variants.length > 1 ||
-      (product.variants.length === 1 &&
-        product.variants[0].title !== "Standard Edition" &&
-        product.variants[0].title !== "Standard" &&
-        product.variants[0].title !== "Default Title"))
+      (product.variants.length > 1 ||
+        (product.variants.length === 1 &&
+          product.variants[0].title !== "Standard Edition" &&
+          product.variants[0].title !== "Standard" &&
+          product.variants[0].title !== "Default Title"))
   );
 
   const currentVariant = product.variants[selectedVariantIndex] || product.variants[0];
@@ -146,8 +154,29 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
     await toggleWishlist(product.id);
   };
 
+  // Lightbox scroll lock & Escape listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsLightboxOpen(false);
+      if (e.key === "ArrowLeft") handlePrevImage();
+      if (e.key === "ArrowRight") handleNextImage();
+    };
+
+    if (isLightboxOpen) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKeyDown);
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isLightboxOpen]);
+
   // Check if customer already has a pending restock request for this product
-  React.useEffect(() => {
+  useEffect(() => {
     const token = getAuthToken();
     if (!token) return;
 
@@ -223,38 +252,10 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
     }
   };
 
-  const handleUpdateRestockQuantity = async (newQty: number) => {
-    if (!restockRequestId) return;
-    const token = getAuthToken();
-    if (!token) return;
-
-    setIsRestockLoading(true);
-    try {
-      const data = await safeApiFetch<{ success: boolean; request?: any }>(
-        `${API_BASE}/restock-requests/${restockRequestId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ quantity: Math.max(1, newQty) }),
-        }
-      );
-
-      if (data.success && data.request) {
-        setRequestedQuantity(data.request.quantity);
-        setRestockNotice("Requested quantity updated.");
-      }
-    } catch (err: any) {
-      setRestockErr(err.message || "Failed to update quantity.");
-    } finally {
-      setIsRestockLoading(false);
-    }
-  };
-
   const handleAddToCart = () => {
     if (!currentVariant || !inStock) return;
+    setIsAddingToCart(true);
+
     addItem({
       variantId: currentVariant.id,
       productId: product.id,
@@ -266,6 +267,12 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
       sku: currentVariant.sku,
       brand: product.brand,
     });
+
+    setJustAdded(true);
+    setTimeout(() => {
+      setIsAddingToCart(false);
+      setTimeout(() => setJustAdded(false), 2500);
+    }, 300);
   };
 
   const handleBuyNow = () => {
@@ -292,32 +299,39 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
     setSelectedImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
   };
 
+  const brandName = product.brand || product.category?.name || "AUTHENTIC COLLECTIBLE";
+
   return (
-    <div className="space-y-10 sm:space-y-14 w-full max-w-full overflow-hidden box-border">
-      {/* Breadcrumb Navigation - Clean Editorial Path */}
-      <nav className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] overflow-x-auto whitespace-nowrap scrollbar-none w-full max-w-full py-1 border-b border-[#E5E5E2] pb-3">
-        <Link href="/" className="hover:text-[#111111] transition-colors shrink-0">
-          Home
+    <div className="space-y-12 sm:space-y-16 w-full max-w-full overflow-hidden box-border">
+      {/* 1. Subtle Breadcrumb Navigation */}
+      <nav className="flex items-center space-x-2 text-[11px] font-mono font-bold uppercase tracking-widest text-[#64748B] overflow-x-auto whitespace-nowrap scrollbar-none w-full max-w-full pb-2 border-b border-white/10">
+        <Link href="/" className="hover:text-[#F5C518] transition-colors shrink-0">
+          HOME
         </Link>
-        <span className="text-[#A0A0A0] shrink-0">/</span>
-        <Link href="/shop" className="hover:text-[#111111] transition-colors shrink-0">
-          Shop
+        <span>/</span>
+        <Link href="/shop" className="hover:text-[#F5C518] transition-colors shrink-0">
+          VAULT
         </Link>
-        <span className="text-[#A0A0A0] shrink-0">/</span>
-        <Link href={`/shop?category=${product.category.slug}`} className="hover:text-[#111111] transition-colors shrink-0">
+        <span>/</span>
+        <Link
+          href={`/shop?category=${product.category.slug}`}
+          className="hover:text-[#F5C518] transition-colors shrink-0"
+        >
           {product.category.name}
         </Link>
-        <span className="text-[#A0A0A0] shrink-0">/</span>
-        <span className="text-[#111111] font-mono shrink-0 truncate max-w-[220px] sm:max-w-xs">{product.name}</span>
+        <span>/</span>
+        <span className="text-white shrink-0 truncate max-w-[200px] sm:max-w-xs">{product.name}</span>
       </nav>
 
-      {/* Main 2-Column Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 w-full max-w-full box-border items-start">
-        
+      {/* 2. Main 2-Column Product Studio Split */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 w-full max-w-full box-border items-start">
         {/* Left Column: Image Gallery (7 Cols Desktop) */}
         <div className="lg:col-span-7 space-y-4 w-full max-w-full box-border">
           {/* Main Hero Product Image Surface */}
-          <div className="relative aspect-square sm:aspect-[4/3] md:aspect-square w-full max-w-full bg-white border border-[#E5E5E2] rounded-lg overflow-hidden group box-border flex items-center justify-center shadow-2xs">
+          <div className="relative aspect-square sm:aspect-[4/3] md:aspect-square w-full max-w-full bg-[#121318] border border-white/10 rounded-3xl overflow-hidden group box-border flex items-center justify-center shadow-2xl shadow-black/80 p-6 sm:p-10">
+            {/* Ambient subtle gold radial glow behind artwork */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#F5C518]/[0.06] via-transparent to-purple-500/[0.04] pointer-events-none" />
+
             {currentImage ? (
               <Image
                 src={currentImage}
@@ -325,35 +339,37 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 fill
                 priority
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 720px"
-                className="object-contain cursor-zoom-in max-w-full transition-transform duration-300 group-hover:scale-105"
+                className="object-contain cursor-zoom-in max-w-full transition-transform duration-500 group-hover:scale-[1.03] p-4"
                 onClick={() => setIsLightboxOpen(true)}
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-xs text-[#6B6B6B] space-y-2">
-                <Sparkles className="w-6 h-6 text-[#A0A0A0]" />
-                <span>No image artwork available</span>
+              <div className="w-full h-full flex flex-col items-center justify-center text-xs font-mono text-[#64748B] space-y-2">
+                <Sparkles className="w-6 h-6 text-[#F5C518]" />
+                <span>NO IMAGE ARTWORK AVAILABLE</span>
               </div>
             )}
 
             {/* Discount Badge on Main Image */}
             {discountPercent > 0 && (
-              <div className="absolute top-3 left-3 bg-[#D4AF37] text-black text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-xs shadow-xs pointer-events-none z-10">
-                {discountPercent}% OFF
+              <div className="absolute top-4 left-4 z-10 pointer-events-none">
+                <Badge variant="gold" size="md" glow>
+                  {discountPercent}% OFF
+                </Badge>
               </div>
             )}
 
             {/* Floating Wishlist Heart Button */}
             <button
+              type="button"
               onClick={handleWishlistToggle}
-              className={`absolute top-3 right-3 p-2.5 rounded-full border transition-all min-w-[40px] min-h-[40px] flex items-center justify-center z-10 shadow-xs ${
+              className={`absolute top-4 right-4 w-11 h-11 min-w-[44px] min-h-[44px] rounded-2xl border transition-all flex items-center justify-center z-10 shadow-lg cursor-pointer ${
                 isWishlisted
-                  ? "bg-[#111111] text-white border-[#111111]"
-                  : "bg-white/90 backdrop-blur-xs text-[#111111] border-[#E5E5E2] hover:bg-white"
+                  ? "bg-[#181920] border-rose-500/50 text-rose-400 shadow-rose-500/20"
+                  : "bg-[#121318]/80 backdrop-blur-md text-white/90 border-white/10 hover:border-white/25 hover:text-white"
               }`}
-              title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-              aria-label="Wishlist toggle"
+              aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
             >
-              <Heart className={`w-4 h-4 ${isWishlisted ? "fill-white" : ""}`} />
+              <Heart className={`w-5 h-5 ${isWishlisted ? "fill-rose-500 text-rose-500" : ""}`} />
             </button>
 
             {/* Previous / Next Image Navigation Controls */}
@@ -362,7 +378,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 <button
                   type="button"
                   onClick={handlePrevImage}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 backdrop-blur-xs border border-[#E5E5E2] text-[#111111] hover:bg-white flex items-center justify-center transition-all shadow-xs z-10"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-2xl bg-[#121318]/80 backdrop-blur-md border border-white/10 hover:border-white/25 text-white flex items-center justify-center transition-all shadow-lg z-10 cursor-pointer"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -371,7 +387,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 <button
                   type="button"
                   onClick={handleNextImage}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 backdrop-blur-xs border border-[#E5E5E2] text-[#111111] hover:bg-white flex items-center justify-center transition-all shadow-xs z-10"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-2xl bg-[#121318]/80 backdrop-blur-md border border-white/10 hover:border-white/25 text-white flex items-center justify-center transition-all shadow-lg z-10 cursor-pointer"
                   aria-label="Next image"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -379,11 +395,12 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
               </>
             )}
 
-            {/* Expand Lightbox Button */}
+            {/* Expand Fullscreen Lightbox Button */}
             <button
+              type="button"
               onClick={() => setIsLightboxOpen(true)}
-              className="absolute bottom-3 right-3 p-2 bg-white/90 backdrop-blur-xs border border-[#E5E5E2] hover:bg-white text-[#111111] rounded-lg transition-all min-w-[36px] min-h-[36px] flex items-center justify-center shadow-xs z-10"
-              title="Expand full resolution"
+              className="absolute bottom-4 right-4 w-10 h-10 min-w-[40px] min-h-[40px] bg-[#121318]/80 backdrop-blur-md border border-white/10 hover:border-white/25 text-[#94A3B8] hover:text-white rounded-xl transition-all flex items-center justify-center shadow-md z-10 cursor-pointer"
+              aria-label="Expand artwork full resolution"
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -391,7 +408,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
           {/* Thumbnail Strip Gallery */}
           {product.images && product.images.length > 1 && (
-            <div className="flex space-x-3 overflow-x-auto pb-2 w-full max-w-full scrollbar-none box-border pt-1">
+            <div className="flex gap-3 overflow-x-auto pb-2 w-full max-w-full scrollbar-none box-border pt-1 select-none">
               {product.images.map((img, idx) => {
                 const isSelected = selectedImageIndex === idx;
                 return (
@@ -399,17 +416,17 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                     key={img.id || idx}
                     type="button"
                     onClick={() => setSelectedImageIndex(idx)}
-                    className={`relative w-16 h-16 sm:w-20 sm:h-20 bg-white border rounded-lg shrink-0 overflow-hidden transition-all box-border p-1 ${
+                    className={`relative w-20 h-20 bg-[#121318] border rounded-2xl shrink-0 overflow-hidden transition-all box-border p-2 cursor-pointer ${
                       isSelected
-                        ? "border-[#111111] ring-2 ring-[#111111] ring-offset-1"
-                        : "border-[#E5E5E2] opacity-70 hover:opacity-100"
+                        ? "border-[#F5C518] ring-2 ring-[#F5C518]/30 shadow-[0_0_12px_rgba(245,197,24,0.2)]"
+                        : "border-white/10 opacity-70 hover:opacity-100 hover:border-white/25"
                     }`}
                   >
                     <Image
                       src={img.url}
                       alt={img.altText || `${product.name} thumbnail ${idx + 1}`}
                       fill
-                      className="object-contain p-1"
+                      className="object-contain p-1.5"
                     />
                   </button>
                 );
@@ -418,90 +435,90 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
           )}
         </div>
 
-        {/* Right Column: Product Info & Purchase Controls (5 Cols Desktop) */}
+        {/* Right Column: Product Identity & Purchase Controls (5 Cols Desktop) */}
         <div className="lg:col-span-5 space-y-6 sm:space-y-7 w-full max-w-full box-border lg:sticky lg:top-24 lg:self-start">
-          
           {/* Header & Brand Info */}
-          <div className="space-y-2.5 w-full max-w-full border-b border-[#E5E5E2] pb-5">
+          <div className="space-y-3 w-full max-w-full border-b border-white/10 pb-6">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-extrabold uppercase tracking-widest text-[#D4AF37] font-mono">
-                {product.brand || product.category.name || "FICTIONFIGURE"}
-              </span>
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#F5C518]">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{brandName}</span>
+              </div>
 
-              {/* Verified Rating Pill - Rendered ONLY if real review data exists */}
+              {/* Verified Rating Pill (Rendered ONLY if real review data exists) */}
               {product.reviewCount > 0 && product.rating > 0 && (
                 <a
                   href="#reviews-section"
-                  className="flex items-center space-x-1 bg-white px-2.5 py-1 rounded-md border border-[#E5E5E2] hover:border-[#111111] transition-colors shrink-0"
+                  className="flex items-center space-x-1.5 bg-[#181920] px-3 py-1 rounded-lg border border-white/10 hover:border-[#F5C518]/40 transition-colors shrink-0"
                 >
-                  <Star className="w-3.5 h-3.5 fill-[#D4AF37] text-[#D4AF37]" />
-                  <span className="font-mono text-xs font-extrabold text-[#111111]">
+                  <Star className="w-3.5 h-3.5 fill-[#F5C518] text-[#F5C518]" />
+                  <span className="font-mono text-xs font-bold text-white">
                     {product.rating.toFixed(1)}
                   </span>
-                  <span className="text-[#6B6B6B] font-mono text-[11px]">({product.reviewCount})</span>
+                  <span className="text-[#64748B] font-mono text-[11px]">({product.reviewCount})</span>
                 </a>
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111111] tracking-tight leading-tight break-words max-w-full">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tight text-white leading-tight break-words max-w-full">
               {product.name}
             </h1>
 
             {product.shortDescription && (
-              <p className="text-xs text-[#6B6B6B] leading-relaxed break-words max-w-full">
+              <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed break-words max-w-full font-sans">
                 {product.shortDescription}
               </p>
             )}
           </div>
 
           {/* Pricing & Stock Card */}
-          <div className="p-4 sm:p-5 bg-white border border-[#E5E5E2] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full max-w-full box-border shadow-2xs">
+          <div className="p-5 bg-[#121318] border border-white/10 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full max-w-full box-border shadow-xl shadow-black/50">
             <div className="min-w-0 space-y-1">
-              <div className="flex flex-wrap items-baseline gap-2.5 sm:gap-3">
-                <span className="text-2xl sm:text-3xl font-extrabold font-mono text-[#111111]">
+              <div className="flex flex-wrap items-baseline gap-3">
+                <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white tracking-tight">
                   {formatPrice(currentPrice)}
                 </span>
 
                 {currentCompareAt && currentCompareAt > currentPrice && (
-                  <span className="text-sm sm:text-base font-mono text-[#8E8E93] line-through">
+                  <span className="text-sm sm:text-base font-mono text-[#64748B] line-through">
                     {formatPrice(currentCompareAt)}
                   </span>
                 )}
               </div>
 
               {currentVariant?.sku && (
-                <span className="text-[10px] text-[#8E8E93] uppercase font-mono block tracking-wider">
+                <span className="text-[10px] text-[#64748B] uppercase font-mono block tracking-wider">
                   SKU: {currentVariant.sku}
                 </span>
               )}
             </div>
 
-            {/* Stock Badge */}
+            {/* Stock Status Badge */}
             <div className="shrink-0 self-start sm:self-auto">
               {inStock ? (
                 isLowStock ? (
-                  <span className="bg-[#B86E00] text-white text-[10px] uppercase font-extrabold tracking-wider px-3 py-1.5 rounded-md inline-block shadow-2xs">
+                  <Badge variant="warning" size="md" dot>
                     Only {currentVariant.inventoryCount} Left
-                  </span>
+                  </Badge>
                 ) : (
-                  <span className="bg-[#2E6B44] text-white text-[10px] uppercase font-extrabold tracking-wider px-3 py-1.5 rounded-md inline-block shadow-2xs">
+                  <Badge variant="success" size="md" dot>
                     In Stock
-                  </span>
+                  </Badge>
                 )
               ) : (
-                <span className="bg-[#A83232] text-white text-[10px] uppercase font-extrabold tracking-wider px-3 py-1.5 rounded-md inline-block shadow-2xs">
+                <Badge variant="danger" size="md" dot>
                   Sold Out
-                </span>
+                </Badge>
               )}
             </div>
           </div>
 
           {/* Generic Variant Selector System */}
           {hasVariants && (
-            <div className="space-y-3 w-full max-w-full bg-white border border-[#E5E5E2] rounded-lg p-4 shadow-2xs">
-              <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-[#111111] font-mono">
-                <span>SELECT VARIANT:</span>
-                <span className="text-[#D4AF37]">{currentVariant?.title}</span>
+            <div className="space-y-3 w-full max-w-full bg-[#121318] border border-white/10 rounded-2xl p-5 shadow-lg shadow-black/40">
+              <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-white font-mono">
+                <span>SELECT EDITION / VARIANT:</span>
+                <span className="text-[#F5C518]">{currentVariant?.title}</span>
               </div>
 
               <div className="flex flex-wrap gap-2.5 w-full max-w-full pt-1">
@@ -515,17 +532,21 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                       type="button"
                       disabled={isOutOfStock}
                       onClick={() => setSelectedVariantIndex(idx)}
-                      className={`min-h-[44px] px-4 py-2 border rounded-lg text-xs font-bold font-mono transition-all flex items-center justify-center space-x-2 relative ${
+                      className={`min-h-[44px] px-4 py-2.5 border rounded-xl text-xs font-bold font-mono transition-all flex items-center justify-center space-x-2 cursor-pointer ${
                         isSelected
-                          ? "border-[#111111] bg-[#111111] text-white shadow-xs"
+                          ? "border-[#F5C518] bg-[#F5C518]/15 text-[#F5C518] shadow-[0_0_12px_rgba(245,197,24,0.15)]"
                           : isOutOfStock
-                          ? "border-[#E5E5E2] bg-[#FAF9F6] text-[#A0A0A0] cursor-not-allowed opacity-50 line-through"
-                          : "border-[#E5E5E2] bg-white text-[#111111] hover:border-[#111111]"
+                          ? "border-white/5 bg-white/[0.02] text-[#64748B] cursor-not-allowed opacity-40 line-through"
+                          : "border-white/10 bg-[#181920] text-white/90 hover:border-white/25 hover:text-white"
                       }`}
                     >
                       <span>{v.title}</span>
                       {v.price && v.price !== product.price && (
-                        <span className={`text-[10px] font-normal ${isSelected ? "text-[#D4AF37]" : "text-[#6B6B6B]"}`}>
+                        <span
+                          className={`text-[10px] font-normal ${
+                            isSelected ? "text-[#F5C518]" : "text-[#94A3B8]"
+                          }`}
+                        >
                           ({formatPrice(v.price)})
                         </span>
                       )}
@@ -536,469 +557,463 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
             </div>
           )}
 
-          {/* Quantity Controls & Actions */}
+          {/* Quantity Controls & Purchase Buttons */}
           <div className="space-y-4 w-full max-w-full box-border">
-            
-            <div className="flex flex-wrap items-center gap-3 w-full max-w-full">
-              {/* Quantity Picker */}
-              <div className="flex items-center space-x-3 shrink-0">
-                <label className="text-xs font-bold uppercase tracking-widest text-[#111111] font-mono">
-                  Quantity:
-                </label>
-                <div className="flex items-center border border-[#E5E5E2] bg-white rounded-lg overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={quantity <= 1 || !inStock}
-                    className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[#6B6B6B] hover:text-[#111111] hover:bg-[#FAF9F6] disabled:opacity-40 transition-colors"
-                    aria-label="Decrease quantity"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="px-3 min-w-[36px] text-center text-xs font-mono font-bold text-[#111111]">
-                    {quantity}
+            {inStock ? (
+              <div className="space-y-4">
+                {/* Quantity Stepper */}
+                <div className="flex items-center space-x-4">
+                  <span className="text-xs font-bold uppercase tracking-widest text-white font-mono">
+                    QUANTITY:
                   </span>
+                  <div className="flex items-center border border-white/15 bg-[#0E0F13] rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                      disabled={quantity <= 1}
+                      className="w-11 h-11 flex items-center justify-center text-[#94A3B8] hover:text-white hover:bg-white/[0.06] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="w-12 text-center text-sm font-mono font-bold text-white">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setQuantity((prev) =>
+                          currentVariant ? Math.min(currentVariant.inventoryCount, prev + 1) : prev + 1
+                        )
+                      }
+                      disabled={Boolean(currentVariant && quantity >= currentVariant.inventoryCount)}
+                      className="w-11 h-11 flex items-center justify-center text-[#94A3B8] hover:text-white hover:bg-white/[0.06] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Primary Action Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <button
                     type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    disabled={!inStock || (currentVariant && quantity >= currentVariant.inventoryCount)}
-                    className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[#6B6B6B] hover:text-[#111111] hover:bg-[#FAF9F6] disabled:opacity-40 transition-colors"
-                    aria-label="Increase quantity"
+                    onClick={handleAddToCart}
+                    disabled={isAddingToCart}
+                    className={`py-4 px-6 rounded-2xl text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all min-h-[52px] shadow-lg cursor-pointer ${
+                      justAdded
+                        ? "bg-[#10B981] text-white border border-[#10B981]"
+                        : "bg-[#181920] hover:bg-[#22242D] text-white border border-white/15 hover:border-white/30"
+                    }`}
                   >
-                    <Plus className="w-4 h-4" />
+                    {justAdded ? (
+                      <>
+                        <Check className="w-4 h-4 text-white" />
+                        <span>ADDED TO BAG!</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>ADD TO BAG</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleBuyNow}
+                    className="py-4 px-6 rounded-2xl bg-gradient-to-r from-[#F5C518] to-[#D4AF37] text-[#0A0A0C] text-xs sm:text-sm font-extrabold uppercase tracking-wider hover:brightness-110 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 flex items-center justify-center gap-2 transition-all min-h-[52px] cursor-pointer"
+                  >
+                    <span>BUY NOW</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-
-              {/* Utility Actions (Share Link) */}
-              <div className="flex items-center space-x-2 ml-auto">
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="min-w-[44px] min-h-[44px] px-3 flex items-center justify-center space-x-1.5 border border-[#E5E5E2] bg-white text-[#111111] hover:border-[#111111] rounded-lg text-xs font-semibold transition-colors"
-                  title="Share product link"
-                  aria-label="Share product"
-                >
-                  {copiedLink ? (
-                    <>
-                      <Check className="w-4 h-4 text-[#2E6B44]" />
-                      <span className="text-[11px] text-[#2E6B44] font-mono">Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="w-4 h-4" />
-                      <span className="text-[11px] font-mono">Share</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Main CTAs: Add to Cart & Buy Now */}
-            {inStock ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 w-full max-w-full box-border">
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  className="w-full min-h-[50px] px-6 py-3.5 bg-[#111111] text-white text-xs font-extrabold uppercase tracking-widest hover:bg-black rounded-lg transition-colors flex items-center justify-center max-w-full box-border shadow-xs"
-                >
-                  <ShoppingBag className="w-4 h-4 mr-2 shrink-0" /> Add to Cart
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleBuyNow}
-                  className="w-full min-h-[50px] px-6 py-3.5 bg-white border-2 border-[#111111] text-[#111111] text-xs font-extrabold uppercase tracking-widest hover:bg-[#111111] hover:text-white rounded-lg transition-colors flex items-center justify-center max-w-full box-border shadow-2xs"
-                >
-                  Buy Now <ChevronRight className="w-4 h-4 ml-1 shrink-0" />
-                </button>
-              </div>
             ) : (
-              <div className="space-y-3 pt-1 w-full max-w-full box-border">
-                {restockNotice && (
-                  <div className="p-3.5 bg-[#E8F5E9] border border-[#2E6B44] text-[#2E6B44] text-xs font-semibold rounded-lg">
-                    {restockNotice}
-                  </div>
-                )}
-                {restockErr && (
-                  <div className="p-3.5 bg-[#FFEBEE] border border-[#A83232] text-[#A83232] text-xs font-semibold rounded-lg">
-                    {restockErr}
-                  </div>
-                )}
+              /* Out of Stock & Restock Notification Block */
+              <div className="space-y-4 bg-[#121318] border border-white/10 rounded-2xl p-5">
+                <div className="space-y-1">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-rose-400 block">
+                    CURRENTLY UNAVAILABLE IN VAULT
+                  </span>
+                  <p className="text-xs text-[#94A3B8]">
+                    Join the restock alert queue to get notified immediately when more units are dispatched.
+                  </p>
+                </div>
 
                 {hasRequestedRestock ? (
-                  <div className="bg-[#FAF9F6] border border-[#E5E5E2] rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between text-xs font-bold text-[#2E6B44]">
-                      <span className="flex items-center">
-                        <Check className="w-4 h-4 mr-1.5" /> RESTOCK REQUESTED
-                      </span>
-                      <span className="font-mono text-[#111111]">Qty: {requestedQuantity}</span>
-                    </div>
-                    <p className="text-[11px] text-[#6B6B6B] leading-relaxed">
-                      You are on the priority restock list. We will notify you immediately when stock arrives.
-                    </p>
-                    <div className="flex items-center gap-2 pt-2 border-t border-[#E5E5E2]">
-                      <span className="text-[10px] font-extrabold text-[#111111] uppercase tracking-wider font-mono">
-                        Update Qty:
-                      </span>
-                      <div className="flex items-center border border-[#E5E5E2] bg-white rounded-md overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateRestockQuantity(Math.max(1, requestedQuantity - 1))}
-                          disabled={isRestockLoading}
-                          className="px-2.5 py-1 text-xs font-bold text-[#6B6B6B] hover:text-[#111111] disabled:opacity-40"
-                        >
-                          -
-                        </button>
-                        <span className="px-2.5 font-mono text-xs font-bold text-[#111111]">
-                          {requestedQuantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateRestockQuantity(requestedQuantity + 1)}
-                          disabled={isRestockLoading}
-                          className="px-2.5 py-1 text-xs font-bold text-[#6B6B6B] hover:text-[#111111] disabled:opacity-40"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
+                  <div className="p-4 rounded-xl bg-[#10B981]/10 border border-[#10B981]/30 flex items-center gap-3 text-xs text-emerald-400">
+                    <CheckCircle2 className="w-5 h-5 shrink-0" />
+                    <span>You are on the restock notification list ({requestedQuantity} requested).</span>
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={handleRestockButtonClick}
-                    disabled={isRestockLoading}
-                    className="w-full min-h-[50px] px-6 py-3.5 bg-[#111111] text-white text-xs font-extrabold uppercase tracking-widest hover:bg-black rounded-lg transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed max-w-full box-border shadow-xs"
+                    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#F5C518] to-[#D4AF37] text-[#0A0A0C] text-xs font-bold uppercase tracking-wider hover:brightness-110 shadow-lg transition-all min-h-[48px] cursor-pointer"
                   >
-                    {isRestockLoading ? "SUBMITTING..." : "NOTIFY ME WHEN RESTOCKED"}
+                    NOTIFY ME WHEN RESTOCKED
                   </button>
                 )}
               </div>
             )}
+
+            {/* Secondary Share Button */}
+            <div className="pt-2 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleShare}
+                className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#94A3B8] hover:text-white transition-colors cursor-pointer"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>{copiedLink ? "Link Copied to Clipboard!" : "Share Collectible"}</span>
+              </button>
+            </div>
           </div>
 
-          {/* Service & Guarantee Highlights Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 bg-white border border-[#E5E5E2] rounded-lg text-center text-[10px] sm:text-[11px] text-[#6B6B6B] font-medium w-full max-w-full box-border shadow-2xs">
-            <div className="flex flex-col items-center p-1.5 space-y-1">
-              <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
-              <span className="font-semibold text-[#111111]">100% Authentic</span>
-            </div>
-            <div className="flex flex-col items-center p-1.5 space-y-1">
-              <Truck className="w-4 h-4 text-[#D4AF37]" />
-              <span className="font-semibold text-[#111111]">Pan-India Delivery</span>
-            </div>
-            <div className="flex flex-col items-center p-1.5 space-y-1">
-              <CreditCard className="w-4 h-4 text-[#D4AF37]" />
-              <span className="font-semibold text-[#111111]">Secure Payments</span>
-            </div>
-            <div className="flex flex-col items-center p-1.5 space-y-1">
-              <Headphones className="w-4 h-4 text-[#D4AF37]" />
-              <span className="font-semibold text-[#111111]">Collector Support</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Product Details & Information Accordion Section */}
-      <div className="bg-white border border-[#E5E5E2] rounded-lg divide-y divide-[#E5E5E2] overflow-hidden shadow-2xs w-full max-w-full box-border">
-        
-        {/* Accordion 1: Description */}
-        <div className="w-full">
-          <button
-            type="button"
-            onClick={() => toggleAccordion("description")}
-            className="w-full px-5 py-4 flex justify-between items-center text-left hover:bg-[#FAF9F6] transition-colors"
-          >
-            <span className="text-xs font-extrabold uppercase tracking-widest text-[#111111] font-mono">
-              Product Description
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 text-[#111111] transition-transform duration-200 ${
-                openAccordions.description ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-          {openAccordions.description && (
-            <div className="px-5 pb-5 text-xs text-[#6B6B6B] leading-relaxed whitespace-pre-line border-t border-[#E5E5E2]/60 pt-4">
-              {product.description || product.shortDescription || "No detailed product description available."}
-            </div>
-          )}
-        </div>
-
-        {/* Accordion 2: Product Specifications */}
-        <div className="w-full">
-          <button
-            type="button"
-            onClick={() => toggleAccordion("specs")}
-            className="w-full px-5 py-4 flex justify-between items-center text-left hover:bg-[#FAF9F6] transition-colors"
-          >
-            <span className="text-xs font-extrabold uppercase tracking-widest text-[#111111] font-mono">
-              Specifications & Details
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 text-[#111111] transition-transform duration-200 ${
-                openAccordions.specs ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-          {openAccordions.specs && (
-            <div className="px-5 pb-5 border-t border-[#E5E5E2]/60 pt-4">
-              <div className="max-w-xl w-full">
-                <table className="w-full text-left border-collapse text-xs">
-                  <tbody>
-                    <tr className="border-b border-[#E5E5E2]/60">
-                      <td className="py-2.5 font-bold text-[#6B6B6B] uppercase text-[10px] font-mono w-1/3 pr-2">Brand / Studio</td>
-                      <td className="py-2.5 font-semibold text-[#111111]">{product.brand || "FICTIONFIGURE"}</td>
-                    </tr>
-                    {product.franchise && (
-                      <tr className="border-b border-[#E5E5E2]/60">
-                        <td className="py-2.5 font-bold text-[#6B6B6B] uppercase text-[10px] font-mono pr-2">Franchise</td>
-                        <td className="py-2.5 font-semibold text-[#111111]">{product.franchise}</td>
-                      </tr>
-                    )}
-                    {product.material && (
-                      <tr className="border-b border-[#E5E5E2]/60">
-                        <td className="py-2.5 font-bold text-[#6B6B6B] uppercase text-[10px] font-mono pr-2">Material</td>
-                        <td className="py-2.5 font-semibold text-[#111111]">{product.material}</td>
-                      </tr>
-                    )}
-                    {product.scale && (
-                      <tr className="border-b border-[#E5E5E2]/60">
-                        <td className="py-2.5 font-bold text-[#6B6B6B] uppercase text-[10px] font-mono pr-2">Scale / Dimensions</td>
-                        <td className="py-2.5 font-semibold text-[#111111]">{product.scale}</td>
-                      </tr>
-                    )}
-                    <tr className="border-b border-[#E5E5E2]/60">
-                      <td className="py-2.5 font-bold text-[#6B6B6B] uppercase text-[10px] font-mono pr-2">Category</td>
-                      <td className="py-2.5 font-semibold text-[#111111]">{product.category?.name}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-2.5 font-bold text-[#6B6B6B] uppercase text-[10px] font-mono pr-2">SKU Code</td>
-                      <td className="py-2.5 font-mono text-[#111111]">{currentVariant?.sku || product.sku}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Accordion 3: What's Included */}
-        {product.whatsIncluded && (
-          <div className="w-full">
-            <button
-              type="button"
-              onClick={() => toggleAccordion("included")}
-              className="w-full px-5 py-4 flex justify-between items-center text-left hover:bg-[#FAF9F6] transition-colors"
-            >
-              <span className="text-xs font-extrabold uppercase tracking-widest text-[#111111] font-mono">
-                Box Contents
+          {/* Collector Benefits / Trust Strip */}
+          <div className="p-4 bg-[#121318] border border-white/[0.08] rounded-2xl grid grid-cols-3 gap-3 text-center">
+            <div className="space-y-1">
+              <ShieldCheck className="w-5 h-5 text-[#F5C518] mx-auto" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-white block">
+                100% Authentic
               </span>
-              <ChevronDown
-                className={`w-4 h-4 text-[#111111] transition-transform duration-200 ${
-                  openAccordions.included ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {openAccordions.included && (
-              <div className="px-5 pb-5 border-t border-[#E5E5E2]/60 pt-4 text-xs text-[#6B6B6B]">
-                <ul className="space-y-2 list-disc list-inside">
-                  {product.whatsIncluded
-                    .split(/\r?\n|,/)
-                    .map((item) => item.trim())
-                    .filter(Boolean)
-                    .map((item, idx) => (
-                      <li key={idx} className="font-medium text-[#111111]">
-                        {item}
-                      </li>
-                    ))}
-                </ul>
+            </div>
+            <div className="space-y-1 border-x border-white/10 px-2">
+              <Box className="w-5 h-5 text-[#F5C518] mx-auto" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-white block">
+                Mint Box Safe
+              </span>
+            </div>
+            <div className="space-y-1">
+              <Truck className="w-5 h-5 text-[#F5C518] mx-auto" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-white block">
+                Express Transit
+              </span>
+            </div>
+          </div>
+
+          {/* Supporting Information Accordions */}
+          <div className="space-y-3 pt-2">
+            {/* Description Accordion */}
+            <div className="bg-[#121318] border border-white/10 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleAccordion("description")}
+                className="w-full p-4 sm:p-5 flex items-center justify-between text-left cursor-pointer hover:bg-white/[0.02] transition-colors"
+              >
+                <span className="text-xs font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#F5C518]" />
+                  <span>FIGURE DESCRIPTION & STORY</span>
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-[#94A3B8] transition-transform duration-200 ${
+                    openAccordions.description ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {openAccordions.description && (
+                <div className="p-5 pt-0 border-t border-white/[0.06] text-xs sm:text-sm text-[#94A3B8] leading-relaxed space-y-3">
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: product.description || product.shortDescription || "No detailed description available.",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Specifications Accordion */}
+            <div className="bg-[#121318] border border-white/10 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleAccordion("specs")}
+                className="w-full p-4 sm:p-5 flex items-center justify-between text-left cursor-pointer hover:bg-white/[0.02] transition-colors"
+              >
+                <span className="text-xs font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[#F5C518]" />
+                  <span>COLLECTOR SPECIFICATIONS</span>
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-[#94A3B8] transition-transform duration-200 ${
+                    openAccordions.specs ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {openAccordions.specs && (
+                <div className="p-5 pt-0 border-t border-white/[0.06] text-xs text-[#94A3B8] space-y-2.5 font-mono">
+                  <div className="flex justify-between py-1.5 border-b border-white/5">
+                    <span className="text-[#64748B]">Series / Universe</span>
+                    <span className="text-white font-bold">{product.category.name}</span>
+                  </div>
+                  {product.brand && (
+                    <div className="flex justify-between py-1.5 border-b border-white/5">
+                      <span className="text-[#64748B]">Manufacturer / Studio</span>
+                      <span className="text-white font-bold">{product.brand}</span>
+                    </div>
+                  )}
+                  {product.scale && (
+                    <div className="flex justify-between py-1.5 border-b border-white/5">
+                      <span className="text-[#64748B]">Scale</span>
+                      <span className="text-white font-bold">{product.scale}</span>
+                    </div>
+                  )}
+                  {product.material && (
+                    <div className="flex justify-between py-1.5 border-b border-white/5">
+                      <span className="text-[#64748B]">Material</span>
+                      <span className="text-white font-bold">{product.material}</span>
+                    </div>
+                  )}
+                  {product.franchise && (
+                    <div className="flex justify-between py-1.5 border-b border-white/5">
+                      <span className="text-[#64748B]">Franchise</span>
+                      <span className="text-white font-bold">{product.franchise}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-[#64748B]">Authenticity Guarantee</span>
+                    <span className="text-[#10B981] font-bold">100% Japanese Import</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* What's in the Box Accordion */}
+            {product.whatsIncluded && (
+              <div className="bg-[#121318] border border-white/10 rounded-2xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("included")}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left cursor-pointer hover:bg-white/[0.02] transition-colors"
+                >
+                  <span className="text-xs font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
+                    <Box className="w-4 h-4 text-[#F5C518]" />
+                    <span>WHAT'S IN THE BOX</span>
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#94A3B8] transition-transform duration-200 ${
+                      openAccordions.included ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {openAccordions.included && (
+                  <div className="p-5 pt-0 border-t border-white/[0.06] text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+                    <p>{product.whatsIncluded}</p>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* Accordion 4: Shipping & Policy */}
-        <div className="w-full">
+            {/* Shipping & Delivery Guarantee Accordion */}
+            <div className="bg-[#121318] border border-white/10 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleAccordion("shipping")}
+                className="w-full p-4 sm:p-5 flex items-center justify-between text-left cursor-pointer hover:bg-white/[0.02] transition-colors"
+              >
+                <span className="text-xs font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-[#F5C518]" />
+                  <span>SHIPPING & COLLECTOR PACKAGING</span>
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-[#94A3B8] transition-transform duration-200 ${
+                    openAccordions.shipping ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {openAccordions.shipping && (
+                <div className="p-5 pt-0 border-t border-white/[0.06] text-xs sm:text-sm text-[#94A3B8] leading-relaxed space-y-2 font-sans">
+                  <p>
+                    All items are dispatched in heavy-duty multi-layer corrugated boxes with bubble corner protectors to ensure the box and figure arrive in pristine collector condition.
+                  </p>
+                  <p>
+                    Standard transit takes 3–5 business days across India with real-time tracking provided upon dispatch.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Full-Resolution Lightbox Modal */}
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
           <button
             type="button"
-            onClick={() => toggleAccordion("shipping")}
-            className="w-full px-5 py-4 flex justify-between items-center text-left hover:bg-[#FAF9F6] transition-colors"
+            onClick={() => setIsLightboxOpen(false)}
+            className="absolute top-6 right-6 w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all z-20 cursor-pointer"
+            aria-label="Close fullscreen view"
           >
-            <span className="text-xs font-extrabold uppercase tracking-widest text-[#111111] font-mono">
-              Shipping & Protection
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 text-[#111111] transition-transform duration-200 ${
-                openAccordions.shipping ? "rotate-180" : ""
-              }`}
-            />
+            <X className="w-6 h-6" />
           </button>
-          {openAccordions.shipping && (
-            <div className="px-5 pb-5 border-t border-[#E5E5E2]/60 pt-4 text-xs text-[#6B6B6B] space-y-2.5 leading-relaxed">
-              <p>
-                All orders are packaged in reinforced outer boxes with high-density padding to ensure collector-grade delivery condition.
-              </p>
-              <p>
-                Standard pan-India delivery dispatches within 24-48 business hours with full tracking details sent via SMS & email.
-              </p>
+
+          {/* Lightbox Navigation Chevrons */}
+          {product.images && product.images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={handlePrevImage}
+                className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all z-20 cursor-pointer"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextImage}
+                className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all z-20 cursor-pointer"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          <div className="relative w-full max-w-4xl h-[80vh] flex items-center justify-center">
+            {currentImage && (
+              <Image
+                src={currentImage}
+                alt={product.name}
+                fill
+                className="object-contain p-4"
+                priority
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Restock Request Modal */}
+      {showRestockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-md bg-[#121318] border border-white/10 rounded-2xl p-6 space-y-5 shadow-2xl shadow-black">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white font-mono">
+                REQUEST RESTOCK NOTIFICATION
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowRestockModal(false)}
+                className="text-white/60 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
+
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              Enter your desired quantity. We will notify you via email and phone the moment new units are dispatched to our vault.
+            </p>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#64748B]">
+                DESIRED UNITS:
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={desiredRestockQty}
+                onChange={(e) => setDesiredRestockQty(Math.max(1, Number(e.target.value)))}
+                className="w-full p-3 bg-[#0E0F13] border border-white/10 rounded-xl text-xs font-mono text-white focus:border-[#F5C518] focus:outline-none"
+              />
+            </div>
+
+            {restockErr && <p className="text-xs text-rose-400">{restockErr}</p>}
+
+            <button
+              type="button"
+              disabled={isRestockLoading}
+              onClick={handleConfirmRestockRequest}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#F5C518] to-[#D4AF37] text-[#0A0A0C] text-xs font-bold uppercase tracking-widest hover:brightness-110 shadow-lg transition-all min-h-[44px]"
+            >
+              {isRestockLoading ? "SUBMITTING..." : "CONFIRM RESTOCK REQUEST"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Auth Required Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm bg-[#121318] border border-white/10 rounded-2xl p-6 space-y-4 shadow-2xl text-center">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+              AUTHENTICATION REQUIRED
+            </h3>
+            <p className="text-xs text-[#94A3B8]">
+              Please sign in or register to join the restock alert queue and track your requests.
+            </p>
+            <div className="pt-2 flex gap-3">
+              <Link
+                href="/login"
+                className="flex-1 py-3 bg-[#F5C518] text-[#0A0A0C] text-xs font-bold uppercase tracking-wider rounded-xl text-center"
+              >
+                Sign In
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(false)}
+                className="flex-1 py-3 bg-white/[0.05] border border-white/10 text-white text-xs font-bold uppercase tracking-wider rounded-xl text-center"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Mobile Sticky Bottom Purchase Bar (< lg) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#121318]/95 backdrop-blur-xl border-t border-white/10 p-3.5 flex items-center justify-between gap-3 lg:hidden shadow-2xl shadow-black">
+        <div className="min-w-0 space-y-0.5">
+          <span className="text-[10px] font-mono uppercase text-[#94A3B8] block">Price</span>
+          <span className="text-base font-extrabold font-mono text-white truncate block">
+            {formatPrice(currentPrice)}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {inStock ? (
+            <>
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={isAddingToCart}
+                className="py-2.5 px-3.5 rounded-xl bg-white/[0.06] border border-white/15 text-white text-xs font-bold uppercase tracking-wider min-h-[44px] flex items-center justify-center gap-1.5"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>Add</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#F5C518] to-[#D4AF37] text-[#0A0A0C] text-xs font-bold uppercase tracking-wider min-h-[44px] flex items-center justify-center gap-1 shadow-md shadow-amber-500/20"
+              >
+                <span>Buy Now</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleRestockButtonClick}
+              className="py-2.5 px-4 rounded-xl bg-[#F5C518] text-[#0A0A0C] text-xs font-bold uppercase tracking-wider min-h-[44px]"
+            >
+              Restock Alert
+            </button>
           )}
         </div>
       </div>
 
-      {/* Verified Customer Reviews Section */}
-      <div id="reviews-section">
+      {/* 7. Verified Collector Reviews Section */}
+      <div id="reviews-section" className="pt-8">
         <ProductReviews
           productId={product.id}
           productSlug={product.slug}
           productName={product.name}
         />
       </div>
-
-      {/* RESTOCK QUANTITY SELECTOR MODAL */}
-      {showRestockModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E5E5E2] rounded-lg p-6 max-w-md w-full space-y-5 text-[#111111] text-xs shadow-2xl">
-            <div className="flex justify-between items-center border-b border-[#E5E5E2] pb-3">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#D4AF37] block font-mono">
-                  Priority Restock Alert
-                </span>
-                <h3 className="font-extrabold text-sm uppercase tracking-wider text-[#111111]">
-                  Request Restock
-                </h3>
-              </div>
-              <button onClick={() => setShowRestockModal(false)} className="text-[#6B6B6B] hover:text-[#111111]">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-xs text-[#6B6B6B]">
-                How many units of <strong>"{product.name}"</strong> would you like to request?
-              </p>
-              <div className="flex items-center space-x-3 pt-2">
-                <span className="font-bold text-xs text-[#111111] uppercase tracking-wider font-mono">Quantity:</span>
-                <div className="flex items-center border border-[#E5E5E2] bg-[#FAF9F6] rounded-md overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setDesiredRestockQty(Math.max(1, desiredRestockQty - 1))}
-                    className="px-3 py-1.5 text-sm font-bold text-[#6B6B6B] hover:text-[#111111]"
-                  >
-                    -
-                  </button>
-                  <span className="px-4 font-mono text-sm font-bold text-[#111111]">{desiredRestockQty}</span>
-                  <button
-                    type="button"
-                    onClick={() => setDesiredRestockQty(desiredRestockQty + 1)}
-                    className="px-3 py-1.5 text-sm font-bold text-[#6B6B6B] hover:text-[#111111]"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end space-x-3 pt-4 border-t border-[#E5E5E2]">
-              <button
-                type="button"
-                onClick={() => setShowRestockModal(false)}
-                className="px-4 py-2.5 border border-[#E5E5E2] font-semibold text-xs uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111] rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmRestockRequest}
-                disabled={isRestockLoading}
-                className="px-6 py-2.5 bg-[#111111] text-white font-extrabold text-xs uppercase tracking-widest hover:bg-black disabled:opacity-50 rounded-lg"
-              >
-                {isRestockLoading ? "SUBMITTING..." : "REQUEST RESTOCK"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AUTHENTICATION REQUIRED PROMPT MODAL */}
-      {showAuthModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E5E5E2] rounded-lg p-6 max-w-sm w-full space-y-4 text-center text-[#111111] text-xs shadow-2xl">
-            <div className="w-10 h-10 rounded-full bg-[#FAF9F6] border border-[#E5E5E2] flex items-center justify-center mx-auto text-[#111111]">
-              <ShieldCheck className="w-5 h-5 text-[#D4AF37]" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-extrabold text-sm uppercase tracking-wider text-[#111111]">
-                Sign In Required
-              </h3>
-              <p className="text-xs text-[#6B6B6B] leading-relaxed">
-                Please sign in to request a restock notification for this item.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => router.push(`/login?redirect=/products/${product.slug}`)}
-                className="w-full py-3 bg-[#111111] text-white font-extrabold text-xs uppercase tracking-widest hover:bg-black rounded-lg"
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAuthModal(false)}
-                className="w-full py-2.5 border border-[#E5E5E2] text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] hover:text-[#111111] rounded-lg"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile Sticky Bottom Purchase Bar */}
-      {inStock && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E5E5E2] p-3 sm:hidden shadow-lg flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <span className="text-[10px] text-[#6B6B6B] block font-mono uppercase tracking-wider truncate">
-              {currentVariant?.title !== "Standard Edition" && currentVariant?.title !== "Standard" ? currentVariant.title : product.name}
-            </span>
-            <span className="text-sm font-extrabold font-mono text-[#111111]">
-              {formatPrice(currentPrice)}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            className="min-h-[44px] px-5 bg-[#111111] text-white text-xs font-extrabold uppercase tracking-widest rounded-lg hover:bg-black transition-colors flex items-center justify-center shrink-0 shadow-xs"
-          >
-            <ShoppingBag className="w-3.5 h-3.5 mr-1.5" /> Add to Cart
-          </button>
-        </div>
-      )}
-
-      {/* Fullscreen Lightbox Modal */}
-      {isLightboxOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-xs">
-          <button
-            onClick={() => setIsLightboxOpen(false)}
-            className="absolute top-4 right-4 p-2 text-white hover:text-[#D4AF37] min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors z-50"
-            aria-label="Close image preview"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <div className="relative w-full max-w-5xl h-[85vh]">
-            <Image
-              src={currentImage}
-              alt={product.name}
-              fill
-              className="object-contain"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-
