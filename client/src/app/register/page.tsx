@@ -56,30 +56,11 @@ export default function RegisterPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/check-phone`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: norm }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || data.registered) {
-        setError(data.error || "This mobile number is already registered. Please sign in.");
-        setIsLoading(false);
-        return;
-      }
-
-      setNormalizedPhone(norm);
-      registrationSubmittedRef.current = false;
-      setStep("OTP");
-    } catch (err: any) {
-      setError(err.message || "Failed to verify mobile number. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    // No pre-OTP lookup: whether a number is registered is only revealed after the
+    // owner verifies it (the server answers 409 at that point).
+    setNormalizedPhone(norm);
+    registrationSubmittedRef.current = false;
+    setStep("OTP");
   };
 
   const handleOTPVerified = async (payload: MSG91VerificationPayload) => {
@@ -222,7 +203,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 text-[#9A9DA5] hover:text-white p-1"
+                    className="absolute right-1 w-10 h-10 flex items-center justify-center rounded-full text-[#9A9DA5] hover:text-white"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -249,7 +230,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 text-[#9A9DA5] hover:text-white p-1"
+                    className="absolute right-1 w-10 h-10 flex items-center justify-center rounded-full text-[#9A9DA5] hover:text-white"
                     aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -282,7 +263,7 @@ export default function RegisterPage() {
 
             <div className="pt-4 border-t border-white/[0.08] text-center text-xs text-[#9A9DA5]">
               Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-[#F7F7F5] hover:underline ml-1">
+              <Link href="/login" className="inline-flex items-center min-h-[44px] font-semibold text-[#F7F7F5] hover:underline ml-1">
                 Sign in →
               </Link>
             </div>

@@ -74,10 +74,10 @@ export function Footer({ showValueStrip = true }: FooterProps = {}) {
           <div className="space-y-5">
             <Link href="/" className="inline-block">
               <Image
-                src="/fictionfigure-logo-dark.svg"
+                src="/fictionfigure-logo-light.png"
                 alt="FictionFigure"
-                width={180}
-                height={40}
+                width={326}
+                height={100}
                 className="h-8 w-auto object-contain"
               />
             </Link>

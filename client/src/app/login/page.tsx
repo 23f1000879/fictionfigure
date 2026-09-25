@@ -3,10 +3,11 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { normalizeIndianPhone } from "@/lib/phone";
 import { API_BASE } from "@/lib/api";
 import { AuthShell, AuthHeading } from "@/components/auth/AuthShell";
+import { ForgotPasswordFlow } from "@/components/auth/ForgotPasswordFlow";
 
 function LoginForm() {
   const router = useRouter();
@@ -21,7 +22,6 @@ function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<{ identifier?: string; password?: string }>({});
 
   const [showForgot, setShowForgot] = useState(false);
-  const [forgotMessage, setForgotMessage] = useState("");
 
   // Check if already authenticated on mount
   useEffect(() => {
@@ -104,42 +104,12 @@ function LoginForm() {
     }
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setServerError("");
-    setForgotMessage("");
-
-    const normPhone = normalizeIndianPhone(identifier);
-    if (!normPhone) {
-      setFieldErrors({ identifier: "Enter a valid 10-digit mobile number." });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/check-phone`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: normPhone }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.registered) {
-        setForgotMessage("Account verified. Contact support or use register flow for password reset.");
-      } else {
-        setServerError(data.error || "No account found with this mobile number.");
-      }
-    } catch (err) {
-      setServerError("Failed to initiate password reset.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <AuthShell>
-
+      {showForgot ? (
+        <ForgotPasswordFlow initialPhone={identifier.includes("@") ? "" : identifier} onDone={() => setShowForgot(false)} />
+      ) : (
+        <>
         <AuthHeading eyebrow="Member sign in" title="Welcome back." text="Sign in to continue to your collection." />
 
 
@@ -151,14 +121,6 @@ function LoginForm() {
           </div>
         )}
 
-        {forgotMessage && (
-          <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 text-xs font-semibold flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{forgotMessage}</span>
-          </div>
-        )}
-
-        {!showForgot ? (
           <form onSubmit={handleLogin} className="space-y-5 text-xs" noValidate>
             {/* Mobile Number / Email Field */}
             <div className="space-y-1.5">
@@ -198,7 +160,7 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowForgot(true)}
-                  className="text-[11px] text-[#9A9DA5] hover:text-white hover:underline"
+                  className="min-h-[44px] px-1 text-[12px] text-[#9A9DA5] hover:text-[#F5C518] transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -220,7 +182,7 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-[#9A9DA5] hover:text-white p-1"
+                  className="absolute right-1 w-10 h-10 flex items-center justify-center rounded-full text-[#9A9DA5] hover:text-white"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -250,52 +212,15 @@ function LoginForm() {
               )}
             </button>
           </form>
-        ) : (
-          <form onSubmit={handleForgotPassword} className="space-y-4 text-xs">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5]">
-                REGISTERED MOBILE NUMBER *
-              </label>
-              <div className="flex overflow-hidden bg-[#17191F] border border-white/[0.08] focus-within:border-[#F5C518]/60 transition-colors rounded-[8px] placeholder:text-[#6E717A] transition-colors">
-                <span className="px-4 flex items-center font-mono font-semibold text-[#9A9DA5] border-r border-white/[0.08] select-none">
-                  +91
-                </span>
-                <input
-                  type="tel"
-                  required
-                  autoComplete="tel"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="98765 43210"
-                  className="w-full h-12 px-3 bg-transparent text-[#F7F7F5] font-mono focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="ff-btn ff-btn-gold w-full h-12 disabled:opacity-50 disabled:pointer-events-none"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>VERIFY ACCOUNT</span>}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowForgot(false)}
-              className="w-full text-center text-xs text-[#9A9DA5] hover:text-white hover:underline"
-            >
-              Back to Sign In
-            </button>
-          </form>
-        )}
 
         <div className="pt-4 border-t border-white/[0.08] text-center text-xs text-[#9A9DA5]">
           Don't have an account?{" "}
-          <Link href="/register" className="font-semibold text-[#F7F7F5] hover:underline ml-1">
-            Register →
+          <Link href="/register" className="inline-flex items-center min-h-[44px] font-semibold text-[#F7F7F5] hover:underline ml-1">
+            Create account →
           </Link>
         </div>
+        </>
+      )}
     </AuthShell>
   );
 }

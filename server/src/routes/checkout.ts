@@ -3,6 +3,9 @@ import jwt from "jsonwebtoken";
 import { normalizeIndianPhone } from "../utils/phone.js";
 import { prisma } from "../db.js";
 import { getStoreSettingsHelper } from "./settings.js";
+import bcrypt from "bcryptjs";
+import { verifyMsg91AccessToken, phoneBindingOk } from "../utils/msg91.js";
+import { MIN_PASSWORD_LENGTH, hasUsablePassword, allowAttempt, clientIp, TOO_MANY_ATTEMPTS } from "../utils/security.js";
 
 const router = Router();
 
@@ -125,6 +128,8 @@ export async function calculateAuthoritativeTotals(
 }
 
 // 1. Identify Customer & Initiate OTP Endpoint
+// Never issues a session and never reveals whether the number has an account:
+// every unauthenticated checkout starts with OTP verification of the number.
 router.post("/auth/identify", async (req, res) => {
   try {
     const { phone } = req.body;
@@ -137,57 +142,28 @@ router.post("/auth/identify", async (req, res) => {
       return res.status(400).json({ error: "Please enter a valid 10-digit Indian mobile number." });
     }
 
-    const existingUser = await prisma.user.findFirst({
-      where: { phone: normalizedPhone },
-    });
-
-    if (existingUser && existingUser.isBlocked) {
-      return res.status(403).json({
-        success: false,
-        error: "ACCOUNT_BLOCKED",
-        message: "Your account has been blocked. Please contact support.",
-      });
-    }
-
-    // CASE A: Existing Verified Customer -> Skip OTP & Restore Session
-    if (existingUser && existingUser.phoneVerified) {
-      const token = jwt.sign(
-        { userId: existingUser.id, phone: existingUser.phone, role: "CUSTOMER" },
-        JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      return res.json({
-        exists: true,
-        phoneVerified: true,
-        requiresOtp: false,
-        token,
-        user: {
-          id: existingUser.id,
-          phone: existingUser.phone,
-          firstName: existingUser.firstName,
-          lastName: existingUser.lastName,
-          email: existingUser.email,
-        },
-      });
-    }
-
-    // CASE B: New Customer or Unverified Customer -> Require MSG91 OTP Widget Verification
-    res.json({
-      exists: Boolean(existingUser),
-      phoneVerified: false,
-      requiresOtp: true,
-      normalizedPhone,
-    });
+    res.json({ requiresOtp: true, normalizedPhone });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to identify customer mobile number." });
   }
 });
 
-// 2. Verify MSG91 Widget Access Token Endpoint (Reuses Registration MSG91 Gateway)
+const SETUP_TOKEN_TTL = "15m";
+
+/** Single-purpose token proving OTP ownership of a number; carries no userId, so it is never a session. */
+function signPasswordSetupToken(phone: string) {
+  return jwt.sign({ purpose: "password_setup", phone }, JWT_SECRET, { expiresIn: SETUP_TOKEN_TTL });
+}
+
+// 2. Verify MSG91 Widget Access Token Endpoint
+// OTP proves control of the number *now*; it does not log anyone in by itself.
 router.post(["/auth/verify-widget-token", "/auth/verify-otp"], async (req, res) => {
   try {
-    const { phone, accessToken, widgetToken, reqId, firstName, lastName, email } = req.body;
+    const { phone, accessToken, widgetToken, reqId } = req.body;
+
+    if (!allowAttempt(`checkout-otp:${clientIp(req)}`, 10, 15 * 60 * 1000)) {
+      return res.status(429).json({ error: TOO_MANY_ATTEMPTS });
+    }
 
     if (!phone) {
       return res.status(400).json({ error: "Mobile number is required." });
@@ -198,99 +174,107 @@ router.post(["/auth/verify-widget-token", "/auth/verify-otp"], async (req, res) 
       return res.status(400).json({ error: "Please enter a valid 10-digit Indian mobile number." });
     }
 
-    const msg91Token = accessToken || widgetToken;
-    const MSG91_AUTH_KEY = process.env.MSG91_AUTH_KEY || "";
-
-    if (!msg91Token) {
-      return res.status(400).json({ error: "MSG91 OTP access token is required for verification." });
+    const verification = await verifyMsg91AccessToken(accessToken || widgetToken, reqId);
+    if (!verification.ok) {
+      return res.status(verification.status || 400).json({ error: verification.error });
     }
 
-    let isVerified = false;
+    const user = await prisma.user.findFirst({ where: { phone: normalizedPhone } });
 
-    // STRICT SERVER-SIDE MSG91 ACCESS TOKEN VALIDATION (Same as Registration)
-    if (MSG91_AUTH_KEY) {
-      try {
-        const payload: Record<string, string> = {
-          authkey: MSG91_AUTH_KEY,
-          "access-token": msg91Token,
-        };
-        if (reqId) payload.reqId = reqId;
-
-        const msg91Res = await fetch("https://control.msg91.com/api/v5/widget/verifyAccessToken", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            authkey: MSG91_AUTH_KEY,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const msg91Data: any = await msg91Res.json();
-        console.log("Checkout MSG91 verifyAccessToken response:", msg91Data);
-
-        isVerified =
-          msg91Res.ok &&
-          (msg91Data.type === "success" ||
-            msg91Data.status === "success" ||
-            msg91Data.message === "success" ||
-            msg91Data.message?.toLowerCase().includes("verified") ||
-            (msg91Data.data && !msg91Data.error));
-
-        if (!isVerified) {
-          return res.status(400).json({
-            error: msg91Data.message || "MSG91 access token verification failed. Unauthorized.",
-          });
-        }
-      } catch (e: any) {
-        console.error("MSG91 verifyAccessToken network error:", e);
-        return res.status(500).json({ error: "Unable to verify MSG91 access token with server." });
-      }
-    } else {
-      // Development mode fallback when MSG91_AUTH_KEY is not configured
-      isVerified = true;
+    // Existing account: the OTP must be proven to belong to this exact number.
+    if (user && !phoneBindingOk(verification, normalizedPhone, "strict")) {
+      return res.status(400).json({ error: "We couldn't confirm this number. Please verify it again with a new OTP." });
+    }
+    if (!user && !phoneBindingOk(verification, normalizedPhone, "lenient")) {
+      return res.status(400).json({ error: "The verified mobile number does not match. Please verify this number again." });
     }
 
-    // Upsert Verified CUSTOMER User Record in Neon PostgreSQL
-    let user = await prisma.user.findFirst({
-      where: { phone: normalizedPhone },
+    if (user && user.isBlocked) {
+      return res.status(403).json({ error: "ACCOUNT_BLOCKED", message: "Your account has been blocked. Please contact support." });
+    }
+
+    if (user && hasUsablePassword(user.passwordHash)) {
+      return res.json({
+        status: "LOGIN_REQUIRED",
+        message: "This number already has an account. Sign in with your password to continue checkout.",
+      });
+    }
+
+    return res.json({
+      status: user ? "PASSWORD_SETUP_REQUIRED" : "NEW_ACCOUNT",
+      setupToken: signPasswordSetupToken(normalizedPhone),
+      firstName: user?.firstName || undefined,
+      lastName: user?.lastName || undefined,
+      message: user
+        ? "Number verified. Create a password to secure your account and continue."
+        : "Number verified. Create a password to set up your account and continue.",
     });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to verify the OTP. Please try again." });
+  }
+});
+
+// 2b. Complete account after OTP: a password is always required before any session is issued.
+router.post("/auth/complete-account", async (req, res) => {
+  try {
+    const { setupToken, password, firstName, lastName } = req.body;
+
+    if (!allowAttempt(`checkout-complete:${clientIp(req)}`, 10, 15 * 60 * 1000)) {
+      return res.status(429).json({ error: TOO_MANY_ATTEMPTS });
+    }
+
+    let claims: any;
+    try {
+      claims = jwt.verify(String(setupToken || ""), JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Verification expired. Please verify your number again." });
+    }
+    if (!claims || claims.purpose !== "password_setup" || !claims.phone) {
+      return res.status(401).json({ error: "Invalid verification. Please verify your number again." });
+    }
+
+    if (!password || String(password).length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long` });
+    }
+
+    const phone = String(claims.phone);
+    const passwordHash = await bcrypt.hash(String(password), 10);
+    let user = await prisma.user.findFirst({ where: { phone } });
 
     if (user) {
+      if (user.isBlocked) {
+        return res.status(403).json({ error: "ACCOUNT_BLOCKED", message: "Your account has been blocked. Please contact support." });
+      }
+      if (hasUsablePassword(user.passwordHash)) {
+        return res.status(409).json({ error: "LOGIN_REQUIRED", message: "This account already has a password. Please sign in." });
+      }
+      // Legacy passwordless account: attach the new password.
       user = await prisma.user.update({
         where: { id: user.id },
-        data: {
-          phoneVerified: true,
-          isVerified: true,
-          firstName: firstName ? firstName.trim() : user.firstName,
-          lastName: lastName ? lastName.trim() : user.lastName,
-          email: email ? email.trim().toLowerCase() : user.email,
-        },
+        data: { passwordHash, phoneVerified: true, isVerified: true },
       });
     } else {
-      user = await prisma.user.create({
-        data: {
-          phone: normalizedPhone,
-          firstName: firstName ? firstName.trim() : "Collector",
-          lastName: lastName ? lastName.trim() : "Customer",
-          email: email ? email.trim().toLowerCase() : null,
-          passwordHash: "$2a$10$dummyHashForMobileOnlyUserPasswordPlaceholder",
-          phoneVerified: true,
-          isVerified: true,
-          role: "CUSTOMER",
-        },
-      });
+      const first = String(firstName || "").trim();
+      const last = String(lastName || "").trim();
+      if (!first || !last) {
+        return res.status(400).json({ error: "First name and last name are required." });
+      }
+      try {
+        user = await prisma.user.create({
+          data: { phone, firstName: first, lastName: last, passwordHash, phoneVerified: true, isVerified: true, role: "CUSTOMER" },
+        });
+      } catch (dbErr: any) {
+        if (dbErr.code === "P2002") {
+          return res.status(409).json({ error: "LOGIN_REQUIRED", message: "This number already has an account. Please sign in." });
+        }
+        throw dbErr;
+      }
     }
 
-    // Sign JWT Session Token
-    const token = jwt.sign(
-      { userId: user.id, phone: user.phone, role: "CUSTOMER" },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ userId: user.id, phone: user.phone, role: "CUSTOMER" }, JWT_SECRET, { expiresIn: "7d" });
 
     res.json({
       success: true,
-      message: "Mobile number verified successfully.",
       token,
       user: {
         id: user.id,
@@ -302,7 +286,7 @@ router.post(["/auth/verify-widget-token", "/auth/verify-otp"], async (req, res) 
       },
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to verify MSG91 access token." });
+    res.status(500).json({ error: "Could not complete your account. Please try again." });
   }
 });
 

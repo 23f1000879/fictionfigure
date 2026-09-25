@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
 import { OrderTotals } from "@/components/checkout/OrderTotals";
+import { UpiPaymentQr } from "@/components/checkout/UpiPaymentQr";
 import { formatPrice } from "@/lib/utils";
 import {
   Check,
@@ -14,6 +15,7 @@ import {
   QrCode,
   Banknote,
   ArrowLeft,
+  ArrowRight,
   Loader2,
   Phone,
   AlertCircle,
@@ -53,6 +55,16 @@ export function CheckoutClient() {
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
   const [isReviewStep, setIsReviewStep] = useState(false);
 
+  // Post-OTP outcome: OTP proves the number; an account always needs a password before a session exists.
+  const [loginRequiredMessage, setLoginRequiredMessage] = useState("");
+  const [accountSetup, setAccountSetup] = useState<{
+    status: "NEW_ACCOUNT" | "PASSWORD_SETUP_REQUIRED";
+    setupToken: string;
+    message: string;
+  } | null>(null);
+  const [setupForm, setSetupForm] = useState({ firstName: "", lastName: "", password: "", confirm: "" });
+  const [isCompletingAccount, setIsCompletingAccount] = useState(false);
+
   // Address State
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | "new">("new");
@@ -84,12 +96,14 @@ export function CheckoutClient() {
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   // Store Settings (UPI QR)
+  // Merchant UPI details come only from store settings; never a placeholder VPA.
   const [upiSettings, setUpiSettings] = useState({
-    upiId: "fictionfigure@upi",
+    upiId: "",
     upiQrUrl: "",
+    storeName: "FictionFigure",
+    loaded: false,
   });
 
-  const { upiId: contextUpiId, upiQrUrl: contextUpiQrUrl } = useSettings();
 
   // 1. Fetch Store Settings for UPI QR on Mount
   useEffect(() => {
@@ -97,11 +111,13 @@ export function CheckoutClient() {
       .then((res) => res.json())
       .then((data) => {
         setUpiSettings({
-          upiId: data.upiId || data.settings?.upi_id || "fictionfigure@upi",
+          upiId: String(data.settings?.upi_id || "").trim(),
           upiQrUrl: data.upiQrUrl || data.settings?.upi_qr_url || "",
+          storeName: data.storeName || data.settings?.store_name || "FictionFigure",
+          loaded: true,
         });
       })
-      .catch(() => {});
+      .catch(() => setUpiSettings((prev) => ({ ...prev, loaded: true })));
   }, []);
 
   // 2. Fetch Authenticated User Session & Saved Addresses on Mount
@@ -261,26 +277,10 @@ export function CheckoutClient() {
       if (!identifyRes.ok) throw new Error(identifyData.error || "Failed to identify mobile number.");
 
       setFormData((prev) => ({ ...prev, phone: norm }));
+      setLoginRequiredMessage("");
+      setAccountSetup(null);
 
-      // Existing Verified Customer -> Restore token & skip OTP
-      if (identifyData.exists && identifyData.phoneVerified) {
-        setIsMobileVerified(true);
-        setIsOtpSent(false);
-        if (identifyData.token) {
-          localStorage.setItem("fictionfigure_token", identifyData.token);
-          setSessionToken(identifyData.token);
-        }
-        if (identifyData.user) {
-          setFormData((prev) => ({
-            ...prev,
-            fullName: `${identifyData.user.firstName || ""} ${identifyData.user.lastName || ""}`.trim() || prev.fullName,
-            email: identifyData.user.email || prev.email,
-          }));
-        }
-        return;
-      }
-
-      // New / Unverified Customer -> Trigger MSG91 OTP Widget
+      // Every unauthenticated checkout verifies the number by OTP first.
       setIsOtpSent(true);
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to process mobile verification.");
@@ -307,16 +307,81 @@ export function CheckoutClient() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "MSG91 OTP verification failed.");
+      if (!res.ok) throw new Error(data.message || data.error || "MSG91 OTP verification failed.");
 
-      setIsMobileVerified(true);
       setIsOtpSent(false);
+
+      if (data.status === "LOGIN_REQUIRED") {
+        setLoginRequiredMessage(data.message || "This number already has an account. Sign in with your password to continue.");
+        return;
+      }
+
+      if ((data.status === "NEW_ACCOUNT" || data.status === "PASSWORD_SETUP_REQUIRED") && data.setupToken) {
+        setAccountSetup({ status: data.status, setupToken: data.setupToken, message: data.message || "" });
+        setSetupForm((prev) => ({
+          ...prev,
+          firstName: data.firstName || prev.firstName,
+          lastName: data.lastName || prev.lastName,
+        }));
+        return;
+      }
+
+      throw new Error("Verification could not be completed. Please try again.");
+    } catch (err: any) {
+      setErrorMessage(err.message || "OTP verification failed. Please try again.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  // Create the password (and account, for new customers) after OTP; only then is a session issued.
+  const handleCompleteAccount = async () => {
+    if (!accountSetup) return;
+    setErrorMessage("");
+    if (accountSetup.status === "NEW_ACCOUNT" && (!setupForm.firstName.trim() || !setupForm.lastName.trim())) {
+      setErrorMessage("Please enter your first and last name.");
+      return;
+    }
+    if (setupForm.password.length < 8) {
+      setErrorMessage("Use at least 8 characters for your password.");
+      return;
+    }
+    if (setupForm.password !== setupForm.confirm) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    setIsCompletingAccount(true);
+    try {
+      const res = await fetch(`${API_BASE}/checkout/auth/complete-account`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          setupToken: accountSetup.setupToken,
+          password: setupForm.password,
+          firstName: setupForm.firstName,
+          lastName: setupForm.lastName,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 409) {
+        setAccountSetup(null);
+        setLoginRequiredMessage(data.message || "This number already has an account. Please sign in.");
+        return;
+      }
+      if (res.status === 401) {
+        setAccountSetup(null);
+        throw new Error(data.error || "Verification expired. Please verify your number again.");
+      }
+      if (!res.ok) throw new Error(data.message || data.error || "Could not create your account.");
 
       if (data.token) {
         localStorage.setItem("fictionfigure_token", data.token);
         setSessionToken(data.token);
       }
-
+      setIsMobileVerified(true);
+      setAccountSetup(null);
+      setSetupForm({ firstName: "", lastName: "", password: "", confirm: "" });
       if (data.user) {
         setFormData((prev) => ({
           ...prev,
@@ -325,9 +390,9 @@ export function CheckoutClient() {
         }));
       }
     } catch (err: any) {
-      setErrorMessage(err.message || "OTP verification failed. Please try again.");
+      setErrorMessage(err.message || "Could not create your account.");
     } finally {
-      setIsVerifyingOtp(false);
+      setIsCompletingAccount(false);
     }
   };
 
@@ -500,7 +565,7 @@ export function CheckoutClient() {
       <header className="sticky top-0 z-30 bg-[#08090B]/90 backdrop-blur-xl border-b border-white/[0.08]">
         <div className="ff-container h-16 flex justify-between items-center gap-4">
           <Link href="/" className="flex items-center shrink-0" aria-label="FictionFigure home">
-            <Image src="/fictionfigure-logo-dark.svg" alt="FictionFigure" width={160} height={40} className="h-9 w-auto" priority />
+            <Image src="/fictionfigure-logo-light.png" alt="FictionFigure" width={326} height={100} className="h-9 w-auto" priority />
           </Link>
 
           <ol className="hidden sm:flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em]" aria-label="Checkout progress">
@@ -830,6 +895,85 @@ export function CheckoutClient() {
                         </button>
                       </div>
                     </div>
+                  ) : loginRequiredMessage ? (
+                    /* Existing password account: sign in to continue (OTP alone never opens an account) */
+                    <div className="p-4 rounded-[10px] bg-[#17191F] border border-white/[0.08] space-y-3 text-[13px]">
+                      <p className="text-[#C9CBD1] leading-relaxed">{loginRequiredMessage}</p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link href="/login?redirect=/checkout" className="ff-btn ff-btn-gold">
+                          Sign in to continue <ArrowRight className="w-4 h-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setLoginRequiredMessage("")}
+                          className="min-h-[44px] text-[12px] text-[#9A9DA5] hover:text-white underline"
+                        >
+                          Use a different number
+                        </button>
+                      </div>
+                      <p className="text-[12px] text-[#6E717A]">Your bag is saved on this device and will be here after you sign in.</p>
+                    </div>
+                  ) : accountSetup ? (
+                    /* OTP verified: create a password before any session is issued */
+                    <div className="p-4 sm:p-5 rounded-[10px] bg-[#17191F] border border-[#F5C518]/30 space-y-4 text-[13px]">
+                      <div className="space-y-1">
+                        <p className="ff-eyebrow">Number verified</p>
+                        <p className="text-white font-semibold">
+                          {accountSetup.status === "NEW_ACCOUNT" ? "Create your account password" : "Secure your account with a password"}
+                        </p>
+                        <p className="text-[#9A9DA5]">{accountSetup.message}</p>
+                      </div>
+                      {accountSetup.status === "NEW_ACCOUNT" && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            autoComplete="given-name"
+                            placeholder="First name"
+                            aria-label="First name"
+                            value={setupForm.firstName}
+                            onChange={(e) => setSetupForm({ ...setupForm, firstName: e.target.value })}
+                            className="w-full h-12 px-4 rounded-[8px] bg-[#0D0E12] border border-white/[0.08] text-[#F7F7F5] placeholder:text-[#6E717A] focus:border-[#F5C518]/60 focus:outline-none transition-colors"
+                          />
+                          <input
+                            type="text"
+                            autoComplete="family-name"
+                            placeholder="Last name"
+                            aria-label="Last name"
+                            value={setupForm.lastName}
+                            onChange={(e) => setSetupForm({ ...setupForm, lastName: e.target.value })}
+                            className="w-full h-12 px-4 rounded-[8px] bg-[#0D0E12] border border-white/[0.08] text-[#F7F7F5] placeholder:text-[#6E717A] focus:border-[#F5C518]/60 focus:outline-none transition-colors"
+                          />
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="Password (min. 8 characters)"
+                          aria-label="Password"
+                          value={setupForm.password}
+                          onChange={(e) => setSetupForm({ ...setupForm, password: e.target.value })}
+                          className="w-full h-12 px-4 rounded-[8px] bg-[#0D0E12] border border-white/[0.08] text-[#F7F7F5] placeholder:text-[#6E717A] focus:border-[#F5C518]/60 focus:outline-none transition-colors"
+                        />
+                        <input
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="Confirm password"
+                          aria-label="Confirm password"
+                          value={setupForm.confirm}
+                          onChange={(e) => setSetupForm({ ...setupForm, confirm: e.target.value })}
+                          className="w-full h-12 px-4 rounded-[8px] bg-[#0D0E12] border border-white/[0.08] text-[#F7F7F5] placeholder:text-[#6E717A] focus:border-[#F5C518]/60 focus:outline-none transition-colors"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCompleteAccount}
+                        disabled={isCompletingAccount}
+                        className="ff-btn ff-btn-gold w-full h-12 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        {isCompletingAccount ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Save password &amp; continue <ArrowRight className="w-4 h-4" /></>}
+                      </button>
+                    </div>
                   ) : !isOtpSent ? (
                     <div className="space-y-4 text-xs">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -874,6 +1018,12 @@ export function CheckoutClient() {
                         )}
                         <span>VERIFY MOBILE VIA OTP</span>
                       </button>
+                      <p className="text-[12px] text-[#9A9DA5] text-center">
+                        Already have an account?{" "}
+                        <Link href="/login?redirect=/checkout" className="inline-flex items-center min-h-[36px] font-semibold text-white hover:text-[#F5C518]">
+                          Sign in with your password
+                        </Link>
+                      </p>
                     </div>
                   ) : (
                     /* MSG91 Web OTP Widget */
@@ -1139,41 +1289,21 @@ export function CheckoutClient() {
                     </label>
                   </div>
 
-                  {/* UPI Sub-Section (Responsive Dynamic QR & UPI ID Display) */}
-                  {formData.paymentMethod === "UPI" && (
-                    <div className="p-4 sm:p-6 rounded-[10px] bg-[#0D0E12] border border-white/[0.08] space-y-5 text-center text-xs">
-                      <h4 className="font-bold uppercase tracking-wider text-[#F7F7F5]">
-                        SCAN & PAY VIA UPI ({formatPrice(grandTotal)})
-                      </h4>
-
-                      <div className="flex flex-col items-center justify-center space-y-3">
-                        <div className="relative w-44 h-44 max-w-full bg-[#FFFFFF] rounded-[10px] border-2 border-[#F5C518]/60 p-2 flex items-center justify-center mx-auto shadow-[0_0_30px_-8px_rgba(245,197,24,0.4)]">
-                          {(upiSettings.upiQrUrl || contextUpiQrUrl) ? (
-                            <Image
-                              src={upiSettings.upiQrUrl || contextUpiQrUrl}
-                              alt="FictionFigure UPI QR Code"
-                              width={176}
-                              height={176}
-                              className="object-contain max-w-full h-auto"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="text-center space-y-2 text-[#9A9DA5]">
-                              <QrCode className="w-12 h-12 mx-auto text-[#08090B]" />
-                              <p className="text-[10px] uppercase font-mono">Scan QR via GPay / PhonePe / Paytm</p>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-1 max-w-full overflow-hidden">
-                          <span className="text-[11px] text-[#9A9DA5] block">Official UPI ID:</span>
-                          <span className="font-mono font-bold text-xs sm:text-sm text-[#F7F7F5] bg-[#111318] px-3 py-1.5 rounded-[6px] border border-white/[0.08] inline-block truncate max-w-full">
-                            {upiSettings.upiId || contextUpiId || "fictionfigure@upi"}
-                          </span>
-                        </div>
+                  {/* UPI Sub-Section: amount-specific QR generated from the server-calculated total */}
+                  {formData.paymentMethod === "UPI" &&
+                    (upiSettings.loaded ? (
+                      <UpiPaymentQr
+                        upiId={upiSettings.upiId}
+                        payeeName={upiSettings.storeName}
+                        cartItems={cart.map((item) => ({ variantId: item.variantId, quantity: item.quantity }))}
+                        couponCode={appliedCoupon?.code}
+                        displayedTotal={grandTotal}
+                      />
+                    ) : (
+                      <div className="h-40 rounded-[12px] bg-[#0D0E12] border border-white/[0.08] flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-[#F5C518] animate-spin" aria-label="Loading payment details" />
                       </div>
-                    </div>
-                  )}
+                    ))}
                 </section>
 
                 {/* Mobile Coupon Section (Visible on Mobile) */}

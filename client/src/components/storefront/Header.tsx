@@ -350,10 +350,10 @@ export function Header() {
           aria-label="FictionFigure home"
         >
           <Image
-            src="/fictionfigure-logo-dark.svg"
+            src="/fictionfigure-logo-light.png"
             alt="FictionFigure"
-            width={200}
-            height={44}
+            width={326}
+            height={100}
             priority
             className="h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[160px] object-contain"
           />
@@ -440,10 +440,10 @@ export function Header() {
               <div className="h-header px-5 flex items-center justify-between border-b border-white/[0.08]">
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
                   <Image
-                    src="/fictionfigure-logo-dark.svg"
+                    src="/fictionfigure-logo-light.png"
                     alt="FictionFigure"
-                    width={160}
-                    height={36}
+                    width={326}
+                    height={100}
                     className="h-7 w-auto object-contain"
                   />
                 </Link>
