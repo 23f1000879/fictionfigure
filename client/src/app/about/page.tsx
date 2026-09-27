@@ -72,7 +72,7 @@ export default function AboutPage() {
             <p className="ff-eyebrow">Our story</p>
             <div className="space-y-5 text-[16px] sm:text-[18px] leading-relaxed text-[#F7F7F5]/85 max-w-3xl">
               <p>
-                FictionFigure was established with a singular mission: to bring authentic, high-grade figures, scale statues, and limited-edition collectibles directly to fans across India.
+                Fiction Figures was established with a singular mission: to bring authentic, high-grade figures, scale statues, and limited-edition collectibles directly to fans across India.
               </p>
               <p className="text-[#9A9DA5]">
                 We partner directly with leading international brands and authorized distributors to guarantee 100% authenticity for every box that leaves our warehouse.

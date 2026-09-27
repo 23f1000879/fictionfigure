@@ -14,11 +14,11 @@ import { API_BASE } from "@/lib/api";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "All Collections & Series | FICTIONFIGURE",
+  title: "Anime Collections & Universes",
   description:
-    "Explore all authentic anime figure collections, scale statues, keychains, and exclusive merchandise across the FICTIONFIGURE universe.",
+    "Explore all authentic anime figure collections, scale statues, keychains, and exclusive merchandise at Fiction Figures.",
   alternates: {
-    canonical: "https://www.fictionfigures.in/collections",
+    canonical: "/collections",
   },
 };
 

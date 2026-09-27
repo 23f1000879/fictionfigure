@@ -22,7 +22,7 @@ export default function ContactPage() {
             CUSTOMER ASSISTANCE
           </span>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#111111]">
-            Contact FictionFigure
+            Contact Fiction Figures
           </h1>
           <p className="text-xs sm:text-sm text-[#6B6B6B] max-w-2xl leading-relaxed">
             Have questions about a figure, order dispatch status, or shipment delivery? Our collector support team is here to assist you.

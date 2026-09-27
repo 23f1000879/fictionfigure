@@ -431,8 +431,8 @@ export function CheckoutClient() {
       {/* 1. Simplified checkout header (FICTIONFIGURE dark system) */}
       <header className="sticky top-0 z-30 bg-[#08090B]/90 backdrop-blur-xl border-b border-white/[0.08]">
         <div className="ff-container h-16 flex justify-between items-center gap-4">
-          <Link href="/" className="flex items-center shrink-0" aria-label="FictionFigure home">
-            <Image src="/fictionfigure-logo-light.png" alt="FictionFigure" width={326} height={100} className="h-9 w-auto" priority />
+          <Link href="/" className="flex items-center shrink-0" aria-label="Fiction Figures home">
+            <Image src="/fictionfigure-logo-light.png" alt="Fiction Figures" width={326} height={100} className="h-9 w-auto" priority />
           </Link>
 
           <ol className="hidden sm:flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em]" aria-label="Checkout progress">

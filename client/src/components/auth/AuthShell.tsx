@@ -29,7 +29,7 @@ const VALUES = [
  */
 export function AuthShell({
   children,
-  asideEyebrow = "The FictionFigure experience",
+  asideEyebrow = "The Fiction Figures experience",
   asideTitle = "Collect what",
   asideAccent = "you love.",
   asideText = "Save your wishlist, track your orders and get restock alerts for the pieces you're hunting.",

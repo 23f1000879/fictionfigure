@@ -347,11 +347,11 @@ export function Header() {
         <Link
           href="/"
           className="flex items-center shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
-          aria-label="FictionFigure home"
+          aria-label="Fiction Figures home"
         >
           <Image
             src="/fictionfigure-logo-light.png"
-            alt="FictionFigure"
+            alt="Fiction Figures"
             width={326}
             height={100}
             priority
@@ -441,7 +441,7 @@ export function Header() {
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
                   <Image
                     src="/fictionfigure-logo-light.png"
-                    alt="FictionFigure"
+                    alt="Fiction Figures"
                     width={326}
                     height={100}
                     className="h-7 w-auto object-contain"

@@ -5,6 +5,7 @@ import { Footer } from "@/components/storefront/Footer";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { getProducts, getCategories } from "@/lib/services/productService";
+import { titleCase } from "@/lib/seo";
 import { CollectionListingView } from "@/components/collection/CollectionListingView";
 
 export const revalidate = 60; // 60s Vercel Edge ISR Cache for Catalog
@@ -19,29 +20,30 @@ export async function generateMetadata({ searchParams }: ShopPageProps): Promise
   const franchiseName = resolvedParams.franchise;
   const brandName = resolvedParams.brand;
 
-  let title = "All Figures & Collectibles | Shop | FICTIONFIGURE";
+  let title = "Shop Anime Figures & Collectibles Online in India";
   let desc =
-    "Browse our full catalog of curated premium collectibles, scale anime statues, articulated action figures, and keychains.";
+    "Shop anime figures, action figures, collectible statues, keychains and mystery boxes online at Fiction Figures. Pan-India delivery, Cash on Delivery and UPI.";
 
   let isIndexable = true;
-  let canonical = "https://www.fictionfigures.in/shop";
+  let canonical = "/shop";
 
   if (categorySlug) {
     const { categories } = await getProducts({ category: categorySlug, limit: 1 });
     const cat = categories.find((c: any) => c.slug === categorySlug);
     if (cat) {
-      title = `${cat.name} Collectibles | Shop | FICTIONFIGURE`;
+      title = `${titleCase(cat.name)} — Shop Online in India`;
       desc =
         cat.description ||
         `Browse our premium collection of ${cat.name} action figures, statues, and keychains.`;
-      canonical = `https://www.fictionfigures.in/shop?category=${categorySlug}`;
+      // The collection page is the indexable home for a category.
+      canonical = `/collections/${categorySlug}`;
     }
   } else if (franchiseName) {
-    title = `${franchiseName} Figures & Statues | Shop | FICTIONFIGURE`;
+    title = `${franchiseName} Figures & Statues`;
     desc = `Browse our premium collection of ${franchiseName} scale figures and collectibles.`;
     isIndexable = false;
   } else if (brandName) {
-    title = `${brandName} Collectibles | Shop | FICTIONFIGURE`;
+    title = `${brandName} Collectibles`;
     desc = `Explore premium designer figures and collectibles from ${brandName}.`;
     isIndexable = false;
   } else {
@@ -107,7 +109,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       "@type": "ListItem",
       "position": 3,
       "name": activeCategoryObj.name,
-      "item": `https://www.fictionfigures.in/shop?category=${activeCategoryObj.slug}`,
+      "item": `https://www.fictionfigures.in/collections/${activeCategoryObj.slug}`,
     });
   }
 

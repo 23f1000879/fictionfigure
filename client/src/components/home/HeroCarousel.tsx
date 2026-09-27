@@ -216,10 +216,10 @@ export function HeroCarousel({
         <div key={slide.id} className="ff-fade-up lg:col-span-6 flex flex-col gap-5 lg:py-12" aria-live="polite">
           {slide.eyebrow && <p className="ff-eyebrow text-[11px]">{slide.eyebrow}</p>}
 
-          <h1 className="font-black uppercase leading-[0.94] tracking-[-0.025em] text-[40px] sm:text-[56px] lg:text-[60px] xl:text-[72px] drop-shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+          <h2 className="font-black uppercase leading-[0.94] tracking-[-0.025em] text-[40px] sm:text-[56px] lg:text-[60px] xl:text-[72px] drop-shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
             <span className="block text-white">{slide.title}</span>
             {slide.titleAccent && <span className="block text-[#F5C518]">{slide.titleAccent}</span>}
-          </h1>
+          </h2>
 
           {slide.description && (
             <p className="text-[14px] sm:text-[15px] leading-relaxed text-[#F7F7F5]/80 max-w-[440px]">

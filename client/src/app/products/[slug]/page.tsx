@@ -9,6 +9,22 @@ import { ProductDetailClient } from "@/components/product/ProductDetailClient";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { getProductBySlug } from "@/lib/services/productService";
+import {
+  OG_IMAGE,
+  OPEN_GRAPH_DEFAULTS,
+  SITE_NAME,
+  SITE_URL,
+  absoluteUrl,
+  breadcrumbSchema,
+  cleanText,
+  displayBrand,
+  getStoreFacts,
+  jsonLd,
+  merchantReturnPolicy,
+  metaDescription,
+  shippingDetails,
+  titleCase,
+} from "@/lib/seo";
 
 export const revalidate = 0;
 
@@ -24,30 +40,32 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     return {};
   }
   const { product } = data;
-  const title = `${product.brand ? product.brand + " " : ""}${product.name} | FictionFigure`;
-  const desc =
-    product.shortDescription ||
-    product.description?.replace(/<[^>]*>/g, "").slice(0, 160) ||
-    "";
+  const name = cleanText(product.name);
+  const brand = displayBrand(product.brand);
+  const title = brand === SITE_NAME ? name : `${brand} ${name}`;
+  const desc = metaDescription(
+    product.shortDescription || product.description,
+    `Buy ${name} online in India at Fiction Figures. Pan-India delivery, Cash on Delivery and UPI.`
+  );
+  const url = `/products/${product.slug}`;
+  const image = product.images?.[0]?.url;
 
   return {
     title,
     description: desc,
-    alternates: {
-      canonical: `https://www.fictionfigures.in/products/${product.slug}`,
-    },
+    alternates: { canonical: url },
     openGraph: {
+      ...OPEN_GRAPH_DEFAULTS,
       title,
       description: desc,
-      url: `https://www.fictionfigures.in/products/${product.slug}`,
-      images: product.images?.[0]?.url ? [{ url: product.images[0].url }] : [],
-      type: "article",
+      url,
+      images: image ? [{ url: image, alt: name }] : [OG_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: desc,
-      images: product.images?.[0]?.url ? [product.images[0].url] : [],
+      images: image ? [image] : [OG_IMAGE.url],
     },
   };
 }
@@ -62,6 +80,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const { product, relatedProducts } = data;
+  const storeFacts = await getStoreFacts();
+  const productName = cleanText(product.name);
+  const productUrl = absoluteUrl(`/products/${product.slug}`);
 
   const currentVariant = product.variants?.[0];
   const inStock = currentVariant ? currentVariant.inventoryCount > 0 : false;
@@ -69,14 +90,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const productSchema: any = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "name": product.name,
+    "@id": `${productUrl}#product`,
+    "name": productName,
+    "url": productUrl,
     "image": product.images?.map((img: any) => img.url) || [],
-    "description":
-      product.shortDescription || product.description?.replace(/<[^>]*>/g, ""),
-    "sku": product.sku || product.id,
+    "description": metaDescription(product.shortDescription || product.description, productName, 5000),
+    "sku": cleanText(product.sku) || product.id,
+    "brand": { "@type": "Brand", "name": displayBrand(product.brand) },
+    ...(product.category?.name ? { "category": titleCase(product.category.name) } : {}),
     "offers": {
       "@type": "Offer",
-      "url": `https://www.fictionfigures.in/products/${product.slug}`,
+      "url": productUrl,
       "priceCurrency": "INR",
       "price": product.price,
       "itemCondition": "https://schema.org/NewCondition",
@@ -84,15 +108,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
       "priceValidUntil": "2027-12-31",
+      "seller": { "@id": `${SITE_URL}/#organization`, "@type": "Organization", "name": SITE_NAME },
+      "shippingDetails": shippingDetails(storeFacts, Number(product.price) || 0),
+      "hasMerchantReturnPolicy": merchantReturnPolicy(),
     },
   };
-
-  if (product.brand && product.brand.trim()) {
-    productSchema.brand = {
-      "@type": "Brand",
-      "name": product.brand.trim(),
-    };
-  }
 
   if (product.reviewCount && product.reviewCount > 0 && product.rating) {
     productSchema.aggregateRating = {
@@ -125,50 +145,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
     }
   }
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://www.fictionfigures.in",
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "Shop",
-        "item": "https://www.fictionfigures.in/shop",
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "name": product.category?.name || "Figures",
-        "item": `https://www.fictionfigures.in/shop?category=${
-          product.category?.slug || "figures"
-        }`,
-      },
-      {
-        "@type": "ListItem",
-        "position": 4,
-        "name": product.name,
-        "item": `https://www.fictionfigures.in/products/${product.slug}`,
-      },
-    ],
-  };
+  const crumbs = breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Shop", path: "/shop" },
+    ...(product.category?.slug ? [{ name: titleCase(product.category.name), path: `/collections/${product.category.slug}` }] : []),
+    { name: productName, path: `/products/${product.slug}` },
+  ]);
 
   return (
     <>
       <Header />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(productSchema)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(crumbs)} />
       <SearchModal />
       <CartDrawer />
 

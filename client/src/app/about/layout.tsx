@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "About Our Gallery | FictionFigure",
-  description: "Learn about the FictionFigure manifesto: sourcing 100% authentic designer statues and reinforced protective collector packing.",
+  title: "About Fiction Figures — Anime Collectibles Store",
+  description: "Learn about Fiction Figures: sourcing 100% authentic designer statues and reinforced protective collector packing.",
   alternates: {
-    canonical: "https://www.fictionfigures.in/about",
+    canonical: "/about",
   }
 };
 

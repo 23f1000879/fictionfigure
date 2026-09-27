@@ -119,7 +119,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
       image: primaryImage,
       quantity: 1,
       sku: variantToAdd.sku || "",
-      brand: product.brand || product.category?.name || "FictionFigure",
+      brand: product.brand || product.category?.name || "Fiction Figures",
     });
 
     setTimeout(() => {

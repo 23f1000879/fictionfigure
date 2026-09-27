@@ -31,7 +31,7 @@ export default function TermsPage() {
               1. General Terms
             </h2>
             <p>
-              By accessing or purchasing from FictionFigure, you agree to be bound by these Terms of Service.
+              By accessing or purchasing from Fiction Figures, you agree to be bound by these Terms of Service.
             </p>
           </section>
 

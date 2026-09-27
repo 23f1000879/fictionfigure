@@ -26,7 +26,7 @@ export default function ShippingPage() {
             Shipping & Delivery Standards
           </h1>
           <p className="text-xs sm:text-sm text-[#6B6B6B] max-w-2xl leading-relaxed">
-            FictionFigure dispatches orders from Bikaner, Rajasthan, delivering figures and collectibles to serviceable PIN codes across India.
+            Fiction Figures dispatches orders from Bikaner, Rajasthan, delivering figures and collectibles to serviceable PIN codes across India.
           </p>
         </div>
 

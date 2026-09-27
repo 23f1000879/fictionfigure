@@ -245,7 +245,7 @@ export default function AccountProfilePage() {
                   </span>
                 </div>
                 <p className="text-[10px] text-[#9A9DA5]">
-                  Your verified mobile number is used as your primary login identity across FictionFigure.
+                  Your verified mobile number is used as your primary login identity across Fiction Figures.
                 </p>
               </div>
 

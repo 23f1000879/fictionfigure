@@ -7,6 +7,7 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { getProducts, getCategories } from "@/lib/services/productService";
 import { CollectionListingView } from "@/components/collection/CollectionListingView";
 import { notFound } from "next/navigation";
+import { OG_IMAGE, OPEN_GRAPH_DEFAULTS, absoluteUrl, breadcrumbSchema, cleanText, jsonLd, metaDescription, titleCase } from "@/lib/seo";
 
 export const revalidate = 60; // 60s Vercel Edge ISR Cache
 
@@ -20,21 +21,24 @@ export async function generateMetadata({
   searchParams,
 }: CollectionSlugPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const resolvedSearch = ((await searchParams) || {}) as Record<string, string | undefined>;
   const categories = await getCategories();
   const cat = categories.find((c: any) => c.slug === slug || c.id === slug);
 
   if (!cat) {
     return {
-      title: "Collection Not Found | FICTIONFIGURE",
+      title: "Collection Not Found",
       robots: { index: false, follow: true },
     };
   }
 
-  const title = `${cat.name} Collection | FICTIONFIGURE`;
-  const description =
-    cat.description ||
-    `Browse authentic ${cat.name} collectible figures, statues, keychains, and merchandise at FICTIONFIGURE.`;
-  const canonical = `https://www.fictionfigures.in/collections/${cat.slug}`;
+  const name = titleCase(cat.name);
+  const title = `${name} — Shop Online in India`;
+  const description = metaDescription(
+    cat.description,
+    `Shop ${name} at Fiction Figures: anime figures, collectibles and merchandise with pan-India delivery, Cash on Delivery and UPI.`
+  );
+  const canonical = `/collections/${cat.slug}`;
 
   return {
     title,
@@ -42,13 +46,14 @@ export async function generateMetadata({
     alternates: {
       canonical,
     },
-    robots: { index: true, follow: true },
+    // Filtered / sorted variants share the clean canonical; only the unfiltered view is indexed.
+    robots: Object.keys(resolvedSearch).some((k) => k !== "page") ? { index: false, follow: true } : { index: true, follow: true },
     openGraph: {
       title,
       description,
+      ...OPEN_GRAPH_DEFAULTS,
       url: canonical,
-      siteName: "FICTIONFIGURE",
-      images: cat.imageUrl ? [{ url: cat.imageUrl }] : [],
+      images: cat.imageUrl ? [{ url: cat.imageUrl, alt: name }] : [OG_IMAGE],
     },
   };
 }
@@ -78,40 +83,31 @@ export default async function CollectionSlugPage({
   const { products, totalCount, totalPages, currentPage, brands, franchises } =
     await getProducts(filters);
 
-  const breadcrumbElements = [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Home",
-      "item": "https://www.fictionfigures.in",
-    },
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "name": "Collections",
-      "item": "https://www.fictionfigures.in/collections",
-    },
-    {
-      "@type": "ListItem",
-      "position": 3,
-      "name": cat?.name || slug,
-      "item": `https://www.fictionfigures.in/collections/${slug}`,
-    },
-  ];
+  const crumbs = breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Collections", path: "/collections" },
+    { name: titleCase(cat?.name || slug), path: `/collections/${cat?.slug || slug}` },
+  ]);
 
-  const breadcrumbSchema = {
+  const itemList = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": breadcrumbElements,
+    "@type": "ItemList",
+    name: titleCase(cat?.name || slug),
+    itemListElement: (products || []).map((p: any, i: number) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: absoluteUrl(`/products/${p.slug}`),
+      name: cleanText(p.name),
+    })),
   };
 
   return (
     <>
       <Header />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(crumbs)} />
+      {itemList.itemListElement.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(itemList)} />
+      )}
       <SearchModal />
       <CartDrawer />
 
@@ -121,7 +117,7 @@ export default async function CollectionSlugPage({
           eyebrow="Collection"
           description={
             cat?.description ||
-            `Explore products in the ${cat?.name || slug} collection currently available in the FICTIONFIGURE catalog.`
+            `Explore products in the ${cat?.name || slug} collection currently available in the Fiction Figures catalogue.`
           }
           categoryImage={cat?.imageUrl || cat?.image || null}
           activeCategorySlug={slug}

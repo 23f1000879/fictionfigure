@@ -75,7 +75,7 @@ export function Footer({ showValueStrip = true }: FooterProps = {}) {
             <Link href="/" className="inline-block">
               <Image
                 src="/fictionfigure-logo-light.png"
-                alt="FictionFigure"
+                alt="Fiction Figures"
                 width={326}
                 height={100}
                 className="h-8 w-auto object-contain"
@@ -173,7 +173,7 @@ export function Footer({ showValueStrip = true }: FooterProps = {}) {
               </li>
               <li>
                 <Link href="/about" className="hover:text-[#F5C518] transition-colors">
-                  About FictionFigure
+                  About Fiction Figures
                 </Link>
               </li>
               <li>
@@ -272,7 +272,7 @@ export function Footer({ showValueStrip = true }: FooterProps = {}) {
 
         {/* Footer Bottom Bar */}
         <div className="pt-8 border-t border-white/[0.08] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#94A3B8]">
-          <div>© {new Date().getFullYear()} FictionFigure. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} Fiction Figures. All rights reserved.</div>
 
           <div className="font-mono text-[11px] uppercase tracking-wider text-[#64748B]">
             {deliveryCoverage || "Delivering across India"}

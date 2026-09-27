@@ -13,37 +13,23 @@ import { FeaturedCollection } from "@/components/home/FeaturedCollection";
 import { PromoBanner } from "@/components/home/PromoBanner";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import { CollectorClub } from "@/components/home/CollectorClub";
+import { BrandFaq } from "@/components/home/BrandFaq";
+import { OG_IMAGE, OPEN_GRAPH_DEFAULTS, faqPageSchema, jsonLd, organizationSchema, storeFactsFromSettings, storeFaqs, websiteSchema } from "@/lib/seo";
 import { DEFAULT_HOMEPAGE_CMS_CONFIG, DEFAULT_HOMEPAGE_SECTIONS } from "@/types/cms";
 
 export const revalidate = 60; // 60s Vercel Edge ISR Cache
 
 export const metadata: Metadata = {
-  title: "FictionFigure | Authentic Anime Figures & Collectibles India",
-  description: "Explore FictionFigure for premium collectible figures, scale anime statues, designer keychains, and action figures in India. Sourced directly from global studios with protective outer boxes.",
-  alternates: {
-    canonical: "https://www.fictionfigures.in",
-  },
+  title: { absolute: "Fiction Figures | Anime Figures & Collectibles Store in India" },
+  description:
+    "Shop anime figures, action figures, collectible statues, keychains and mystery boxes at Fiction Figures (fictionfigures.in). Pan-India delivery, Cash on Delivery and UPI.",
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "FictionFigure | Authentic Anime Figures & Collectibles India",
-    description: "Explore FictionFigure for premium collectible figures, scale anime statues, designer keychains, and action figures in India.",
-    url: "https://www.fictionfigures.in",
-    siteName: "FictionFigure",
-    images: [
-      {
-        url: "https://www.fictionfigures.in/fictionfigure-icon.svg",
-        width: 800,
-        height: 800,
-        alt: "FictionFigure Logo",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "FictionFigure | Authentic Anime Figures & Collectibles India",
-    description: "Explore FictionFigure for premium collectible figures, scale anime statues, designer keychains, and action figures in India.",
-    images: ["https://www.fictionfigures.in/fictionfigure-icon.svg"],
+    ...OPEN_GRAPH_DEFAULTS,
+    url: "/",
+    title: "Fiction Figures | Anime Figures & Collectibles Store in India",
+    description: "Shop anime figures, action figures, collectible statues, keychains and mystery boxes at Fiction Figures. Pan-India delivery, Cash on Delivery and UPI.",
+    images: [OG_IMAGE],
   },
 };
 
@@ -187,32 +173,8 @@ export default async function HomePage() {
   const newestArtwork: string | undefined = newArrivals[0]?.images?.[0]?.url;
   const heroArtwork: string | undefined = settings.homepage_hero_image_url || slides[0]?.image;
 
-  const storeName = settings.store_name || "FictionFigure";
-  const supportPhone = settings.support_phone || "+91 97974 94639";
-  const supportEmail = settings.support_email || "support@fictionfigure.in";
-  const supportHours = settings.support_hours || "Monday - Saturday, 10:00 AM - 7:00 PM";
-
-  const orgSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": storeName,
-    "url": "https://www.fictionfigures.in",
-    "logo": "https://www.fictionfigures.in/fictionfigure-icon.svg",
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "telephone": supportPhone,
-      "contactType": "customer service",
-      "email": supportEmail,
-      "hoursAvailable": supportHours,
-    },
-  };
-
-  const websiteSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": storeName,
-    "url": "https://www.fictionfigures.in",
-  };
+  const storeFacts = storeFactsFromSettings(settings);
+  const faqs = storeFaqs(storeFacts);
 
   const buildBlock = (sectionId: string): EditorialBlock | null => {
     switch (sectionId) {
@@ -339,18 +301,14 @@ export default async function HomePage() {
   return (
     <>
       <Header />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organizationSchema(storeFacts))} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(websiteSchema())} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(faqPageSchema(faqs))} />
       <SearchModal />
       <CartDrawer />
 
       <main className="flex-1 flex flex-col bg-[#08090B] text-[#F7F7F5]">
+        <h1 className="sr-only">Fiction Figures — Anime Figures, Action Figures &amp; Collectibles Store in India</h1>
         {heroEnabled && (
           <HeroCarousel
             slides={slides}
@@ -372,6 +330,8 @@ export default async function HomePage() {
               ))}
             </div>
           ))}
+
+          <BrandFaq faqs={faqs} />
         </div>
       </main>
 

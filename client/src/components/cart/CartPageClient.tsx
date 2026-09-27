@@ -77,7 +77,7 @@ export function CartPageClient() {
           <div className="w-16 h-16 rounded-full bg-[#F5C518]/10 border border-[#F5C518]/30 flex items-center justify-center mx-auto mb-6">
             <ShoppingBag className="w-7 h-7 text-[#F5C518]" />
           </div>
-          <p className="ff-eyebrow justify-center">FictionFigure bag</p>
+          <p className="ff-eyebrow justify-center">Fiction Figures bag</p>
           <h1 className="mt-3 text-[30px] sm:text-[40px] font-black uppercase leading-[1] tracking-[-0.02em] text-white">
             Your collection is waiting.
           </h1>

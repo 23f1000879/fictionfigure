@@ -84,7 +84,7 @@ export function AIChatWidget() {
     {
       id: "welcome",
       sender: "ASSISTANT",
-      content: "Hello collector. I am the FictionFigure Store Concierge. I can help you search our catalog of authentic figures, check your order status, or explain our shipping and return policies. What are you looking for today?",
+      content: "Hello collector. I am the Fiction Figures Store Concierge. I can help you search our catalog of authentic figures, check your order status, or explain our shipping and return policies. What are you looking for today?",
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -190,7 +190,7 @@ ${itemsList}`;
               {
                 id: `bot-${Date.now()}`,
                 sender: "ASSISTANT",
-                content: `I see you are attempting to check order **${orderNum}**. Access is restricted—please sign in to your FictionFigure account to view this order details.`,
+                content: `I see you are attempting to check order **${orderNum}**. Access is restricted—please sign in to your Fiction Figures account to view this order details.`,
                 type: "TEXT"
               }
             ]);
@@ -251,7 +251,7 @@ ${itemsList}`;
               {
                 id: `bot-${Date.now()}`,
                 sender: "ASSISTANT",
-                content: "I couldn't find any orders placed under your account on FictionFigure.",
+                content: "I couldn't find any orders placed under your account on Fiction Figures.",
                 type: "TEXT"
               }
             ]);
@@ -388,7 +388,7 @@ ${itemsList}`;
             {
               id: `bot-${Date.now()}`,
               sender: "ASSISTANT",
-              content: `I'm currently focused on helping you discover FictionFigure products, availability, pricing, and store information. Try asking me about a figure, collection, price range, or order.`,
+              content: `I'm currently focused on helping you discover Fiction Figures products, availability, pricing, and store information. Try asking me about a figure, collection, price range, or order.`,
               type: "TEXT"
             }
           ]);
@@ -442,7 +442,7 @@ ${itemsList}`;
                 <Bot className="w-4 h-4 text-[#F5C518]" />
               </span>
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider">FictionFigure Store Concierge</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider">Fiction Figures Store Concierge</h4>
                 <span className="text-[11px] text-[#9A9DA5] block">Live Store & Catalog Assistant</span>
               </div>
             </div>

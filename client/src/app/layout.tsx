@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { SettingsProvider } from "@/context/SettingsContext";
+import { OG_IMAGE, OPEN_GRAPH_DEFAULTS, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,17 +20,45 @@ const oswald = Oswald({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "FictionFigure - Premium Collectibles & Scale Figures",
-    template: "%s | FictionFigure",
+    default: "Fiction Figures | Anime Figures & Collectibles Store in India",
+    template: `%s | ${SITE_NAME}`,
   },
-  description: "Curated figures, statues, and collectible pieces for people who never stopped loving the characters that shaped them.",
-  keywords: ["anime figures", "collectible figures", "anime collectibles", "action figures", "anime merchandise", "figures in India", "collectibles in India"],
-  icons: {
-    icon: "/fictionfigure-icon.svg",
-    shortcut: "/fictionfigure-icon.svg",
-    apple: "/fictionfigure-icon.svg",
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: SITE_KEYWORDS,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "shopping",
+  formatDetection: { telephone: false, email: false, address: false },
+  // Shared fields only: pages set their own url/title so /about never inherits the homepage's og:url.
+  openGraph: {
+    ...OPEN_GRAPH_DEFAULTS,
+    images: [OG_IMAGE],
   },
+  twitter: {
+    card: "summary_large_image",
+    images: [OG_IMAGE.url],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+  },
+  // Paste the tokens from Google Search Console / Bing Webmaster Tools into these env vars.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : undefined,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#08090B",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -38,7 +67,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${oswald.variable} h-full antialiased dark`}>
+    <html lang="en-IN" className={`${inter.variable} ${oswald.variable} h-full antialiased dark`}>
       <body className="min-h-full flex flex-col bg-[#08090B] text-[#F7F7F5] font-sans selection:bg-[#F5C518] selection:text-[#0A0A0C]">
         <SettingsProvider>
           <CartProvider>

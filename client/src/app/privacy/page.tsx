@@ -26,7 +26,7 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="text-xs sm:text-sm text-[#6B6B6B] max-w-2xl leading-relaxed">
-            FictionFigure respects your privacy. This policy outlines how personal details are collected, used, and protected during your store visit and purchases.
+            Fiction Figures respects your privacy. This policy outlines how personal details are collected, used, and protected during your store visit and purchases.
           </p>
         </div>
 
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
               3. Payments
             </h3>
             <p>
-              FictionFigure currently offers Cash on Delivery (COD) and UPI/online payment options where available at checkout.
+              Fiction Figures currently offers Cash on Delivery (COD) and UPI/online payment options where available at checkout.
             </p>
             <p>
               For online payments, customers may be redirected to or interact with the applicable payment service to complete their transaction.
@@ -82,7 +82,7 @@ export default function PrivacyPage() {
               4. Third-Party Services
             </h3>
             <p>
-              We may use trusted third-party service providers to help us operate FictionFigure, process orders and payments, deliver products, provide customer support, send necessary notifications, and maintain the website.
+              We may use trusted third-party service providers to help us operate Fiction Figures, process orders and payments, deliver products, provide customer support, send necessary notifications, and maintain the website.
             </p>
             <p>
               These service providers may process information only as necessary to provide their services to us and are expected to handle information in accordance with applicable privacy and security requirements.
@@ -101,7 +101,7 @@ export default function PrivacyPage() {
               5. Cookies and Local Storage
             </h3>
             <p>
-              FictionFigure may use cookies and browser storage technologies to support essential website functionality, maintain customer sessions, remember certain preferences, and help provide a smooth browsing experience.
+              Fiction Figures may use cookies and browser storage technologies to support essential website functionality, maintain customer sessions, remember certain preferences, and help provide a smooth browsing experience.
             </p>
             <p>
               These technologies may be necessary for features such as authentication, cart functionality, security, and website operation.
