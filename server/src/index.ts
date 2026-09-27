@@ -16,6 +16,7 @@ import paymentsRouter from "./routes/payments.js";
 import wishlistRouter from "./routes/wishlist.js";
 import reviewsRouter from "./routes/reviews.js";
 import ordersRouter from "./routes/orders.js";
+import { stripInternalFields } from "./middleware/stripInternalFields";
 import restockRequestsRouter from "./routes/restockRequests.js";
 
 const app = express();
@@ -98,6 +99,9 @@ app.options("*", cors(corsOptions));
 // RAW BODY PARSER FOR RAZORPAY WEBHOOK SIGNATURE VERIFICATION (MUST COME BEFORE express.json())
 app.use("/api/payments/razorpay/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
+
+// Storefront responses never expose internal product fields (admin routes keep them).
+app.use(stripInternalFields);
 
 // Serve uploads directory statically
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
