@@ -74,7 +74,7 @@ export default function RootLayout({
     <html
       lang="en-IN"
       suppressHydrationWarning
-      className={`${inter.variable} ${oswald.variable} h-full antialiased`}
+      className={`${inter.variable} ${oswald.variable} h-full antialiased dark`}
     >
       <head>
         <script
@@ -83,7 +83,13 @@ export default function RootLayout({
               (function() {
                 try {
                   var saved = localStorage.getItem('fictionfigure_theme');
-                  if (saved === 'night') {
+                  var theme = 'night';
+                  if (saved === 'day' || saved === 'night') {
+                    theme = saved;
+                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                    theme = 'day';
+                  }
+                  if (theme === 'night') {
                     document.documentElement.classList.add('dark');
                     document.documentElement.setAttribute('data-theme', 'night');
                   } else {
