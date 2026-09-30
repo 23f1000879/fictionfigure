@@ -12,7 +12,7 @@ export default function CartPage() {
       <SearchModal />
       <CartDrawer />
 
-      <main className="flex-1 bg-[#08090B] text-[#F7F7F5]">
+      <main className="flex-1 bg-background text-foreground">
         <div className="ff-container py-8 lg:py-12">
           <CartPageClient />
         </div>

@@ -26,7 +26,7 @@ import {
   MapPin,
   CreditCard,
 } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, dedupedFetch } from "@/lib/api";
 
 export function CheckoutClient() {
   const router = useRouter();
@@ -92,7 +92,7 @@ export function CheckoutClient() {
 
   // 1. Fetch Store Settings for UPI QR on Mount
   useEffect(() => {
-    fetch(`${API_BASE}/settings`)
+    dedupedFetch(`${API_BASE}/settings`)
       .then((res) => res.json())
       .then((data) => {
         setUpiSettings({

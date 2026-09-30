@@ -42,7 +42,7 @@ export function AuthShell({
       <SearchModal />
       <CartDrawer />
 
-      <main className="relative isolate flex-1 overflow-hidden bg-[#08090B] text-[#F7F7F5]">
+      <main className="relative isolate flex-1 overflow-hidden bg-background text-foreground">
         <div className="absolute inset-0 -z-10" aria-hidden>
           {cinematicBackgroundUrl && (
             <Image

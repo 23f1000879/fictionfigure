@@ -37,7 +37,7 @@ export default function AboutPage() {
       <SearchModal />
       <CartDrawer />
 
-      <main className="flex-1 bg-[#08090B] text-[#F7F7F5]">
+      <main className="flex-1 bg-background text-foreground">
         {/* Hero */}
         <section className="relative isolate overflow-hidden border-b border-white/[0.06]">
           <div className="absolute inset-0 -z-10" aria-hidden>

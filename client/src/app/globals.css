@@ -4,25 +4,45 @@
 
 @layer base {
   :root {
-    --ff-bg: #08090B;
-    --ff-bg-deep: #060708;
-    --ff-surface: #111318;
-    --ff-surface-elevated: #17191F;
-    --ff-surface-soft: #1E2027;
-    --ff-surface-glass: rgba(17, 19, 24, 0.75);
-    --ff-border: rgba(255, 255, 255, 0.08);
-    --ff-border-light: rgba(255, 255, 255, 0.14);
-    --ff-border-gold: rgba(245, 197, 24, 0.3);
-    
+    /* Day Theme (Default for new visitors) */
+    --ff-bg: #FFFFFF;
+    --ff-bg-deep: #F7F7F5;
+    --ff-bg-charcoal: #F0F0EE;
+    --ff-surface: #FFFFFF;
+    --ff-surface-elevated: #F7F7F5;
+    --ff-surface-soft: #EEEEEC;
+    --ff-surface-glass: rgba(255, 255, 255, 0.90);
+    --ff-surface-card: #FFFFFF;
+    --ff-surface-input: #FFFFFF;
+    --ff-surface-hover: #F2F2F0;
+
+    --ff-border: #E5E5E5;
+    --ff-border-light: #ECECEC;
+    --ff-border-subtle: #F2F2F0;
+    --ff-border-gold: rgba(245, 197, 24, 0.5);
+
     --ff-gold: #F5C518;
     --ff-gold-dark: #D4AF37;
     --ff-gold-glow: rgba(245, 197, 24, 0.25);
-    
-    --ff-text-primary: #F7F7F5;
-    --ff-text-secondary: #9A9DA5;
-    --ff-text-muted: #6E717A;
+    --ff-gold-light: rgba(245, 197, 24, 0.12);
 
-    /* Layout tokens measured from the approved reference composition */
+    --ff-text-primary: #171717;
+    --ff-text-secondary: #666666;
+    --ff-text-muted: #888888;
+    --ff-text-subtle: #AAAAAA;
+
+    --ff-btn-primary-bg: #171717;
+    --ff-btn-primary-text: #FFFFFF;
+    --ff-btn-primary-border: #171717;
+    --ff-btn-primary-hover: #262626;
+
+    --ff-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --ff-card-shadow-hover: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 0 15px 0 rgba(245, 197, 24, 0.15);
+    --ff-scrollbar-track: #F7F7F5;
+    --ff-scrollbar-thumb: #D1D5DB;
+    --ff-scrollbar-thumb-hover: #9CA3AF;
+
+    /* Layout tokens */
     --ff-header-h: 64px;
     --ff-shell-max: 1840px;
     --ff-section-gap: 64px;
@@ -30,6 +50,48 @@
     --ff-radius-card: 12px;
     --ff-radius-tile: 10px;
     --ff-radius-btn: 6px;
+  }
+
+  html.dark,
+  [data-theme="night"],
+  :root.dark {
+    /* Night Theme (Exact existing dark theme tokens preserved) */
+    --ff-bg: #08090B;
+    --ff-bg-deep: #060708;
+    --ff-bg-charcoal: #0C0D10;
+    --ff-surface: #111318;
+    --ff-surface-elevated: #17191F;
+    --ff-surface-soft: #1E2027;
+    --ff-surface-glass: rgba(17, 19, 24, 0.75);
+    --ff-surface-card: #111318;
+    --ff-surface-input: #0D0E12;
+    --ff-surface-hover: #1E2027;
+
+    --ff-border: rgba(255, 255, 255, 0.08);
+    --ff-border-light: rgba(255, 255, 255, 0.14);
+    --ff-border-subtle: rgba(255, 255, 255, 0.04);
+    --ff-border-gold: rgba(245, 197, 24, 0.3);
+
+    --ff-gold: #F5C518;
+    --ff-gold-dark: #D4AF37;
+    --ff-gold-glow: rgba(245, 197, 24, 0.25);
+    --ff-gold-light: rgba(212, 175, 55, 0.12);
+
+    --ff-text-primary: #F7F7F5;
+    --ff-text-secondary: #9A9DA5;
+    --ff-text-muted: #6E717A;
+    --ff-text-subtle: #4A4D55;
+
+    --ff-btn-primary-bg: #181920;
+    --ff-btn-primary-text: #FFFFFF;
+    --ff-btn-primary-border: rgba(255, 255, 255, 0.12);
+    --ff-btn-primary-hover: #22242D;
+
+    --ff-card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    --ff-card-shadow-hover: 0 10px 30px -4px rgba(0, 0, 0, 0.8), 0 0 15px 0 rgba(212, 175, 55, 0.12);
+    --ff-scrollbar-track: #08090B;
+    --ff-scrollbar-thumb: #1E2027;
+    --ff-scrollbar-thumb-hover: #2D303C;
   }
 
   @media (min-width: 1024px) {
@@ -50,14 +112,15 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
-/* Hide native scrollbars globally where requested while preserving internal scrolling */
+/* Hide native scrollbars globally where requested */
 .scrollbar-none,
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .scrollbar-none::-webkit-scrollbar,
 .no-scrollbar::-webkit-scrollbar {
@@ -66,27 +129,23 @@
   height: 0;
 }
 
-/* Custom dark scrollbar for sleek overflow areas */
+/* Theme-adaptive custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #08090B;
+  background: var(--ff-scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E2027;
+  background: var(--ff-scrollbar-thumb);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2D303C;
+  background: var(--ff-scrollbar-thumb-hover);
 }
 
-/*
- * Storefront shell: wide, full-bleed-friendly container.
- * Desktop content uses ~94% of the viewport (1366 → ~1284px, 1440 → ~1354px, 1920 → ~1808px);
- * mobile keeps normal 16–20px page padding.
- */
+/* Storefront shell */
 .editorial-container,
 .ff-container {
   width: 100%;
@@ -115,7 +174,6 @@
 }
 
 @layer utilities {
-  /* Subtle dark radial ambient glows */
   .bg-dark-radial {
     background-image: radial-gradient(circle at 50% 0%, rgba(245, 197, 24, 0.08) 0%, transparent 60%);
   }
@@ -125,19 +183,18 @@
                       radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 40%);
   }
 
-  /* Glassmorphism translucent surfaces */
   .glass-panel {
-    background: rgba(18, 19, 24, 0.75);
+    background: var(--ff-surface-glass);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--ff-border);
   }
 
   .glass-panel-elevated {
-    background: rgba(24, 25, 32, 0.85);
+    background: var(--ff-surface-elevated);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--ff-border);
   }
 
   .glow-gold {
@@ -174,76 +231,70 @@
     transform: scale(0.98);
   }
 
-  /* Primary Dark Elevated Button */
+  /* Primary Theme-Aware Button */
   .btn-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 10px 24px;
-    background: #181920;
-    color: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--ff-btn-primary-bg);
+    color: var(--ff-btn-primary-text);
+    border: 1px solid var(--ff-btn-primary-border);
     border-radius: 12px;
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.02em;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .btn-primary:hover {
-    background: #22242D;
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--ff-btn-primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   }
   .btn-primary:active {
     transform: scale(0.98);
   }
 
-  /* Secondary Translucent Button */
+  /* Secondary Button */
   .btn-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 10px 24px;
-    background: rgba(255, 255, 255, 0.04);
-    color: #F8FAFC;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--ff-surface-elevated);
+    color: var(--ff-text-primary);
+    border: 1px solid var(--ff-border);
     border-radius: 12px;
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.16);
-    color: #FFFFFF;
+    background: var(--ff-surface-soft);
+    border-color: var(--ff-border-gold);
     transform: translateY(-1px);
   }
   .btn-secondary:active {
     transform: scale(0.98);
   }
 
-  /* Dark Collectible Card */
+  /* Collectible Card */
   .card-collectible {
-    background: #121318;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--ff-surface);
+    border: 1px solid var(--ff-border);
     border-radius: 16px;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--ff-card-shadow);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .card-collectible:hover {
-    border-color: rgba(245, 197, 24, 0.35);
-    box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.8), 0 0 15px 0 rgba(245, 197, 24, 0.15);
+    border-color: rgba(245, 197, 24, 0.4);
+    box-shadow: var(--ff-card-shadow-hover);
     transform: translateY(-2px);
   }
 }
 
-/* ==========================================================================
-   FICTIONFIGURE reference primitives
-   Compact editorial storefront language: small gold eyebrows, heavy uppercase
-   display headlines, 6px buttons, 10–12px tiles, hairline borders.
-   ========================================================================== */
+/* FICTIONFIGURE reference primitives */
 @layer components {
   .ff-eyebrow {
     display: inline-flex;
@@ -262,7 +313,7 @@
     line-height: 1.15;
     font-weight: 800;
     letter-spacing: -0.01em;
-    color: #F7F7F5;
+    color: var(--ff-text-primary);
   }
   @media (min-width: 1024px) {
     .ff-section-title {
@@ -273,7 +324,7 @@
   .ff-section-sub {
     font-size: 13px;
     line-height: 1.5;
-    color: #9A9DA5;
+    color: var(--ff-text-secondary);
   }
 
   .ff-display {
@@ -290,7 +341,7 @@
     gap: 6px;
     font-size: 12px;
     font-weight: 600;
-    color: #F7F7F5;
+    color: var(--ff-text-primary);
     transition: color 0.2s ease;
   }
   .ff-link-arrow:hover {
@@ -323,13 +374,13 @@
     background: #FFD43B;
   }
   .ff-btn-outline {
-    background: rgba(255, 255, 255, 0.02);
-    color: #F7F7F5;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: transparent;
+    color: var(--ff-text-primary);
+    border: 1px solid var(--ff-border);
   }
   .ff-btn-outline:hover {
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--ff-text-primary);
+    background: var(--ff-surface-elevated);
   }
   .ff-btn-sm {
     height: 36px;
@@ -338,8 +389,8 @@
   }
 
   .ff-panel {
-    background: #111318;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--ff-surface);
+    border: 1px solid var(--ff-border);
     border-radius: var(--ff-radius-card);
   }
 
@@ -350,9 +401,9 @@
     width: 32px;
     height: 32px;
     border-radius: 9999px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    background: rgba(8, 9, 11, 0.35);
-    color: #F7F7F5;
+    border: 1px solid var(--ff-border);
+    background: var(--ff-surface-elevated);
+    color: var(--ff-text-primary);
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
   .group:hover .ff-circle-arrow {
@@ -375,8 +426,143 @@
 .ff-fade-up {
   animation: ff-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .ff-fade-up {
-    animation: none;
+  .ff-fade-up,
+  body,
+  * {
+    animation: none !important;
+    transition-duration: 0.001ms !important;
   }
+}
+
+/* ==========================================================================
+   Day Mode Scoped Mappings (html:not(.dark))
+   Guarantees thorough, clean, and consistent Day Theme across all pages
+   while preserving the exact existing Night Theme without any alterations.
+   ========================================================================== */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+html:not(.dark) main {
+  background-color: var(--ff-bg);
+  color: var(--ff-text-primary);
+}
+
+html:not(.dark) .bg-\[\#08090B\],
+html:not(.dark) .bg-\[\#060708\],
+html:not(.dark) .bg-\[\#0C0D10\] {
+  background-color: var(--ff-bg);
+}
+
+html:not(.dark) .bg-\[\#111318\],
+html:not(.dark) .bg-\[\#121318\],
+html:not(.dark) .bg-\[\#0D0E12\] {
+  background-color: var(--ff-surface);
+}
+
+html:not(.dark) .bg-\[\#17191F\],
+html:not(.dark) .bg-\[\#181920\],
+html:not(.dark) .bg-\[\#0E0F14\],
+html:not(.dark) .bg-\[\#0E0F13\] {
+  background-color: var(--ff-surface-elevated);
+}
+
+html:not(.dark) .bg-\[\#1E2027\],
+html:not(.dark) .bg-\[\#22242D\] {
+  background-color: var(--ff-surface-soft);
+}
+
+html:not(.dark) .text-\[\#F7F7F5\] {
+  color: var(--ff-text-primary);
+}
+
+html:not(.dark) .text-\[\#9A9DA5\],
+html:not(.dark) .text-\[\#6E717A\],
+html:not(.dark) .text-\[\#94A3B8\],
+html:not(.dark) .text-\[\#64748B\],
+html:not(.dark) .text-\[\#4A4D55\] {
+  color: var(--ff-text-secondary);
+}
+
+html:not(.dark) [class*="border-white"] {
+  border-color: var(--ff-border);
+}
+
+/* Headings in Day Mode */
+html:not(.dark) h1:not(.btn-gold *):not(.ff-btn-gold *),
+html:not(.dark) h2:not(.btn-gold *):not(.ff-btn-gold *),
+html:not(.dark) h3:not(.btn-gold *):not(.ff-btn-gold *),
+html:not(.dark) h4:not(.btn-gold *):not(.ff-btn-gold *),
+html:not(.dark) h5:not(.btn-gold *):not(.ff-btn-gold *),
+html:not(.dark) h6:not(.btn-gold *):not(.ff-btn-gold *) {
+  color: var(--ff-text-primary);
+}
+
+/* Header in Day Mode */
+html:not(.dark) header {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-color: var(--ff-border);
+}
+
+html:not(.dark) header .bg-\[\#060708\] {
+  background-color: var(--ff-bg-deep);
+  border-color: var(--ff-border);
+}
+
+html:not(.dark) header nav a {
+  color: var(--ff-text-primary);
+}
+html:not(.dark) header nav a:hover {
+  color: var(--ff-gold);
+}
+
+/* Footer in Day Mode */
+html:not(.dark) footer {
+  background-color: var(--ff-bg-deep);
+  border-color: var(--ff-border);
+  color: var(--ff-text-primary);
+}
+html:not(.dark) footer a {
+  color: var(--ff-text-secondary);
+}
+html:not(.dark) footer a:hover {
+  color: var(--ff-text-primary);
+}
+
+/* Input Fields in Day Mode */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]),
+html:not(.dark) textarea,
+html:not(.dark) select {
+  background-color: #FFFFFF;
+  color: #171717;
+  border-color: #E5E5E5;
+}
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #888888;
+}
+
+/* Mobile Navigation in Day Mode */
+html:not(.dark) nav[aria-label="Primary"] a,
+html:not(.dark) nav[aria-label="Primary"] button {
+  color: var(--ff-text-primary);
+}
+
+/* Product Card Styling in Day Mode */
+html:not(.dark) .group.relative.flex.flex-col.h-full.bg-\[\#111318\] {
+  background-color: var(--ff-surface);
+  border-color: var(--ff-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+html:not(.dark) .group.relative.flex.flex-col.h-full.bg-\[\#111318\]:hover {
+  border-color: #CCCCCC;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 0 12px 0 rgba(245, 197, 24, 0.15);
+}
+
+/* Product Studio in Day Mode */
+html:not(.dark) div.bg-\[\#0D0E12\] {
+  background-color: var(--ff-surface);
+  border-color: var(--ff-border);
 }

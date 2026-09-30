@@ -307,7 +307,7 @@ export default async function HomePage() {
       <SearchModal />
       <CartDrawer />
 
-      <main className="flex-1 flex flex-col bg-[#08090B] text-[#F7F7F5]">
+      <main className="flex-1 flex flex-col bg-background text-foreground">
         <h1 className="sr-only">Fiction Figures — Anime Figures, Action Figures &amp; Collectibles Store in India</h1>
         {heroEnabled && (
           <HeroCarousel

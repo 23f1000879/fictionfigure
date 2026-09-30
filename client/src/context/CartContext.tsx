@@ -107,6 +107,8 @@ function saveStoredCartRaw(items: CartItemType[]) {
   }
 }
 
+let inflightReconciliation: Promise<CartReconciliationResult> | null = null;
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItemType[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -116,6 +118,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Server-side Batched Cart Validation & Reconciliation
   const reconcileCart = useCallback(async (): Promise<CartReconciliationResult> => {
+    if (inflightReconciliation) {
+      return inflightReconciliation;
+    }
+
     setIsValidating(true);
     const localItems = getStoredCartRaw();
 
@@ -127,39 +133,45 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return { valid: true, items: [], removedItems: [], updatedItems: [] };
     }
 
-    try {
-      const res = await fetch(`${API_BASE}/checkout/validate-cart`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: localItems }),
-      });
+    inflightReconciliation = (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/checkout/validate-cart`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: localItems }),
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          const validatedItems: CartItemType[] = data.items || [];
-          setCart(validatedItems);
-          saveStoredCartRaw(validatedItems);
-          setIsValidating(false);
-          setIsHydrating(false);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            const validatedItems: CartItemType[] = data.items || [];
+            setCart(validatedItems);
+            saveStoredCartRaw(validatedItems);
+            setIsValidating(false);
+            setIsHydrating(false);
 
-          return {
-            valid: data.valid,
-            items: validatedItems,
-            removedItems: data.removedItems || [],
-            updatedItems: data.updatedItems || [],
-          };
+            return {
+              valid: data.valid,
+              items: validatedItems,
+              removedItems: data.removedItems || [],
+              updatedItems: data.updatedItems || [],
+            };
+          }
         }
+      } catch (e) {
+        console.error("[CART RECONCILIATION] Failed to reach validation API:", e);
+      } finally {
+        inflightReconciliation = null;
       }
-    } catch (e) {
-      console.error("[CART RECONCILIATION] Failed to reach validation API:", e);
-    }
 
-    // Fallback if offline/failed API: keep local items safely
-    setCart(localItems);
-    setIsValidating(false);
-    setIsHydrating(false);
-    return { valid: true, items: localItems, removedItems: [], updatedItems: [] };
+      // Fallback if offline/failed API: keep local items safely
+      setCart(localItems);
+      setIsValidating(false);
+      setIsHydrating(false);
+      return { valid: true, items: localItems, removedItems: [], updatedItems: [] };
+    })();
+
+    return inflightReconciliation;
   }, []);
 
   // 1. Initial Mount & Hydration + Immediate Server Reconciliation

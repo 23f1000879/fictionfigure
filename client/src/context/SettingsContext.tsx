@@ -1,7 +1,41 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, dedupedFetch } from "@/lib/api";
+
+let cachedSettings: any = null;
+let settingsInflight: Promise<any> | null = null;
+let cacheTimestamp = 0;
+const SETTINGS_CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+
+async function loadSettings(force = false): Promise<any> {
+  const now = Date.now();
+  if (!force && cachedSettings && now - cacheTimestamp < SETTINGS_CACHE_TTL) {
+    return cachedSettings;
+  }
+  if (!force && settingsInflight) {
+    return settingsInflight;
+  }
+
+  settingsInflight = dedupedFetch(`${API_BASE}/settings`)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data) {
+        cachedSettings = data;
+        cacheTimestamp = Date.now();
+      }
+      return cachedSettings;
+    })
+    .catch((err) => {
+      console.warn("Could not load dynamic store settings, using defaults.", err);
+      return cachedSettings;
+    })
+    .finally(() => {
+      settingsInflight = null;
+    });
+
+  return settingsInflight;
+}
 
 export interface AnnouncementItem {
   id: string;
@@ -70,56 +104,59 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [upiQrUrl, setUpiQrUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/settings`, { cache: "no-store" });
-      const data = await res.json();
+  const applySettingsData = (data: any) => {
+    if (!data) return;
+    if (data.shippingFee !== undefined) {
+      setShippingFee(Number(data.shippingFee) || 0);
+    }
+    if (data.freeShippingThreshold !== undefined) {
+      setFreeShippingThreshold(Number(data.freeShippingThreshold) || 0);
+    }
+    if (typeof data.storeLocation === "string") {
+      setStoreLocation(data.storeLocation);
+    }
+    if (typeof data.deliveryCoverage === "string") {
+      setDeliveryCoverage(data.deliveryCoverage);
+    }
+    if (typeof data.supportPhone === "string") {
+      setSupportPhone(data.supportPhone);
+    }
+    if (typeof data.supportEmail === "string") {
+      setSupportEmail(data.supportEmail);
+    }
+    if (typeof data.supportHours === "string") {
+      setSupportHours(data.supportHours);
+    }
+    if (Array.isArray(data.announcements)) {
+      setAnnouncements(data.announcements);
+    }
+    if (typeof data.settings?.homepage_hero_image_url === "string") {
+      setHeroImageUrl(data.settings.homepage_hero_image_url);
+    }
+    // Universes-page background (admin setting) first, then the first hero slide's cinematic background.
+    const configuredBackdrop = data.settings?.collections_hero_image_url;
+    const slideBackdrop = Array.isArray(data.carouselSlides)
+      ? data.carouselSlides.find((s: any) => s && s.backgroundImage)?.backgroundImage
+      : "";
+    setCinematicBackgroundUrl(
+      (typeof configuredBackdrop === "string" && configuredBackdrop.trim()) || slideBackdrop || ""
+    );
+    if (typeof data.upiId === "string") {
+      setUpiId(data.upiId);
+    } else if (data.settings && typeof data.settings.upi_id === "string") {
+      setUpiId(data.settings.upi_id);
+    }
+    if (typeof data.upiQrUrl === "string") {
+      setUpiQrUrl(data.upiQrUrl);
+    } else if (data.settings && typeof data.settings.upi_qr_url === "string") {
+      setUpiQrUrl(data.settings.upi_qr_url);
+    }
+  };
 
-      if (data.shippingFee !== undefined) {
-        setShippingFee(Number(data.shippingFee) || 0);
-      }
-      if (data.freeShippingThreshold !== undefined) {
-        setFreeShippingThreshold(Number(data.freeShippingThreshold) || 0);
-      }
-      if (typeof data.storeLocation === "string") {
-        setStoreLocation(data.storeLocation);
-      }
-      if (typeof data.deliveryCoverage === "string") {
-        setDeliveryCoverage(data.deliveryCoverage);
-      }
-      if (typeof data.supportPhone === "string") {
-        setSupportPhone(data.supportPhone);
-      }
-      if (typeof data.supportEmail === "string") {
-        setSupportEmail(data.supportEmail);
-      }
-      if (typeof data.supportHours === "string") {
-        setSupportHours(data.supportHours);
-      }
-      if (Array.isArray(data.announcements)) {
-        setAnnouncements(data.announcements);
-      }
-      if (typeof data.settings?.homepage_hero_image_url === "string") {
-        setHeroImageUrl(data.settings.homepage_hero_image_url);
-      }
-      // Universes-page background (admin setting) first, then the first hero slide's cinematic background.
-      const configuredBackdrop = data.settings?.collections_hero_image_url;
-      const slideBackdrop = Array.isArray(data.carouselSlides)
-        ? data.carouselSlides.find((s: any) => s && s.backgroundImage)?.backgroundImage
-        : "";
-      setCinematicBackgroundUrl(
-        (typeof configuredBackdrop === "string" && configuredBackdrop.trim()) || slideBackdrop || ""
-      );
-      if (typeof data.upiId === "string") {
-        setUpiId(data.upiId);
-      } else if (data.settings && typeof data.settings.upi_id === "string") {
-        setUpiId(data.settings.upi_id);
-      }
-      if (typeof data.upiQrUrl === "string") {
-        setUpiQrUrl(data.upiQrUrl);
-      } else if (data.settings && typeof data.settings.upi_qr_url === "string") {
-        setUpiQrUrl(data.settings.upi_qr_url);
-      }
+  const fetchSettings = async (force = false) => {
+    try {
+      const data = await loadSettings(force);
+      applySettingsData(data);
     } catch (err) {
       console.warn("Could not load dynamic store settings, using defaults.", err);
     } finally {
@@ -128,7 +165,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    fetchSettings();
+    fetchSettings(false);
   }, []);
 
   return (

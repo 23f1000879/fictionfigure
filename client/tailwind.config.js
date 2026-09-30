@@ -1,5 +1,5 @@
-/** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -17,35 +17,35 @@ module.exports = {
     },
     extend: {
       colors: {
-        // Core Cinematic Backgrounds
+        // Core Backgrounds
         background: {
-          DEFAULT: "#08090B",
-          deep: "#060708",
-          charcoal: "#0C0D10",
+          DEFAULT: "var(--ff-bg)",
+          deep: "var(--ff-bg-deep)",
+          charcoal: "var(--ff-bg-charcoal)",
         },
-        // Layered Dark Surfaces
+        // Layered Surfaces
         surface: {
-          DEFAULT: "#111318",
-          elevated: "#17191F",
-          soft: "#1E2027",
-          glass: "rgba(17, 19, 24, 0.75)",
-          card: "#111318",
-          input: "#0D0E12",
+          DEFAULT: "var(--ff-surface)",
+          elevated: "var(--ff-surface-elevated)",
+          soft: "var(--ff-surface-soft)",
+          glass: "var(--ff-surface-glass)",
+          card: "var(--ff-surface-card)",
+          input: "var(--ff-surface-input)",
         },
-        // High-Contrast Foregrounds
+        // Foregrounds
         foreground: {
-          DEFAULT: "#F7F7F5",
-          primary: "#FFFFFF",
-          secondary: "#9A9DA5",
-          muted: "#6E717A",
-          subtle: "#4A4D55",
+          DEFAULT: "var(--ff-text-primary)",
+          primary: "var(--ff-text-primary)",
+          secondary: "var(--ff-text-secondary)",
+          muted: "var(--ff-text-muted)",
+          subtle: "var(--ff-text-subtle)",
         },
-        // Subtle Low-Contrast Borders
+        // Borders
         border: {
-          DEFAULT: "rgba(255, 255, 255, 0.08)",
-          light: "rgba(255, 255, 255, 0.14)",
-          subtle: "rgba(255, 255, 255, 0.04)",
-          gold: "rgba(212, 175, 55, 0.3)",
+          DEFAULT: "var(--ff-border)",
+          light: "var(--ff-border-light)",
+          subtle: "var(--ff-border-subtle)",
+          gold: "var(--ff-border-gold)",
           glow: "rgba(245, 197, 24, 0.4)",
         },
         // FICTIONFIGURE Brand Gold / Radiant Yellow
@@ -55,7 +55,7 @@ module.exports = {
           radiant: "#FFD700",
           hover: "#E5B50D",
           muted: "#997F29",
-          light: "rgba(212, 175, 55, 0.12)",
+          light: "var(--ff-gold-light)",
           glow: "rgba(245, 197, 24, 0.25)",
         },
         // Semantic Palette

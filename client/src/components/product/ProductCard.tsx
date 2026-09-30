@@ -152,6 +152,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
                   alt=""
                   aria-hidden
                   fill
+                  loading="lazy"
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
                   className="object-contain opacity-0 group-hover:opacity-100 group-hover:scale-[1.04] transition-all duration-500 ease-out pointer-events-none"
                 />

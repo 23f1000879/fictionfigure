@@ -5,10 +5,11 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Search, User, Heart, ShoppingBag, Menu, X, ArrowRight, ChevronDown, FolderTree } from "lucide-react";
+import { Search, User, Heart, ShoppingBag, Menu, X, ArrowRight, ChevronDown, FolderTree, Sun, Moon } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useSettings } from "@/context/SettingsContext";
+import { useTheme } from "@/context/ThemeContext";
 import { useStoreCategories } from "@/lib/useStoreCategories";
 
 // Naked 36px icon control used across the header (reference: small, borderless, refined).
@@ -236,6 +237,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
 
 export function Header() {
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
   const { cartCount, setIsCartOpen, setIsSearchOpen } = useCart();
   const { wishlistCount } = useWishlist();
   const { announcements, freeShippingThreshold } = useSettings();
@@ -355,7 +357,15 @@ export function Header() {
             width={326}
             height={100}
             priority
-            className="h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[160px] object-contain"
+            className="hidden dark:block h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[160px] object-contain"
+          />
+          <Image
+            src="/fictionfigure-logo.svg"
+            alt="Fiction Figures"
+            width={460}
+            height={120}
+            priority
+            className="block dark:hidden h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[160px] object-contain"
           />
         </Link>
 
@@ -386,6 +396,21 @@ export function Header() {
             aria-label="Search"
           >
             <Search className="w-[18px] h-[18px]" />
+          </button>
+
+          {/* Day / Night Theme Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={iconBtn}
+            aria-label={theme === "night" ? "Switch to Day theme" : "Switch to Night theme"}
+            title={theme === "night" ? "Switch to Day theme" : "Switch to Night theme"}
+          >
+            {theme === "night" ? (
+              <Sun className="w-[18px] h-[18px] text-[#F5C518] transition-transform duration-200 motion-reduce:transition-none hover:rotate-45" />
+            ) : (
+              <Moon className="w-[18px] h-[18px] text-[#171717] transition-transform duration-200 motion-reduce:transition-none hover:-rotate-12" />
+            )}
           </button>
 
           <Link
@@ -444,7 +469,14 @@ export function Header() {
                     alt="Fiction Figures"
                     width={326}
                     height={100}
-                    className="h-7 w-auto object-contain"
+                    className="hidden dark:block h-7 w-auto object-contain"
+                  />
+                  <Image
+                    src="/fictionfigure-logo.svg"
+                    alt="Fiction Figures"
+                    width={460}
+                    height={120}
+                    className="block dark:hidden h-7 w-auto object-contain"
                   />
                 </Link>
                 <button
@@ -460,6 +492,25 @@ export function Header() {
               <MobileNav onNavigate={() => setMobileMenuOpen(false)} />
 
               <div className="px-3 py-4 space-y-0.5">
+                {/* Mobile Drawer Theme Toggle */}
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="w-full flex items-center justify-between h-11 px-3 rounded-md text-[13px] text-[#F7F7F5]/90 hover:bg-white/[0.04] text-left"
+                >
+                  <span className="flex items-center gap-3">
+                    {theme === "night" ? (
+                      <Sun className="w-4 h-4 text-[#F5C518]" />
+                    ) : (
+                      <Moon className="w-4 h-4 text-[#171717]" />
+                    )}
+                    <span>{theme === "night" ? "Night Mode" : "Day Mode"}</span>
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5C518]">
+                    Switch to {theme === "night" ? "Day" : "Night"}
+                  </span>
+                </button>
+
                 <Link
                   href={isLoggedIn ? "/account" : "/login"}
                   onClick={() => setMobileMenuOpen(false)}

@@ -160,7 +160,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <SearchModal />
       <CartDrawer />
 
-      <main className="bg-[#08090B] text-[#F7F7F5] pt-5 pb-16 lg:pt-6 lg:pb-20">
+      <main className="bg-background text-foreground pt-5 pb-16 lg:pt-6 lg:pb-20">
         <div className="ff-container space-y-14 lg:space-y-16">
           <ProductDetailClient product={product} />
 

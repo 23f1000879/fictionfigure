@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
@@ -57,8 +58,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#08090B",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#08090B" },
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
+  ],
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({
@@ -67,16 +71,45 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en-IN" className={`${inter.variable} ${oswald.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-[#08090B] text-[#F7F7F5] font-sans selection:bg-[#F5C518] selection:text-[#0A0A0C]">
-        <SettingsProvider>
-          <CartProvider>
-            <WishlistProvider>
-              {children}
-              <AIChatWidget />
-            </WishlistProvider>
-          </CartProvider>
-        </SettingsProvider>
+    <html
+      lang="en-IN"
+      suppressHydrationWarning
+      className={`${inter.variable} ${oswald.variable} h-full antialiased`}
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('fictionfigure_theme');
+                  if (saved === 'night') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.setAttribute('data-theme', 'night');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.setAttribute('data-theme', 'day');
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-background text-foreground font-sans selection:bg-[#F5C518] selection:text-[#0A0A0C]"
+      >
+        <ThemeProvider>
+          <SettingsProvider>
+            <CartProvider>
+              <WishlistProvider>
+                {children}
+                <AIChatWidget />
+              </WishlistProvider>
+            </CartProvider>
+          </SettingsProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

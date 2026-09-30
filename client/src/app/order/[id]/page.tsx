@@ -176,7 +176,7 @@ export default function OrderDetailPage() {
       <Header />
       <SearchModal />
       <CartDrawer />
-      <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-16 text-[#F7F7F5] space-y-6 sm:space-y-8 box-border overflow-x-hidden min-h-[70vh]">
+      <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-16 text-foreground space-y-6 sm:space-y-8 box-border overflow-x-hidden min-h-[70vh]">
         {/* Order Confirmed Hero Header */}
         <div className="text-center space-y-4 bg-[#111318] border border-white/[0.08] p-8 sm:p-12 rounded-2xl shadow-2xs">
           <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/40/20 rounded-full flex items-center justify-center mx-auto text-emerald-400">

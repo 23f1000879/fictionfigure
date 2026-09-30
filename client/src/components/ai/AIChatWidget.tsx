@@ -100,8 +100,8 @@ export function AIChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  useEffect(() => {
-    // Pre-load store metadata dynamically to guide local intent matching
+  const loadMetadata = React.useCallback(() => {
+    if (storeMeta.categories.length > 0) return;
     fetch(`${API_BASE}/products?limit=1`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -114,7 +114,13 @@ export function AIChatWidget() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [storeMeta.categories.length]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadMetadata();
+    }
+  }, [isOpen, loadMetadata]);
 
   const handleSend = async (textToSend?: string) => {
     const query = (textToSend || input).trim();
@@ -423,6 +429,8 @@ ${itemsList}`;
       {/* Floating Launcher Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        onMouseEnter={loadMetadata}
+        onFocus={loadMetadata}
         className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-2.5 sm:p-3.5 bg-[#111318]/95 backdrop-blur text-white border border-white/15 rounded-[10px] shadow-2xl hover:border-[#F5C518]/60 transition-all duration-200 flex items-center space-x-2 border border-white/[0.08] rounded-none"
         aria-label="Open Shopping Assistant"
       >

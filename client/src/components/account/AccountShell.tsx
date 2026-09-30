@@ -46,7 +46,7 @@ export function AccountShell({ children, isAdmin }: AccountShellProps) {
     }`;
 
   return (
-    <main className="relative flex-1 bg-[#08090B] text-[#F7F7F5] overflow-x-hidden">
+    <main className="relative flex-1 bg-background text-foreground overflow-x-hidden">
       {/* Artwork band behind the page heading */}
       <div className="absolute inset-x-0 top-0 h-[280px] overflow-hidden pointer-events-none" aria-hidden>
         {heroImageUrl && <ArtworkFrame src={heroImageUrl} alt="" mode="ambient" ambientOpacity={0.3} />}

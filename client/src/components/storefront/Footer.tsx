@@ -13,36 +13,16 @@ interface Category {
   slug: string;
 }
 
+import { useStoreCategories } from "@/lib/useStoreCategories";
+
 interface FooterProps {
   /** The compact authenticity/packaging/delivery row. Hidden on pages whose reference has no strip. */
   showValueStrip?: boolean;
 }
 
 export function Footer({ showValueStrip = true }: FooterProps = {}) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
+  const { categories, loading: loadingCategories } = useStoreCategories();
   const { supportPhone, supportEmail, supportHours, storeLocation, deliveryCoverage } = useSettings();
-
-  useEffect(() => {
-    let isMounted = true;
-    fetch(`${API_BASE}/products/categories`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (isMounted && data.categories && Array.isArray(data.categories)) {
-          setCategories(data.categories);
-        }
-      })
-      .catch(() => {
-        if (isMounted) setCategories([]);
-      })
-      .finally(() => {
-        if (isMounted) setLoadingCategories(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   return (
     <footer className="relative bg-[#060708] border-t border-white/[0.08] text-white overflow-hidden">
@@ -78,7 +58,14 @@ export function Footer({ showValueStrip = true }: FooterProps = {}) {
                 alt="Fiction Figures"
                 width={326}
                 height={100}
-                className="h-8 w-auto object-contain"
+                className="hidden dark:block h-8 w-auto object-contain"
+              />
+              <Image
+                src="/fictionfigure-logo.svg"
+                alt="Fiction Figures"
+                width={460}
+                height={120}
+                className="block dark:hidden h-8 w-auto object-contain"
               />
             </Link>
 
