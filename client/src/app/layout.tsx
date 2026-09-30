@@ -83,18 +83,12 @@ export default function RootLayout({
               (function() {
                 try {
                   var saved = localStorage.getItem('fictionfigure_theme');
-                  var theme = 'night';
-                  if (saved === 'day' || saved === 'night') {
-                    theme = saved;
-                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-                    theme = 'day';
-                  }
-                  if (theme === 'night') {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.setAttribute('data-theme', 'night');
-                  } else {
+                  if (saved === 'day') {
                     document.documentElement.classList.remove('dark');
                     document.documentElement.setAttribute('data-theme', 'day');
+                  } else {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.setAttribute('data-theme', 'night');
                   }
                 } catch(e) {}
               })();

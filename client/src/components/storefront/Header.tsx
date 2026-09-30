@@ -496,6 +496,8 @@ export function Header() {
                 <button
                   type="button"
                   onClick={toggleTheme}
+                  data-testid="mobile-theme-toggle"
+                  aria-label={theme === "night" ? "Switch to Day theme" : "Switch to Night theme"}
                   className="w-full flex items-center justify-between h-11 px-3 rounded-md text-[13px] text-[#F7F7F5]/90 hover:bg-white/[0.04] text-left"
                 >
                   <span className="flex items-center gap-3">
