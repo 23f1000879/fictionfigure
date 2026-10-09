@@ -39,7 +39,7 @@ export default function AboutPage() {
 
       <main className="flex-1 bg-background text-foreground">
         {/* Hero */}
-        <section className="relative isolate overflow-hidden border-b border-white/[0.06]">
+        <section className="ff-media relative isolate overflow-hidden border-b border-white/[0.06]">
           <div className="absolute inset-0 -z-10" aria-hidden>
             {cinematicBackgroundUrl && (
               <Image src={cinematicBackgroundUrl} alt="" fill priority sizes="100vw" className="object-cover object-[70%_30%]" />

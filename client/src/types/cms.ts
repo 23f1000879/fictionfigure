@@ -236,7 +236,7 @@ export const DEFAULT_HOMEPAGE_CMS_CONFIG: HomepageCMSConfig = {
     metaDescription: "Explore FictionFigure for premium collectible figures, scale anime statues, designer keychains, and action figures in India.",
     ogTitle: "FictionFigure | Authentic Anime Figures & Collectibles India",
     ogDescription: "Explore FictionFigure for premium collectible figures, scale anime statues, designer keychains, and action figures in India.",
-    ogImage: "https://www.fictionfigures.in/fictionfigure-icon.svg",
+    ogImage: "https://www.fictionfigures.in/og-image.png",
   },
 };
 

@@ -91,8 +91,8 @@ export function AdminSidebar({ isDrawerOpen = false, onClose }: AdminSidebarProp
       {/* Brand Header */}
       <div className="p-6 border-b border-[#2A2A2A] flex items-center space-x-3">
         <Image
-          src="/fictionfigure-icon.svg"
-          alt="FictionFigure Icon"
+          src="/icon-192.png"
+          alt="Fiction Figures"
           width={28}
           height={28}
           className="h-7 w-auto object-contain"

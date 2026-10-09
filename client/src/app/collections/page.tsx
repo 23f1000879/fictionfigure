@@ -53,7 +53,7 @@ export default async function CollectionsPage() {
 
       <main className="flex-1 bg-background text-foreground">
         {/* One cinematic scene behind the heading and the universe grid */}
-        <section className="relative isolate overflow-hidden">
+        <section className="ff-media relative isolate overflow-hidden">
           <div className="absolute inset-0 -z-10" aria-hidden>
             {backdrop ? (
               <Image src={backdrop} alt="" fill priority sizes="100vw" className="object-cover object-[70%_30%]" />

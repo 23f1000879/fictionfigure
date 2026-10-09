@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Award, Box, MapPin, Phone, Clock, Truck, ShieldCheck, Mail, Sparkles } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 import { useSettings } from "@/context/SettingsContext";
@@ -53,20 +53,7 @@ export function Footer({ showValueStrip = true }: FooterProps = {}) {
           {/* Column 1: Brand & Tagline */}
           <div className="space-y-5">
             <Link href="/" className="inline-block">
-              <Image
-                src="/fictionfigure-logo-light.png"
-                alt="Fiction Figures"
-                width={326}
-                height={100}
-                className="hidden dark:block h-8 w-auto object-contain"
-              />
-              <Image
-                src="/fictionfigure-logo.svg"
-                alt="Fiction Figures"
-                width={460}
-                height={120}
-                className="block dark:hidden h-8 w-auto object-contain"
-              />
+              <BrandLogo className="h-8" />
             </Link>
 
             <div className="space-y-2">

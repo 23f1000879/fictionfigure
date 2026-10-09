@@ -38,7 +38,7 @@ export function PromoBanner({
   return (
     <section
       aria-label={headline}
-      className="group relative h-full min-h-[240px] sm:min-h-[260px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#111318]"
+      className="ff-media group relative h-full min-h-[240px] sm:min-h-[260px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#111318]"
     >
       {imageUrl && (
         <ArtworkFrame

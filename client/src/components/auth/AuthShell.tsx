@@ -42,7 +42,7 @@ export function AuthShell({
       <SearchModal />
       <CartDrawer />
 
-      <main className="relative isolate flex-1 overflow-hidden bg-background text-foreground">
+      <main className="ff-media relative isolate flex-1 overflow-hidden bg-background text-foreground">
         <div className="absolute inset-0 -z-10" aria-hidden>
           {cinematicBackgroundUrl && (
             <Image
@@ -82,7 +82,7 @@ export function AuthShell({
 
           {/* Form panel */}
           <div className="lg:col-span-6 xl:col-span-5 flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-[460px] rounded-[16px] border border-white/[0.1] bg-[#0D0E12]/85 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] p-6 sm:p-8">
+            <div className="ff-light relative w-full max-w-[460px] rounded-[16px] border border-white/[0.1] bg-white dark:bg-[#0D0E12]/85 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)] dark:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] p-6 sm:p-8">
               <div className="absolute inset-x-10 -top-px h-px bg-gradient-to-r from-transparent via-[#F5C518]/60 to-transparent" aria-hidden />
               <div className="space-y-6">{children}</div>
             </div>

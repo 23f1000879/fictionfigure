@@ -133,7 +133,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
   return (
     <div className="group relative flex flex-col h-full bg-[#111318] rounded-[10px] border border-white/[0.08] hover:border-white/[0.2] transition-colors duration-300 overflow-hidden text-[#F7F7F5]">
       {/* Artwork — dominates the card */}
-      <div className="relative w-full aspect-[3/4] overflow-hidden bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_55%,#0b0c0f_100%)]">
+      <div className="relative w-full aspect-[3/4] overflow-hidden bg-[radial-gradient(ellipse_at_50%_35%,#FFFFFF_0%,#F5F5F2_60%,#ECECE7_100%)] dark:bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_55%,#0b0c0f_100%)]">
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block" aria-label={product.name}>
           {primaryImage ? (
             <>

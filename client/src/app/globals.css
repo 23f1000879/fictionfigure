@@ -3,44 +3,50 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Day Theme (Default for new visitors) */
-    --ff-bg: #FFFFFF;
-    --ff-bg-deep: #F7F7F5;
-    --ff-bg-charcoal: #F0F0EE;
+  :root,
+  html:not(.dark) .ff-light {
+    /* Day Theme — warm, editorial light palette (night mode below is the established design) */
+    --ff-bg: #FAFAF8;
+    --ff-bg-deep: #F3F3F0;
+    --ff-bg-charcoal: #EFEFEB;
     --ff-surface: #FFFFFF;
-    --ff-surface-elevated: #F7F7F5;
-    --ff-surface-soft: #EEEEEC;
-    --ff-surface-glass: rgba(255, 255, 255, 0.90);
+    --ff-surface-elevated: #F3F3F0;
+    --ff-surface-soft: #ECECE8;
+    --ff-surface-glass: rgba(255, 255, 255, 0.88);
     --ff-surface-card: #FFFFFF;
     --ff-surface-input: #FFFFFF;
-    --ff-surface-hover: #F2F2F0;
+    --ff-surface-hover: #F3F3F0;
 
-    --ff-border: #E5E5E5;
-    --ff-border-light: #ECECEC;
-    --ff-border-subtle: #F2F2F0;
-    --ff-border-gold: rgba(245, 197, 24, 0.5);
+    --ff-border: #E5E5E1;
+    --ff-border-light: #D6D6D0;
+    --ff-border-subtle: #EFEFEB;
+    --ff-border-gold: rgba(184, 140, 0, 0.45);
 
     --ff-gold: #F5C518;
     --ff-gold-dark: #D4AF37;
     --ff-gold-glow: rgba(245, 197, 24, 0.25);
-    --ff-gold-light: rgba(245, 197, 24, 0.12);
+    --ff-gold-light: rgba(245, 197, 24, 0.14);
 
-    --ff-text-primary: #171717;
-    --ff-text-secondary: #666666;
-    --ff-text-muted: #888888;
-    --ff-text-subtle: #AAAAAA;
+    --ff-text-primary: #151515;
+    --ff-text-secondary: #626262;
+    --ff-text-muted: #727272;
+    --ff-text-subtle: #9A9A95;
 
-    --ff-btn-primary-bg: #171717;
+    /* Day-mode contrast system (see "Day Mode" section at the end of this file) */
+    --ff-text-strong: #151515;   /* what text-white resolves to on light surfaces */
+    --ff-gold-ink: #8F6B00;      /* gold text that stays readable on white (4.9:1) */
+    --ff-wash: 21 21 21;         /* rgb channels for translucent hover/selection washes */
+
+    --ff-btn-primary-bg: #151515;
     --ff-btn-primary-text: #FFFFFF;
-    --ff-btn-primary-border: #171717;
-    --ff-btn-primary-hover: #262626;
+    --ff-btn-primary-border: #151515;
+    --ff-btn-primary-hover: #2A2A2A;
 
-    --ff-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --ff-card-shadow-hover: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 0 15px 0 rgba(245, 197, 24, 0.15);
-    --ff-scrollbar-track: #F7F7F5;
-    --ff-scrollbar-thumb: #D1D5DB;
-    --ff-scrollbar-thumb-hover: #9CA3AF;
+    --ff-card-shadow: 0 1px 2px rgba(21, 21, 21, 0.04), 0 1px 3px rgba(21, 21, 21, 0.05);
+    --ff-card-shadow-hover: 0 14px 32px -14px rgba(21, 21, 21, 0.22), 0 0 0 1px rgba(184, 140, 0, 0.18);
+    --ff-scrollbar-track: #F3F3F0;
+    --ff-scrollbar-thumb: #D0D0CA;
+    --ff-scrollbar-thumb-hover: #A3A39C;
 
     /* Layout tokens */
     --ff-header-h: 64px;
@@ -54,7 +60,8 @@
 
   html.dark,
   [data-theme="night"],
-  :root.dark {
+  :root.dark,
+  html:not(.dark) .ff-media {
     /* Night Theme (Exact existing dark theme tokens preserved) */
     --ff-bg: #08090B;
     --ff-bg-deep: #060708;
@@ -92,6 +99,10 @@
     --ff-scrollbar-track: #08090B;
     --ff-scrollbar-thumb: #1E2027;
     --ff-scrollbar-thumb-hover: #2D303C;
+
+    --ff-text-strong: #FFFFFF;
+    --ff-gold-ink: #F5C518;
+    --ff-wash: 255 255 255;
   }
 
   @media (min-width: 1024px) {
@@ -437,9 +448,19 @@
 }
 
 /* ==========================================================================
-   Day Mode Scoped Mappings (html:not(.dark))
-   Guarantees thorough, clean, and consistent Day Theme across all pages
-   while preserving the exact existing Night Theme without any alterations.
+   Day Mode (html:not(.dark))
+   The night theme is the established design and is never touched here: every rule below is
+   scoped to html:not(.dark). Storefront components use the night palette as hard-coded utility
+   classes; this layer maps them onto the day tokens defined in :root.
+
+   Contrast system (variables, so context can override them):
+   - --ff-text-strong  what `text-white` resolves to. Dark on light surfaces; reset to white on
+                       solid dark/colour fills and inside .ff-media.
+   - --ff-gold-ink     gold *text* colour. Deep gold on light surfaces; bright gold on dark ones.
+   - --ff-wash         rgb channels used for translucent hover/selection washes.
+   - .ff-media         "artwork island" (hero, promo/collection art, lightbox): restores the night
+                       palette inside it so text over dark imagery stays light.
+   - .ff-admin         the admin app keeps its own (already light) design untouched.
    ========================================================================== */
 html:not(.dark) {
   color-scheme: light;
@@ -450,75 +471,201 @@ html:not(.dark) main {
   color: var(--ff-text-primary);
 }
 
+/* ---------- Context resets ---------- */
+/* .ff-media / .ff-light pick up the night / day token blocks at the top of this file. */
+html:not(.dark) .ff-media {
+  color-scheme: dark;
+}
+html:not(.dark) .ff-light {
+  color-scheme: light;
+}
+html:not(.dark) .ff-admin {
+  --ff-text-strong: #FFFFFF;
+  --ff-gold-ink: #F5C518;
+  --ff-wash: 255 255 255;
+}
+/* Solid dark / colour fills keep white text and bright gold on top of them.
+   (Translucent black scrims are deliberately not listed: they wrap light modal panels.) */
+html:not(.dark) :is(.bg-black, .bg-\[\#111111\], .bg-\[\#2A2A2A\], .bg-\[\#151515\], .bg-\[\#A83232\],
+  .bg-\[\#2E6B44\], .bg-\[\#10B981\], .bg-\[\#B86E00\], .bg-\[\#6B6B6B\], .bg-\[\#5F259F\], .bg-\[\#1A73E8\],
+  .bg-\[\#00BAF2\], .bg-\[\#F47920\], [style*="background"]) {
+  --ff-text-strong: #FFFFFF;
+  --ff-gold-ink: #F5C518;
+}
+
+/* ---------- Surfaces ---------- */
 html:not(.dark) .bg-\[\#08090B\],
 html:not(.dark) .bg-\[\#060708\],
 html:not(.dark) .bg-\[\#0C0D10\] {
   background-color: var(--ff-bg);
 }
-
 html:not(.dark) .bg-\[\#111318\],
 html:not(.dark) .bg-\[\#121318\],
 html:not(.dark) .bg-\[\#0D0E12\] {
   background-color: var(--ff-surface);
 }
-
 html:not(.dark) .bg-\[\#17191F\],
 html:not(.dark) .bg-\[\#181920\],
 html:not(.dark) .bg-\[\#0E0F14\],
 html:not(.dark) .bg-\[\#0E0F13\] {
   background-color: var(--ff-surface-elevated);
 }
-
 html:not(.dark) .bg-\[\#1E2027\],
-html:not(.dark) .bg-\[\#22242D\] {
+html:not(.dark) .bg-\[\#22242D\],
+html:not(.dark) .hover\:bg-\[\#1E2027\]:hover,
+html:not(.dark) .hover\:bg-\[\#22242D\]:hover {
   background-color: var(--ff-surface-soft);
 }
 
-html:not(.dark) .text-\[\#F7F7F5\] {
-  color: var(--ff-text-primary);
+/* Cards and panels lift with a hairline + soft shadow instead of dark glow. */
+html:not(.dark) :is(.bg-\[\#111318\], .bg-\[\#121318\]):is(.rounded-\[10px\], .rounded-\[12px\], .rounded-xl, .rounded-2xl) {
+  box-shadow: var(--ff-card-shadow);
 }
 
+/* Glass chips over product imagery (wishlist, arrows, counters): white glass in day mode. */
+html:not(.dark) [class*="bg-[#08090B]/"] {
+  background-color: rgba(255, 255, 255, 0.86);
+  border-color: var(--ff-border);
+  color: var(--ff-text-primary);
+  box-shadow: 0 1px 2px rgba(21, 21, 21, 0.08);
+}
+html:not(.dark) .ff-media [class*="bg-[#08090B]/"] {
+  background-color: rgba(8, 9, 11, 0.6);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  box-shadow: none;
+}
+
+/* Translucent white washes would vanish on white: use the same alpha of near-black instead. */
+html:not(.dark) .bg-white\/\[0\.02\], html:not(.dark) .hover\:bg-white\/\[0\.02\]:hover { background-color: rgb(var(--ff-wash) / 0.03); }
+html:not(.dark) .bg-white\/\[0\.03\], html:not(.dark) .hover\:bg-white\/\[0\.03\]:hover { background-color: rgb(var(--ff-wash) / 0.035); }
+html:not(.dark) .bg-white\/\[0\.04\], html:not(.dark) .hover\:bg-white\/\[0\.04\]:hover { background-color: rgb(var(--ff-wash) / 0.04); }
+html:not(.dark) .bg-white\/\[0\.05\], html:not(.dark) .bg-white\/5,
+html:not(.dark) .hover\:bg-white\/\[0\.05\]:hover, html:not(.dark) .hover\:bg-white\/5:hover { background-color: rgb(var(--ff-wash) / 0.045); }
+html:not(.dark) .bg-white\/\[0\.06\], html:not(.dark) .hover\:bg-white\/\[0\.06\]:hover { background-color: rgb(var(--ff-wash) / 0.055); }
+html:not(.dark) .bg-white\/\[0\.08\], html:not(.dark) .hover\:bg-white\/\[0\.08\]:hover { background-color: rgb(var(--ff-wash) / 0.065); }
+html:not(.dark) .bg-white\/10, html:not(.dark) .hover\:bg-white\/10:hover { background-color: rgb(var(--ff-wash) / 0.07); }
+html:not(.dark) .bg-white\/15, html:not(.dark) .hover\:bg-white\/15:hover { background-color: rgb(var(--ff-wash) / 0.09); }
+html:not(.dark) .bg-white\/20, html:not(.dark) .hover\:bg-white\/20:hover { background-color: rgb(var(--ff-wash) / 0.11); }
+
+/* ---------- Text ---------- */
+html:not(.dark) .text-\[\#F7F7F5\],
+html:not(.dark) .hover\:text-\[\#F7F7F5\]:hover {
+  color: var(--ff-text-primary);
+}
 html:not(.dark) .text-\[\#9A9DA5\],
-html:not(.dark) .text-\[\#6E717A\],
+html:not(.dark) .text-\[\#C9CBD1\],
 html:not(.dark) .text-\[\#94A3B8\],
-html:not(.dark) .text-\[\#64748B\],
-html:not(.dark) .text-\[\#4A4D55\] {
+html:not(.dark) .text-\[\#64748B\] {
   color: var(--ff-text-secondary);
 }
+html:not(.dark) .text-\[\#6E717A\],
+html:not(.dark) .placeholder\:text-\[\#6E717A\]::placeholder {
+  color: var(--ff-text-muted);
+}
+html:not(.dark) .text-\[\#4A4D55\] {
+  color: var(--ff-text-subtle);
+}
+html:not(.dark) .text-white,
+html:not(.dark) .hover\:text-white:hover,
+html:not(.dark) .group:hover .group-hover\:text-white {
+  color: var(--ff-text-strong);
+}
+html:not(.dark) .text-white\/90, html:not(.dark) .text-\[\#F7F7F5\]\/90 { color: color-mix(in srgb, var(--ff-text-strong) 90%, transparent); }
+html:not(.dark) .text-white\/85, html:not(.dark) .text-\[\#F7F7F5\]\/85 { color: color-mix(in srgb, var(--ff-text-strong) 86%, transparent); }
+html:not(.dark) .text-white\/80, html:not(.dark) .text-\[\#F7F7F5\]\/80 { color: color-mix(in srgb, var(--ff-text-strong) 82%, transparent); }
+html:not(.dark) .text-\[\#F7F7F5\]\/75 { color: color-mix(in srgb, var(--ff-text-strong) 78%, transparent); }
+html:not(.dark) .text-white\/70 { color: color-mix(in srgb, var(--ff-text-strong) 72%, transparent); }
+html:not(.dark) .text-white\/60 { color: color-mix(in srgb, var(--ff-text-strong) 66%, transparent); }
 
-html:not(.dark) [class*="border-white"] {
-  border-color: var(--ff-border);
+/* Gold text: deep gold ink on light surfaces (bright gold fails contrast on white). */
+html:not(.dark) .text-\[\#F5C518\],
+html:not(.dark) .text-\[\#D4AF37\],
+html:not(.dark) .hover\:text-\[\#F5C518\]:hover,
+html:not(.dark) .hover\:text-\[\#D4AF37\]:hover,
+html:not(.dark) .ff-eyebrow,
+html:not(.dark) .ff-link-arrow:hover {
+  color: var(--ff-gold-ink);
+}
+/* Text that sits on a gold fill stays dark. */
+html:not(.dark) :is(.bg-\[\#F5C518\], .ff-btn-gold, .btn-gold) {
+  --ff-text-strong: #08090B;
+  --ff-gold-ink: #08090B;
 }
 
-/* Headings in Day Mode */
-html:not(.dark) h1:not(.btn-gold *):not(.ff-btn-gold *),
-html:not(.dark) h2:not(.btn-gold *):not(.ff-btn-gold *),
-html:not(.dark) h3:not(.btn-gold *):not(.ff-btn-gold *),
-html:not(.dark) h4:not(.btn-gold *):not(.ff-btn-gold *),
-html:not(.dark) h5:not(.btn-gold *):not(.ff-btn-gold *),
-html:not(.dark) h6:not(.btn-gold *):not(.ff-btn-gold *) {
+/* Headings */
+/* Low specificity on purpose: headings with their own colour class keep it. */
+html:not(.dark) :where(h1, h2, h3, h4, h5, h6) {
   color: var(--ff-text-primary);
 }
 
-/* Header in Day Mode */
+/* ---------- Borders ---------- */
+html:not(.dark) [class*="border-white"],
+html:not(.dark) [class*="divide-white"] > * + * {
+  border-color: var(--ff-border);
+}
+html:not(.dark) [class*="hover:border-white"]:hover {
+  border-color: var(--ff-border-light);
+}
+html:not(.dark) .ff-media [class*="hover:border-white"]:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* ---------- Gradients & glows ---------- */
+/* Fades that blend into the night page fade into the day page instead (or stay dark inside artwork). */
+html:not(.dark) .from-\[\#08090B\] {
+  --tw-gradient-from: var(--ff-bg) var(--tw-gradient-from-position);
+  --tw-gradient-to: color-mix(in srgb, var(--ff-bg) 0%, transparent) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+html:not(.dark) .via-\[\#08090B\]\/60 {
+  --tw-gradient-to: color-mix(in srgb, var(--ff-bg) 0%, transparent) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), color-mix(in srgb, var(--ff-bg) 60%, transparent) var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+html:not(.dark) .via-\[\#08090B\]\/80 {
+  --tw-gradient-to: color-mix(in srgb, var(--ff-bg) 0%, transparent) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), color-mix(in srgb, var(--ff-bg) 80%, transparent) var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+/* Heavy black shadows look muddy on white. */
+html:not(.dark) [class*="shadow-black"]:not(.ff-media *) {
+  --tw-shadow-color: rgb(21 21 21 / 0.12);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+html:not(.dark) [class*="drop-shadow-[0_30px_60px"]:not(.ff-media *) {
+  filter: drop-shadow(0 18px 26px rgba(21, 21, 21, 0.16));
+}
+
+/* Blurred "ambient" artwork washes: rich on black, muddy on white — keep them faint in day mode. */
+html:not(.dark) .ff-ambient:not(.ff-media *) {
+  opacity: 0.16 !important;
+  filter: blur(40px) saturate(1.1);
+}
+/* Dark vignettes painted over image stages are night-only. */
+html:not(.dark) .ff-night-vignette:not(.ff-media *) {
+  display: none;
+}
+
+/* ---------- Header, announcement bar, footer ---------- */
 html:not(.dark) header {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.92);
   border-color: var(--ff-border);
+  box-shadow: 0 1px 0 rgba(21, 21, 21, 0.02);
 }
-
 html:not(.dark) header .bg-\[\#060708\] {
-  background-color: var(--ff-bg-deep);
-  border-color: var(--ff-border);
+  background-color: #151515;
+  border-color: #151515;
+  --ff-text-strong: #FFFFFF;
+  --ff-gold-ink: #F5C518;
 }
-
+html:not(.dark) header .bg-\[\#060708\] .text-\[\#F7F7F5\]\/80 {
+  color: rgba(255, 255, 255, 0.86);
+}
 html:not(.dark) header nav a {
   color: var(--ff-text-primary);
 }
 html:not(.dark) header nav a:hover {
-  color: var(--ff-gold);
+  color: var(--ff-gold-ink);
 }
-
-/* Footer in Day Mode */
 html:not(.dark) footer {
   background-color: var(--ff-bg-deep);
   border-color: var(--ff-border);
@@ -531,38 +678,73 @@ html:not(.dark) footer a:hover {
   color: var(--ff-text-primary);
 }
 
-/* Input Fields in Day Mode */
-html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]),
-html:not(.dark) textarea,
-html:not(.dark) select {
+/* ---------- Forms ---------- */
+html:not(.dark) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="range"]), textarea, select):not(.ff-admin *) {
   background-color: #FFFFFF;
-  color: #171717;
-  border-color: #E5E5E5;
+  color: #151515;
+  border-color: #D6D6D0;
 }
-html:not(.dark) input::placeholder,
-html:not(.dark) textarea::placeholder {
-  color: #888888;
+html:not(.dark) :is(input, textarea, select):not(.ff-admin *):focus {
+  border-color: #151515;
+}
+html:not(.dark) :is(input, textarea)::placeholder {
+  color: #8A8A85;
+}
+/* Wrapped inputs (e.g. +91 prefix groups) get the same visible frame. */
+html:not(.dark) .focus-within\:border-\[\#F5C518\]\/60:focus-within {
+  border-color: #151515;
+}
+html:not(.dark) [class*="focus:border-[#F5C518]"]:focus {
+  border-color: #151515;
 }
 
-/* Mobile Navigation in Day Mode */
+/* Disabled controls look intentionally disabled, not invisible. */
+html:not(.dark) :is(button, a, input, select, textarea):disabled:not(.ff-admin *),
+html:not(.dark) [aria-disabled="true"]:not(.ff-admin *) {
+  opacity: 0.55;
+}
+
+/* ---------- Focus ---------- */
+html:not(.dark) :focus-visible:not(.ff-admin *):not(input):not(textarea):not(select) {
+  outline: 2px solid #151515;
+  outline-offset: 2px;
+}
+
+/* ---------- Mobile navigation ---------- */
 html:not(.dark) nav[aria-label="Primary"] a,
 html:not(.dark) nav[aria-label="Primary"] button {
   color: var(--ff-text-primary);
 }
 
-/* Product Card Styling in Day Mode */
+/* ---------- Product cards ---------- */
 html:not(.dark) .group.relative.flex.flex-col.h-full.bg-\[\#111318\] {
   background-color: var(--ff-surface);
   border-color: var(--ff-border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--ff-card-shadow);
 }
 html:not(.dark) .group.relative.flex.flex-col.h-full.bg-\[\#111318\]:hover {
-  border-color: #CCCCCC;
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 0 12px 0 rgba(245, 197, 24, 0.15);
+  border-color: var(--ff-border-light);
+  box-shadow: var(--ff-card-shadow-hover);
+}
+/* Image wells behind figures: soft warm grey so white product shots don't merge with the card. */
+html:not(.dark) div.bg-\[\#0D0E12\] {
+  background-color: var(--ff-surface-elevated);
+  border-color: var(--ff-border);
 }
 
-/* Product Studio in Day Mode */
-html:not(.dark) div.bg-\[\#0D0E12\] {
-  background-color: var(--ff-surface);
-  border-color: var(--ff-border);
+/* ---------- Brand primitives ---------- */
+html:not(.dark) .ff-btn-outline:hover {
+  border-color: #151515;
+  background: #FFFFFF;
+}
+html:not(.dark) .ff-media .ff-btn-outline {
+  color: #F7F7F5;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+html:not(.dark) .ff-media .ff-btn-outline:hover {
+  border-color: #F7F7F5;
+  background: rgba(255, 255, 255, 0.08);
+}
+html:not(.dark) .group:hover .ff-circle-arrow {
+  color: #08090B;
 }

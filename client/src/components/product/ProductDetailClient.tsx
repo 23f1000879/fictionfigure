@@ -404,7 +404,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
             onKeyDown={handleStageKeyDown}
           >
             {currentImage && <AmbientImage src={currentImage} opacity={0.35} />}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,transparent_0%,rgba(8,9,11,0.6)_75%)] pointer-events-none" />
+            <div className="ff-night-vignette absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,transparent_0%,rgba(8,9,11,0.6)_75%)] pointer-events-none" />
 
             {currentImage ? (
               <Image
@@ -835,7 +835,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
       {/* 3. Full-Resolution Lightbox Modal */}
       {isLightboxOpen && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+          className="ff-media fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-label={`${product.name} — enlarged image`}

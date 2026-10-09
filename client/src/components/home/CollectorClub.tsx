@@ -16,7 +16,7 @@ export function CollectorClub({ imageUrl }: CollectorClubProps) {
   return (
     <section
       aria-label="Collector's Club"
-      className="relative h-full min-h-[240px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0D0E12]"
+      className="ff-media relative h-full min-h-[240px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0D0E12]"
     >
       {imageUrl && <ArtworkFrame src={imageUrl} alt="" mode="ambient" ambientOpacity={0.35} />}
       <div className="absolute inset-0 bg-gradient-to-r from-[#08090B]/95 via-[#08090B]/70 to-[#08090B]/30 pointer-events-none" />

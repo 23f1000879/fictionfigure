@@ -49,7 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isAuthorized === null) {
     return (
-      <div className="min-h-screen bg-[#F7F7F5] flex flex-col items-center justify-center text-xs text-[#6B6B6B]">
+      <div className="ff-admin min-h-screen bg-[#F7F7F5] flex flex-col items-center justify-center text-xs text-[#6B6B6B]">
         <Loader2 className="w-6 h-6 animate-spin text-[#111111] mb-2" />
         <span>Authenticating Admin Credentials...</span>
       </div>
@@ -58,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isAuthorized === false) {
     return (
-      <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center p-6 text-[#111111]">
+      <div className="ff-admin min-h-screen bg-[#F7F7F5] flex items-center justify-center p-6 text-[#111111]">
         <div className="bg-white border border-[#E5E5E2] p-8 max-w-md text-center space-y-4 shadow-xl">
           <ShieldAlert className="w-12 h-12 text-[#A83232] mx-auto" />
           <h2 className="text-lg font-bold uppercase tracking-wider text-[#111111]">Access Restricted</h2>
@@ -77,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] flex flex-col lg:flex-row text-[#111111] font-sans">
+    <div className="ff-admin min-h-screen bg-[#F7F7F5] flex flex-col lg:flex-row text-[#111111] font-sans">
       <AdminSidebar isDrawerOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Top Header */}
@@ -91,8 +91,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Menu className="w-5 h-5" />
             </button>
             <Image
-              src="/fictionfigure-icon.svg"
-              alt="FictionFigure Icon"
+              src="/icon-192.png"
+              alt="Fiction Figures"
               width={20}
               height={20}
               className="h-5 w-auto object-contain"

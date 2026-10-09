@@ -125,7 +125,7 @@ export function CartPageClient() {
               key={item.variantId}
               className="rounded-[12px] border border-white/[0.08] bg-[#111318] p-3 sm:p-4 flex gap-4 items-center hover:border-white/15 transition-colors duration-200"
             >
-              <div className="relative w-20 h-24 sm:w-24 sm:h-28 shrink-0 overflow-hidden rounded-[8px] bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_60%,#0b0c0f_100%)] border border-white/[0.06]">
+              <div className="relative w-20 h-24 sm:w-24 sm:h-28 shrink-0 overflow-hidden rounded-[8px] bg-[radial-gradient(ellipse_at_50%_35%,#FFFFFF_0%,#F5F5F2_60%,#ECECE7_100%)] dark:bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_60%,#0b0c0f_100%)] border border-white/[0.06]">
                 {item.image && item.image.trim() !== "" ? (
                   <Image src={item.image} alt={item.title} fill sizes="96px" className="object-contain p-1" unoptimized />
                 ) : (

@@ -40,7 +40,7 @@ export function CategoryTile({
   return (
     <Link
       href={href || `/collections/${category.slug}`}
-      className={`group relative block ${aspect} overflow-hidden rounded-[10px] border border-white/[0.1] bg-[#111318] hover:border-[#F5C518]/50 focus-visible:outline-none focus-visible:border-[#F5C518] transition-colors duration-200`}
+      className={`ff-media group relative block ${aspect} overflow-hidden rounded-[10px] border border-white/[0.1] bg-[#111318] hover:border-[#F5C518]/50 focus-visible:outline-none focus-visible:border-[#F5C518] transition-colors duration-200`}
     >
       {imageSrc ? (
         <Image

@@ -128,7 +128,7 @@ export function HeroCarousel({
 
   return (
     <section
-      className="relative isolate overflow-hidden bg-[#08090B] border-b border-white/[0.06]"
+      className="ff-media relative isolate overflow-hidden bg-[#08090B] border-b border-white/[0.06]"
       aria-roledescription="carousel"
       aria-label="Featured collections"
       onPointerDown={onPointerDown}

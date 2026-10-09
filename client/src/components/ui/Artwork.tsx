@@ -70,7 +70,7 @@ export function AmbientImage({
       aria-hidden
       loading="lazy"
       decoding="async"
-      className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl saturate-150 pointer-events-none ${className}`}
+      className={`ff-ambient absolute inset-0 w-full h-full object-cover scale-110 blur-xl saturate-150 pointer-events-none ${className}`}
       style={{ opacity }}
     />
   );

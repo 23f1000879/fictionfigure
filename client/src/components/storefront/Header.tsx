@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useId } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Search, User, Heart, ShoppingBag, Menu, X, ArrowRight, ChevronDown, FolderTree, Sun, Moon } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -351,22 +352,7 @@ export function Header() {
           className="flex items-center shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]"
           aria-label="Fiction Figures home"
         >
-          <Image
-            src="/fictionfigure-logo-light.png"
-            alt="Fiction Figures"
-            width={326}
-            height={100}
-            priority
-            className="hidden dark:block h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[160px] object-contain"
-          />
-          <Image
-            src="/fictionfigure-logo.svg"
-            alt="Fiction Figures"
-            width={460}
-            height={120}
-            priority
-            className="block dark:hidden h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[160px] object-contain"
-          />
+          <BrandLogo className="h-9 sm:h-10" priority />
         </Link>
 
         {/* Centre navigation */}
@@ -464,20 +450,7 @@ export function Header() {
             <div className="fixed top-0 right-0 bottom-0 w-[86%] max-w-[340px] z-[9999] bg-[#0C0D10] border-l border-white/[0.08] lg:hidden overflow-y-auto flex flex-col">
               <div className="h-header px-5 flex items-center justify-between border-b border-white/[0.08]">
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
-                  <Image
-                    src="/fictionfigure-logo-light.png"
-                    alt="Fiction Figures"
-                    width={326}
-                    height={100}
-                    className="hidden dark:block h-7 w-auto object-contain"
-                  />
-                  <Image
-                    src="/fictionfigure-logo.svg"
-                    alt="Fiction Figures"
-                    width={460}
-                    height={120}
-                    className="block dark:hidden h-7 w-auto object-contain"
-                  />
+                  <BrandLogo className="h-7" />
                 </Link>
                 <button
                   type="button"

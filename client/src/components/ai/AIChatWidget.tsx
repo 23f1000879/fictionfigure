@@ -431,7 +431,7 @@ ${itemsList}`;
         onClick={() => setIsOpen(!isOpen)}
         onMouseEnter={loadMetadata}
         onFocus={loadMetadata}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-2.5 sm:p-3.5 bg-[#111318]/95 backdrop-blur text-white border border-white/15 rounded-[10px] shadow-2xl hover:border-[#F5C518]/60 transition-all duration-200 flex items-center space-x-2 border border-white/[0.08] rounded-none"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-2.5 sm:p-3.5 bg-white/95 dark:bg-[#111318]/95 backdrop-blur text-white border border-white/15 rounded-[10px] shadow-2xl hover:border-[#F5C518]/60 transition-all duration-200 flex items-center space-x-2 border border-white/[0.08] rounded-none"
         aria-label="Open Shopping Assistant"
       >
         <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4AF37]" />
