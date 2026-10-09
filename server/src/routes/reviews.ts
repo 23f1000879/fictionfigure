@@ -438,7 +438,7 @@ export async function handleGetAdminReviews(req: any, res: any) {
     const reviews = await prisma.review.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        product: { select: { id: true, name: true, slug: true, images: { take: 1 } } },
+        product: { select: { id: true, name: true, slug: true, images: { take: 1, orderBy: { sortOrder: "asc" } } } },
         user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
       },
     });

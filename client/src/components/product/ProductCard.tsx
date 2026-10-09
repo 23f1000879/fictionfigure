@@ -7,6 +7,7 @@ import { Heart, ShoppingBag, ChevronLeft, ChevronRight, Star } from "lucide-reac
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { primaryImageUrl } from "@/lib/productImages";
 import { Badge } from "@/components/ui/Badge";
 
 export interface ProductCardProps {
@@ -70,11 +71,10 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
   const images = product.images || [];
   const hasMultipleImages = images.length > 1;
 
-  const primaryImage =
-    currentVariant?.imageUrl ||
-    images[imageIndex]?.url ||
-    images[0]?.url ||
-    "";
+  // Cover (or the variant's own image) until the shopper steps through the gallery arrows.
+  // Previously the variant image always won, so the arrows never changed the picture.
+  const coverImage = primaryImageUrl(images, currentVariant?.imageUrl);
+  const primaryImage = imageIndex === 0 ? coverImage : images[imageIndex]?.url || coverImage;
 
   // Hover image swap: display second image if multiple images exist
   const secondaryImage =
@@ -116,7 +116,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
       title: product.name,
       variantTitle: variantToAdd.title,
       price: currentPrice,
-      image: primaryImage,
+      image: coverImage,
       quantity: 1,
       sku: variantToAdd.sku || "",
       brand: product.brand || product.category?.name || "Fiction Figures",

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, AlertCircle, Plus, Trash2, Upload, Image as ImageIcon } from "lucide-react";
-import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
+import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { API_BASE, adminFetch } from "@/lib/api";
 
 export interface VariantFormItem {
@@ -22,6 +22,8 @@ export default function AdminNewProductPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
+  // Synchronous lock: state updates are async, so a fast double click could otherwise submit twice.
+  const submitLock = useRef(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState("");
@@ -43,7 +45,7 @@ export default function AdminNewProductPage() {
     scale: "",
     franchise: "",
     whatsIncluded: "",
-    images: ["", ""],
+    images: [] as string[],
   });
 
   const [productType, setProductType] = useState<"simple" | "variants">("simple");
@@ -142,7 +144,7 @@ export default function AdminNewProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isImageUploading) return;
+    if (isImageUploading || submitLock.current) return;
 
     if (!form.categoryId) {
       setError("A category selection is required to publish a product.");
@@ -167,15 +169,18 @@ export default function AdminNewProductPage() {
       }
     }
 
+    const validImages = form.images.filter(Boolean);
+    if (validImages.length === 0) {
+      setError("Add at least one product image. The first image becomes the cover.");
+      return;
+    }
+
+    submitLock.current = true;
     setIsSubmitting(true);
     setError("");
     setSlugError("");
 
     try {
-      const validImages = form.images.filter(Boolean);
-      if (validImages.length === 0) {
-        throw new Error("Please upload or provide at least one Primary Product Image.");
-      }
 
       const isVariantMode = productType === "variants";
       const totalStock = isVariantMode
@@ -206,6 +211,7 @@ export default function AdminNewProductPage() {
 
       router.push("/admin/products");
     } catch (err: any) {
+      submitLock.current = false; // stays locked after success while navigating away
       setError(err.message || "Something went wrong while creating figure");
     } finally {
       setIsSubmitting(false);
@@ -573,14 +579,12 @@ export default function AdminNewProductPage() {
         {/* Section 3: Product Photography */}
         <div className="space-y-4 pt-4 border-t border-[#E5E5E2]">
           <h3 className="font-semibold uppercase tracking-wider text-[#111111] border-b border-[#E5E5E2] pb-2 font-mono">
-            3. Product Imagery
+            3. Product Images
           </h3>
-          <ProductImageUploader
-            label="Primary Product Photography Image"
-            value={form.images[0] || ""}
-            onChange={(url) => setForm((prev) => ({ ...prev, images: [url, prev.images[1] || ""] }))}
-            onUploadingChange={setIsImageUploading}
-            required
+          <ProductImageManager
+            value={form.images}
+            onChange={(urls) => setForm((prev) => ({ ...prev, images: urls }))}
+            onBusyChange={setIsImageUploading}
           />
         </div>
 

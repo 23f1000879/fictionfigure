@@ -6,6 +6,8 @@ import { v2 as cloudinary } from "cloudinary";
 import { requireAdmin } from "../middleware/auth.js";
 import { prisma } from "../db.js";
 import { DEFAULT_SETTINGS, clearSettingsCache } from "./settings.js";
+import { clearProductsMetaCache } from "./products.js";
+import { normalizeProductImages, replaceProductImages, toImageRows } from "../utils/productImages.js";
 
 const router = Router();
 
@@ -52,7 +54,8 @@ const upload = multer({
 });
 
 // 1. Image Upload Endpoint (POST /api/admin/uploads/product-image)
-router.post("/uploads/product-image", (req, res) => {
+// Registered before router.use(requireAdmin) below, so it guards itself.
+router.post("/uploads/product-image", requireAdmin, (req, res) => {
   upload.single("image")(req, res, async (err: any) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
@@ -445,6 +448,24 @@ router.get("/products", async (_req, res) => {
   }
 });
 
+// Single product for the admin edit form (any status, uncached, full ordered gallery).
+router.get("/products/:id", async (req, res) => {
+  try {
+    const product = await prisma.product.findFirst({
+      where: { OR: [{ id: req.params.id }, { slug: req.params.id }] },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        images: { orderBy: { sortOrder: "asc" } },
+        variants: { include: { inventory: true }, orderBy: { createdAt: "asc" } },
+      },
+    });
+    if (!product) return res.status(404).json({ error: "Product not found" });
+    res.json({ product });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch product" });
+  }
+});
+
 router.post("/products", async (req, res) => {
   try {
     const {
@@ -475,7 +496,10 @@ router.post("/products", async (req, res) => {
 
     const generatedSlug = (slug || name).toLowerCase().trim().replace(/[^\w ]+/g, "").replace(/ +/g, "-");
     const stock = typeof stockQuantity === "number" ? stockQuantity : Number(stockQuantity) || 0;
-    const imgArray = Array.isArray(images) && images.length > 0 ? images.filter(Boolean) : [];
+    const normalized = normalizeProductImages(images ?? []);
+    if (!normalized.ok) return res.status(400).json({ error: normalized.error });
+    const imageList = normalized.images;
+    const imgArray = imageList.map((img) => img.url);
     const isClothingProduct = Boolean(isClothing);
 
     let cat = categoryId;
@@ -569,12 +593,7 @@ router.post("/products", async (req, res) => {
         whatsIncluded: whatsIncluded || null,
         isClothing: isClothingProduct,
         images: {
-          create: imgArray.map((url: string, idx: number) => ({
-            url,
-            altText: `${name} View ${idx + 1}`,
-            sortOrder: idx,
-            isPrimary: idx === 0,
-          })),
+          create: toImageRows(imageList, name),
         },
         variants: {
           create: variantsToCreate,
@@ -588,6 +607,7 @@ router.post("/products", async (req, res) => {
       },
     });
 
+    clearProductsMetaCache();
     res.status(201).json({ success: true, product });
   } catch (err: any) {
     console.error("POST /api/admin/products error:", err);
@@ -649,6 +669,19 @@ router.patch("/products/:id", async (req, res) => {
     });
 
     if (!existingProduct) return res.status(404).json({ error: "Product not found" });
+
+    // Validate the gallery before writing anything, so a bad payload changes nothing.
+    let imageList: ReturnType<typeof normalizeProductImages> | null = null;
+    if (images !== undefined) {
+      imageList = normalizeProductImages(images);
+      if (!imageList.ok) return res.status(400).json({ error: imageList.error });
+      if (imageList.images.length === 0) {
+        const existingCount = await prisma.productImage.count({ where: { productId: id } });
+        if (existingCount > 0) {
+          return res.status(400).json({ error: "A product needs at least one image. Add a new image before removing the last one." });
+        }
+      }
+    }
 
     const updatedProduct = await prisma.product.update({
       where: { id },
@@ -770,22 +803,12 @@ router.patch("/products/:id", async (req, res) => {
       }
     }
 
-    if (Array.isArray(images)) {
-      const validImages = images.filter(Boolean);
-      await prisma.productImage.deleteMany({ where: { productId: id } });
-      if (validImages.length > 0) {
-        await prisma.productImage.createMany({
-          data: validImages.map((url: string, idx: number) => ({
-            productId: id,
-            url,
-            altText: `${name || existingProduct.name} View ${idx + 1}`,
-            sortOrder: idx,
-            isPrimary: idx === 0,
-          })),
-        });
-      }
+    if (imageList?.ok) {
+      const gallery = imageList.images;
+      await prisma.$transaction((tx) => replaceProductImages(tx, id, gallery, name || existingProduct.name));
     }
 
+    clearProductsMetaCache();
     res.json({ success: true, product: updatedProduct });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to update product" });
@@ -798,7 +821,7 @@ router.post("/products/:id/duplicate", async (req, res) => {
     const { id } = req.params;
     const orig = await prisma.product.findUnique({
       where: { id },
-      include: { images: true, variants: true },
+      include: { images: { orderBy: { sortOrder: "asc" } }, variants: true },
     });
 
     if (!orig) return res.status(404).json({ error: "Original product not found" });

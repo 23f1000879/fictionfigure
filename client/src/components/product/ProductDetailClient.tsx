@@ -33,6 +33,7 @@ import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { API_BASE, safeApiFetch } from "@/lib/api";
+import { galleryIndexForVariant, primaryImageUrl, wrapIndex } from "@/lib/productImages";
 import { Badge } from "@/components/ui/Badge";
 import { AmbientImage } from "@/components/ui/Artwork";
 import { ProductReviews } from "./ProductReviews";
@@ -83,7 +84,15 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const gallery = product.images || [];
+  const imageCount = gallery.length;
+  // Start on the image of the first variant (for simple products that is the cover).
+  const initialVariantImage = product.variants?.[0]?.imageUrl || null;
+  const [selectedImageIndex, setSelectedImageIndex] = useState(() => Math.max(0, galleryIndexForVariant(gallery, initialVariantImage)));
+  // A variant image that is not part of the gallery; shown until the shopper picks a thumbnail.
+  const [variantOnlyImage, setVariantOnlyImage] = useState<string | null>(() =>
+    galleryIndexForVariant(gallery, initialVariantImage) === -1 ? initialVariantImage : null
+  );
   const [quantity, setQuantity] = useState(1);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -140,12 +149,31 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
       ? Math.round(((currentCompareAt - currentPrice) / currentCompareAt) * 100)
       : 0;
 
-  // Active image priority: variant image if present, else selected image index
-  const currentImage =
-    currentVariant?.imageUrl ||
-    product.images[selectedImageIndex]?.url ||
-    product.images[0]?.url ||
-    "";
+  // Shown image: the shopper's gallery selection, or a variant-only image right after choosing that variant.
+  // (Previously the variant image always won, so thumbnails could not change the main image.)
+  const currentImage = variantOnlyImage || gallery[selectedImageIndex]?.url || gallery[0]?.url || "";
+  const currentImageAlt =
+    (!variantOnlyImage && gallery[selectedImageIndex]?.altText) ||
+    (imageCount > 1 ? `${product.name} — image ${selectedImageIndex + 1} of ${imageCount}` : product.name);
+
+  // Selecting a variant jumps to its image.
+  const variantImage = currentVariant?.imageUrl || null;
+  useEffect(() => {
+    if (!variantImage) return;
+    const idx = galleryIndexForVariant(gallery, variantImage);
+    if (idx >= 0) {
+      setSelectedImageIndex(idx);
+      setVariantOnlyImage(null);
+    } else {
+      setVariantOnlyImage(variantImage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variantImage]);
+
+  const showImage = (idx: number) => {
+    setVariantOnlyImage(null);
+    setSelectedImageIndex(wrapIndex(idx, imageCount));
+  };
 
   const isWishlisted = isInWishlist(product.id);
 
@@ -263,7 +291,8 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
       title: product.name,
       variantTitle: currentVariant.title,
       price: currentPrice,
-      image: currentImage,
+      // Cart, checkout and orders always use the variant/cover image, not the thumbnail being browsed.
+      image: primaryImageUrl(gallery, currentVariant?.imageUrl),
       quantity,
       sku: currentVariant.sku,
       brand: product.brand,
@@ -291,13 +320,27 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   };
 
   const handlePrevImage = () => {
-    if (!product.images || product.images.length === 0) return;
-    setSelectedImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+    if (imageCount === 0) return;
+    showImage(variantOnlyImage ? selectedImageIndex : selectedImageIndex - 1);
   };
 
   const handleNextImage = () => {
-    if (!product.images || product.images.length === 0) return;
-    setSelectedImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+    if (imageCount === 0) return;
+    showImage(variantOnlyImage ? selectedImageIndex : selectedImageIndex + 1);
+  };
+
+  const handleStageKeyDown = (e: React.KeyboardEvent) => {
+    if (isLightboxOpen) return; // the lightbox has its own window-level key handler
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      handlePrevImage();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      handleNextImage();
+    } else if ((e.key === "Enter" || e.key === " ") && currentImage && e.target === e.currentTarget) {
+      e.preventDefault();
+      setIsLightboxOpen(true);
+    }
   };
 
   const brandName = product.brand || product.category?.name || "AUTHENTIC COLLECTIBLE";
@@ -326,14 +369,14 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
         <div className="lg:col-span-7 w-full max-w-full flex flex-col-reverse lg:flex-row gap-3 lg:gap-4">
           {product.images && product.images.length > 1 && (
             <div className="flex lg:flex-col gap-2.5 overflow-x-auto lg:overflow-visible no-scrollbar lg:w-[76px] shrink-0">
-              {product.images.map((img, idx) => {
-                const isSelected = selectedImageIndex === idx;
+              {gallery.map((img, idx) => {
+                const isSelected = !variantOnlyImage && selectedImageIndex === idx;
                 return (
                   <button
                     key={img.id || idx}
                     type="button"
-                    onClick={() => setSelectedImageIndex(idx)}
-                    aria-label={`View image ${idx + 1}`}
+                    onClick={() => showImage(idx)}
+                    aria-label={`Show image ${idx + 1} of ${imageCount}`}
                     aria-pressed={isSelected}
                     className={`relative w-16 h-20 lg:w-[76px] lg:h-[92px] shrink-0 overflow-hidden rounded-[8px] border bg-[#111318] transition-colors ${
                       isSelected ? "border-[#F5C518]" : "border-white/10 opacity-70 hover:opacity-100 hover:border-white/25"
@@ -341,7 +384,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                   >
                     <Image
                       src={img.url}
-                      alt={img.altText || `${product.name} thumbnail ${idx + 1}`}
+                      alt=""
                       fill
                       sizes="80px"
                       className="object-contain p-1"
@@ -352,14 +395,21 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
             </div>
           )}
 
-          <div className="relative flex-1 min-w-0 aspect-[4/5] sm:aspect-[5/6] lg:aspect-auto lg:h-[min(76vh,700px)] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0D0E12] group">
+          <div
+            className="relative flex-1 min-w-0 aspect-[4/5] sm:aspect-[5/6] lg:aspect-auto lg:h-[min(76vh,700px)] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0D0E12] group outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]/70"
+            tabIndex={0}
+            role="region"
+            aria-roledescription="image gallery"
+            aria-label={`${product.name} images${imageCount > 1 ? ". Use the left and right arrow keys to browse, Enter to enlarge." : ""}`}
+            onKeyDown={handleStageKeyDown}
+          >
             {currentImage && <AmbientImage src={currentImage} opacity={0.35} />}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,transparent_0%,rgba(8,9,11,0.6)_75%)] pointer-events-none" />
 
             {currentImage ? (
               <Image
                 src={currentImage}
-                alt={product.images[selectedImageIndex]?.altText || product.name}
+                alt={currentImageAlt}
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 720px"
@@ -393,7 +443,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 <button
                   type="button"
                   onClick={handlePrevImage}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#08090B]/60 backdrop-blur-md border border-white/15 text-white flex items-center justify-center lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#08090B]/60 backdrop-blur-md border border-white/15 text-white flex items-center justify-center lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -401,11 +451,17 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
                 <button
                   type="button"
                   onClick={handleNextImage}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#08090B]/60 backdrop-blur-md border border-white/15 text-white flex items-center justify-center lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#08090B]/60 backdrop-blur-md border border-white/15 text-white flex items-center justify-center lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity"
                   aria-label="Next image"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
+                <span
+                  className="absolute bottom-3 left-3 z-10 px-2 py-1 rounded-full bg-[#08090B]/60 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-white/85 tabular-nums pointer-events-none"
+                  aria-hidden
+                >
+                  {variantOnlyImage ? "Variant" : `${selectedImageIndex + 1} / ${imageCount}`}
+                </span>
               </>
             )}
 
@@ -778,7 +834,15 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
       {/* 3. Full-Resolution Lightbox Modal */}
       {isLightboxOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${product.name} — enlarged image`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsLightboxOpen(false);
+          }}
+        >
           <button
             type="button"
             onClick={() => setIsLightboxOpen(false)}
@@ -815,13 +879,19 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
             {currentImage && (
               <Image
                 src={currentImage}
-                alt={product.name}
+                alt={currentImageAlt}
                 fill
+                sizes="100vw"
                 className="object-contain p-4"
                 priority
               />
             )}
           </div>
+          {imageCount > 1 && !variantOnlyImage && (
+            <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[12px] font-semibold text-white/70 tabular-nums">
+              {selectedImageIndex + 1} / {imageCount}
+            </p>
+          )}
         </div>
       )}
 

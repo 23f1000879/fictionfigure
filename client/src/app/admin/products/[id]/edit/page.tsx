@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save, Plus, Trash2, Upload, AlertCircle, Image as ImageIcon } from "lucide-react";
-import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
+import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { API_BASE, adminFetch } from "@/lib/api";
 import { VariantFormItem } from "../../new/page";
 
@@ -16,6 +16,9 @@ export default function AdminEditProductPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  // Synchronous lock: state updates are async, so a fast double click could otherwise submit twice.
+  const submitLock = useRef(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -33,7 +36,7 @@ export default function AdminEditProductPage() {
     scale: "",
     franchise: "",
     whatsIncluded: "",
-    images: ["", ""],
+    images: [] as string[],
   });
 
   const [productType, setProductType] = useState<"simple" | "variants">("simple");
@@ -49,10 +52,15 @@ export default function AdminEditProductPage() {
 
   useEffect(() => {
     if (productId) {
-      adminFetch(`${API_BASE}/products?limit=100`)
-        .then((res) => res.json())
+      // Admin endpoint: any status (drafts too), uncached, with the full ordered gallery.
+      adminFetch(`${API_BASE}/admin/products/${encodeURIComponent(String(productId))}`)
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Could not load this product.");
+          return data;
+        })
         .then((data) => {
-          const found = (data.products || []).find((p: any) => p.id === productId || p.slug === productId);
+          const found = data.product;
           if (found) {
             const hasVariantMode = Boolean(
               found.isClothing ||
@@ -92,13 +100,12 @@ export default function AdminEditProductPage() {
               scale: found.scale || "",
               franchise: found.franchise || "",
               whatsIncluded: found.whatsIncluded || "",
-              images: [
-                found.images?.[0]?.url || "",
-                found.images?.[1]?.url || "",
-              ].filter(Boolean),
+              // Every saved image, in display order (previously only the first two were kept).
+              images: (found.images || []).map((img: any) => img.url).filter(Boolean),
             });
           }
         })
+        .catch((err) => setLoadError(err.message || "Could not load this product."))
         .finally(() => setIsLoading(false));
     }
   }, [productId]);
@@ -158,6 +165,12 @@ export default function AdminEditProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isImageUploading || submitLock.current || loadError) return;
+    if (form.images.filter(Boolean).length === 0) {
+      setError("Add at least one product image. The first image becomes the cover.");
+      return;
+    }
+    submitLock.current = true;
     setIsSubmitting(true);
     setError("");
     setMessage("");
@@ -206,6 +219,7 @@ export default function AdminEditProductPage() {
       setMessage("Product and variant configuration saved successfully!");
       setTimeout(() => router.push("/admin/products"), 1200);
     } catch (err: any) {
+      submitLock.current = false; // stays locked after success while redirecting
       setError(err.message || "Failed to save product edits");
     } finally {
       setIsSubmitting(false);
@@ -217,6 +231,21 @@ export default function AdminEditProductPage() {
       <div className="p-16 text-center text-xs font-mono text-[#6B6B6B] flex flex-col items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin mb-3 text-[#111111]" />
         <span>Loading Product Record & Variant Catalog...</span>
+      </div>
+    );
+  }
+
+  // Never show an editable (empty) form for a product that failed to load: saving it would overwrite real data.
+  if (loadError) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 space-y-4 text-xs">
+        <div className="p-4 bg-[#A83232]/10 border border-[#A83232] text-[#A83232] font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{loadError}</span>
+        </div>
+        <Link href="/admin/products" className="inline-flex items-center gap-1 font-semibold text-[#111111] hover:underline">
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to products
+        </Link>
       </div>
     );
   }
@@ -522,14 +551,12 @@ export default function AdminEditProductPage() {
         {/* Section 3: Product Photography */}
         <div className="space-y-4 pt-4 border-t border-[#E5E5E2]">
           <h3 className="font-semibold uppercase tracking-wider text-[#111111] border-b border-[#E5E5E2] pb-2 font-mono">
-            3. Product Imagery
+            3. Product Images
           </h3>
-          <ProductImageUploader
-            label="Primary Product Photography Image"
-            value={form.images[0] || ""}
-            onChange={(url) => setForm((prev) => ({ ...prev, images: [url, prev.images[1] || ""] }))}
-            onUploadingChange={setIsImageUploading}
-            required
+          <ProductImageManager
+            value={form.images}
+            onChange={(urls) => setForm((prev) => ({ ...prev, images: urls }))}
+            onBusyChange={setIsImageUploading}
           />
         </div>
 
