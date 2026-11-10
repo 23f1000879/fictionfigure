@@ -164,7 +164,7 @@ export default function AdminSettingsPage() {
     formData.append("image", file);
 
     try {
-      const res = await adminFetch(`${API_BASE}/admin/uploads/product-image`, {
+      const res = await adminFetch(`${API_BASE}/admin/uploads/site-image`, {
         method: "POST",
         body: formData,
       });
@@ -362,7 +362,7 @@ export default function AdminSettingsPage() {
     formData.append("image", file);
 
     try {
-      const res = await adminFetch(`${API_BASE}/admin/uploads/product-image`, {
+      const res = await adminFetch(`${API_BASE}/admin/uploads/site-image`, {
         method: "POST",
         body: formData,
       });

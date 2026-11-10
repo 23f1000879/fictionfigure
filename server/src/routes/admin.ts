@@ -37,10 +37,14 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({
+/** Upload size caps. Homepage hero/slide art is full-width, so it gets Cloudinary's free-plan maximum. */
+export const PRODUCT_IMAGE_MAX_MB = 5;
+export const SITE_IMAGE_MAX_MB = 10;
+
+const makeUpload = (maxMb: number) => multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB Max File Size
+    fileSize: maxMb * 1024 * 1024,
   },
   fileFilter: (_req, file, cb) => {
     const validMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -48,18 +52,19 @@ const upload = multer({
     if (validMimeTypes.includes(file.mimetype) || [".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error("Unsupported file type. Only JPG, PNG, and WEBP images up to 5 MB are allowed."));
+      cb(new Error(`Unsupported file type. Only JPG, PNG, and WEBP images up to ${maxMb} MB are allowed.`));
     }
   },
 });
 
-// 1. Image Upload Endpoint (POST /api/admin/uploads/product-image)
-// Registered before router.use(requireAdmin) below, so it guards itself.
-router.post("/uploads/product-image", requireAdmin, (req, res) => {
+/** Shared upload handler: multer parse + validation, then Cloudinary (or local dev storage). */
+export const imageUploadHandler = (maxMb: number) => {
+  const upload = makeUpload(maxMb);
+  return (req: any, res: any) => {
   upload.single("image")(req, res, async (err: any) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({ error: "File exceeds 5 MB size limit." });
+        return res.status(400).json({ error: `File exceeds ${maxMb} MB size limit.` });
       }
       return res.status(400).json({ error: err.message || "Failed to upload image." });
     }
@@ -124,7 +129,14 @@ router.post("/uploads/product-image", requireAdmin, (req, res) => {
       filename: req.file.filename,
     });
   });
-});
+  };
+};
+
+// Both upload routes are registered before router.use(requireAdmin) below, so each guards itself.
+// 1. Product images (POST /api/admin/uploads/product-image) — unchanged 5 MB limit.
+router.post("/uploads/product-image", requireAdmin, imageUploadHandler(PRODUCT_IMAGE_MAX_MB));
+// 1b. Homepage hero background and carousel slide images (POST /api/admin/uploads/site-image).
+router.post("/uploads/site-image", requireAdmin, imageUploadHandler(SITE_IMAGE_MAX_MB));
 
 // Enforce Strict Admin Authentication & Authorization Across All Admin Console Endpoints
 router.use(requireAdmin);
