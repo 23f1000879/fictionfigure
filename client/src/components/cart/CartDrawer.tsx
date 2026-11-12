@@ -124,16 +124,17 @@ export function CartDrawer() {
               cart.map((item) => (
                 <div
                   key={item.variantId}
-                  className="flex space-x-3.5 p-3.5 bg-[#181920] border border-white/[0.08] rounded-xl hover:border-white/15 transition-all min-w-0 w-full box-border"
+                  className="flex gap-3.5 p-3 sm:p-3.5 bg-[#181920] border border-white/[0.08] rounded-xl hover:border-white/15 transition-all min-w-0 w-full box-border"
                 >
                   {/* Thumbnail */}
-                  <div className="relative w-18 h-18 sm:w-20 sm:h-20 bg-[#0E0F13] border border-white/10 rounded-lg overflow-hidden shrink-0 p-1 flex items-center justify-center">
+                  <div className="relative w-20 h-24 sm:w-24 sm:h-28 bg-[#0E0F13] border border-white/10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
                     {item.image && item.image.trim() !== "" ? (
                       <Image
                         src={item.image}
                         alt={item.title}
                         fill
-                        className="object-contain"
+                        sizes="96px"
+                        className="object-contain p-1"
                       />
                     ) : (
                       <div className="text-[10px] text-[#64748B] font-mono">No Image</div>
@@ -141,57 +142,57 @@ export function CartDrawer() {
                   </div>
 
                   {/* Details */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between space-y-2">
+                  <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-[#F5C518] block tracking-wider truncate">
                         {item.brand || "COLLECTIBLE"}
                       </span>
-                      <h4 className="text-xs font-semibold text-white truncate leading-snug">
+                      <h4 className="mt-0.5 text-[13px] font-semibold text-white leading-snug line-clamp-2 break-words" title={item.title}>
                         {item.title}
                       </h4>
                       {item.variantTitle && item.variantTitle !== "Standard Edition" && item.variantTitle !== "Standard" && (
-                        <span className="text-[10px] font-mono text-[#94A3B8] block">
+                        <span className="mt-1 text-[10px] font-mono text-[#94A3B8] block truncate">
                           {item.variantTitle}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center justify-between gap-2">
                       {/* Stepper */}
-                      <div className="flex items-center border border-white/15 rounded-lg bg-[#0E0F13] overflow-hidden">
+                      <div className="flex items-center border border-white/15 rounded-lg bg-[#0E0F13] overflow-hidden shrink-0">
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                          className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-white hover:bg-white/[0.06] transition-colors"
+                          className="w-9 h-9 flex items-center justify-center text-[#94A3B8] hover:text-white hover:bg-white/[0.06] transition-colors"
                           aria-label="Decrease quantity"
                         >
-                          <Minus className="w-3 h-3" />
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="w-7 text-center text-xs font-mono font-bold text-white">
+                        <span className="w-8 text-center text-xs font-mono font-bold text-white" aria-live="polite">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                          className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-white hover:bg-white/[0.06] transition-colors"
+                          className="w-9 h-9 flex items-center justify-center text-[#94A3B8] hover:text-white hover:bg-white/[0.06] transition-colors"
                           aria-label="Increase quantity"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
                       {/* Line Price & Trash */}
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-mono font-bold text-white">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="text-sm font-mono font-bold text-white whitespace-nowrap">
                           {formatPrice(item.price * item.quantity)}
                         </span>
                         <button
                           type="button"
                           onClick={() => removeItem(item.variantId)}
-                          className="text-[#64748B] hover:text-rose-400 p-1 transition-colors"
+                          className="w-9 h-9 -mr-1.5 flex items-center justify-center rounded-lg text-[#64748B] hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                           aria-label="Remove item"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
