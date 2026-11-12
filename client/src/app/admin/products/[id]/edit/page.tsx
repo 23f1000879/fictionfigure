@@ -147,7 +147,7 @@ export default function AdminEditProductPage() {
 
     try {
       const token = localStorage.getItem("fictionfigure_token");
-      const res = await fetch(`${API_BASE}/admin/upload`, {
+      const res = await fetch(`${API_BASE}/admin/uploads/product-image`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

@@ -126,7 +126,7 @@ export default function AdminNewProductPage() {
 
     try {
       const token = localStorage.getItem("fictionfigure_token");
-      const res = await fetch(`${API_BASE}/admin/upload`, {
+      const res = await fetch(`${API_BASE}/admin/uploads/product-image`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -166,6 +166,10 @@ export default function AdminNewProductPage() {
           setError("All variants must have a unique SKU code.");
           return;
         }
+        if (!(Number(v.price) > 0)) {
+          setError("Enter a selling price for every variant.");
+          return;
+        }
       }
     }
 
@@ -186,12 +190,17 @@ export default function AdminNewProductPage() {
       const totalStock = isVariantMode
         ? variants.reduce((acc, curr) => acc + (Number(curr.stock) || 0), 0)
         : Number(form.stockQuantity) || 0;
+      // The product-level price field is hidden in variant mode; use the lowest variant price
+      // (the server requires a product price, and it is what cards show as "from").
+      const variantPrices = variants.map((v) => Number(v.price) || 0).filter((p) => p > 0);
+      const productPrice = isVariantMode && variantPrices.length ? Math.min(...variantPrices) : form.price;
 
       const res = await adminFetch(`${API_BASE}/admin/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          price: productPrice,
           stockQuantity: totalStock,
           hasVariants: isVariantMode,
           productType,

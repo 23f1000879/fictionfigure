@@ -146,7 +146,9 @@ export function HeroCarousel({
             <div
               key={s.id}
               data-hero-bg={s.id}
-              className={`absolute inset-0 ${fade}`}
+              // Below lg the art is a full-width band at (close to) its natural ultra-wide ratio, so
+              // phones see the whole scene instead of a zoomed slice; lg+ keeps the full-bleed backdrop.
+              className={`absolute inset-x-0 top-0 aspect-[5/2] lg:aspect-auto lg:inset-0 ${fade}`}
               style={{ opacity: i === index ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
             >
               <Image
@@ -201,17 +203,21 @@ export function HeroCarousel({
           className="hidden lg:block absolute inset-0"
           style={{ background: "radial-gradient(ellipse 44% 60% at 24% 52%, rgba(8,9,11,0.6) 0%, transparent 78%)" }}
         />
-        {/* Below lg the copy spans the full width, so the art is dimmed evenly rather than from the left */}
+        {/* Below lg the art band sits above the copy: only fade its bottom edge into the page */}
         <div
-          className="lg:hidden absolute inset-0"
-          style={{ background: "linear-gradient(90deg, rgba(8,9,11,0.82) 0%, rgba(8,9,11,0.6) 100%)" }}
+          className="lg:hidden absolute inset-x-0 top-0 aspect-[5/2]"
+          style={{ background: "linear-gradient(180deg, rgba(8,9,11,0.15) 0%, rgba(8,9,11,0) 45%, rgba(8,9,11,0.95) 100%)" }}
         />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#08090B] via-[#08090B]/60 to-transparent" />
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#08090B]/60 to-transparent" />
       </div>
 
       {/* ── Layer 5: foreground ── */}
-      <div className="ff-container grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center pt-10 pb-6 sm:pt-14 lg:py-0 lg:min-h-[520px] xl:min-h-[560px]">
+      <div
+        className={`ff-container grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center pb-6 lg:py-0 lg:min-h-[520px] xl:min-h-[560px] ${
+          hasBackground ? "pt-[calc(40vw-24px)]" : "pt-10 sm:pt-14"
+        }`}
+      >
         {/* Copy */}
         <div key={slide.id} className="ff-fade-up lg:col-span-6 flex flex-col gap-5 lg:py-12" aria-live="polite">
           {slide.eyebrow && <p className="ff-eyebrow text-[11px]">{slide.eyebrow}</p>}
