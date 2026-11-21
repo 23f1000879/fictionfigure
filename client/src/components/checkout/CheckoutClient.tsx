@@ -437,11 +437,11 @@ export function CheckoutClient() {
           </Link>
 
           <ol className="hidden sm:flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em]" aria-label="Checkout progress">
-            <li className={isReviewStep ? "text-[#9A9DA5]" : "text-[#F5C518]"}>01 Details</li>
+            <li className={isReviewStep ? "text-[#9A9DA5]" : "text-[#F5C518]"}>Details</li>
             <li className="w-8 h-px bg-white/15" aria-hidden />
-            <li className={isReviewStep ? "text-[#F5C518]" : "text-[#6E717A]"}>02 Review</li>
+            <li className={isReviewStep ? "text-[#F5C518]" : "text-[#6E717A]"}>Review</li>
             <li className="w-8 h-px bg-white/15" aria-hidden />
-            <li className="text-[#6E717A]">03 Confirmed</li>
+            <li className="text-[#6E717A]">Confirmed</li>
           </ol>
 
           <Link
@@ -519,9 +519,10 @@ export function CheckoutClient() {
       {/* Main Checkout Grid Layout */}
       <main className="ff-container py-6 sm:py-10 flex-1">
         {!isReviewStep && (
-          <div className="mb-6 lg:mb-8 space-y-2">
+          <div className="concept-checkout-intro mb-6 lg:mb-8 space-y-2">
             <p className="ff-eyebrow">Secure checkout</p>
             <h1 className="text-[30px] sm:text-[38px] font-extrabold leading-[1.05] tracking-[-0.02em] text-white">Checkout</h1>
+            <nav className="concept-checkout-sections" aria-label="Checkout sections"><a href="#checkout-contact" data-complete={isMobileVerified}>Contact</a><a href="#checkout-address">Address</a><a href="#checkout-payment">Payment</a></nav>
           </div>
         )}
         {/* Global Error Banner */}
@@ -733,7 +734,7 @@ export function CheckoutClient() {
               /* FORM FLOW (SECTIONS 1, 2, 3) */
               <>
                 {/* SECTION 1: CONTACT INFORMATION */}
-                <section className="space-y-4 rounded-[14px] border border-white/[0.08] bg-[#111318] p-5 sm:p-6">
+                <section id="checkout-contact" className="space-y-4 rounded-[14px] border border-white/[0.08] bg-[#111318] p-5 sm:p-6">
                   {isMobileVerified && (
                   <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-[#F7F7F5] flex items-center">
@@ -772,7 +773,7 @@ export function CheckoutClient() {
                 </section>
 
                 {/* SECTION 2: DELIVERY ADDRESS */}
-<section className="space-y-4 rounded-[14px] border border-white/[0.08] bg-[#111318] p-5 sm:p-6">
+<section id="checkout-address" className="space-y-4 rounded-[14px] border border-white/[0.08] bg-[#111318] p-5 sm:p-6">
                   <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-[#F7F7F5] flex items-center">
                       <span className="flex flex-col"><span className="ff-eyebrow">Step 02</span><span className="mt-1.5 text-[17px] font-bold normal-case tracking-normal text-white">Delivery address</span></span>
@@ -967,7 +968,7 @@ export function CheckoutClient() {
                 </section>
 
                 {/* SECTION 3: PAYMENT METHOD */}
-<section className="space-y-4 rounded-[14px] border border-white/[0.08] bg-[#111318] p-5 sm:p-6">
+<section id="checkout-payment" className="space-y-4 rounded-[14px] border border-white/[0.08] bg-[#111318] p-5 sm:p-6">
                   <div className="border-b border-white/[0.08] pb-3">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-[#F7F7F5] flex items-center">
                       <span className="flex flex-col"><span className="ff-eyebrow">Step 03</span><span className="mt-1.5 text-[17px] font-bold normal-case tracking-normal text-white">Payment method</span></span>

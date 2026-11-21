@@ -54,7 +54,7 @@ export function CartDrawer() {
                 <ShoppingBag className="w-4 h-4" />
               </div>
               <h2 className="text-sm font-bold uppercase tracking-wider text-white truncate">
-                Collector Bag ({isHydrating ? "..." : cartCount})
+                Your bag ({isHydrating ? "..." : cartCount})
               </h2>
             </div>
             <button
@@ -74,7 +74,7 @@ export function CartDrawer() {
                 <span className="text-[#94A3B8] font-medium flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#F5C518]" />
                   {remainingForFreeShipping === 0 ? (
-                    <span className="text-[#10B981] font-bold">Free Insured Shipping Unlocked!</span>
+                    <span className="text-[#10B981] font-bold">Free shipping unlocked!</span>
                   ) : (
                     <span>Add <strong className="text-white font-mono">{formatPrice(remainingForFreeShipping)}</strong> for Free Shipping</span>
                   )}
@@ -236,7 +236,7 @@ export function CartDrawer() {
 
               <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-[#64748B]">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#F5C518]" />
-                <span>100% Authentic Japanese Import Guarantee</span>
+                <span>Packed with care. Ready for your shelf.</span>
               </div>
             </div>
           )}

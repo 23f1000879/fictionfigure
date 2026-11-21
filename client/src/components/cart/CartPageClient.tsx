@@ -86,7 +86,7 @@ export function CartPageClient() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/collections" className="ff-btn ff-btn-gold w-full sm:w-auto">
-              Explore collections <ArrowRight className="w-4 h-4" />
+              Explore collections
             </Link>
             <Link href="/shop" className="ff-btn ff-btn-outline w-full sm:w-auto">
               Continue shopping
@@ -100,17 +100,18 @@ export function CartPageClient() {
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="space-y-6 lg:space-y-8 pb-12">
+    <div className="concept-bag space-y-6 lg:space-y-8 pb-12">
       {/* Page header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-5 border-b border-white/[0.08]">
         <div className="space-y-2">
           <p className="ff-eyebrow">Shopping bag</p>
           <h1 className="text-[30px] sm:text-[38px] font-extrabold leading-[1.05] tracking-[-0.02em] text-white">
-            Your Bag
+            Your bag
             <span className="ml-3 align-middle text-[14px] font-semibold text-[#9A9DA5] tracking-normal">
               {itemCount} {itemCount === 1 ? "item" : "items"}
             </span>
           </h1>
+          <p className="concept-bag-subtitle">A good start to your universe.</p>
         </div>
         <Link href="/shop" className="ff-link-arrow min-h-[44px]">
           <ArrowLeft className="w-3.5 h-3.5" /> Continue shopping
@@ -120,87 +121,28 @@ export function CartPageClient() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* Items */}
         <ul className="lg:col-span-8 space-y-3">
-          {cart.map((item) => (
-            <li
-              key={item.variantId}
-              className="rounded-[12px] border border-white/[0.08] bg-[#111318] p-3 sm:p-4 flex gap-4 items-center hover:border-white/15 transition-colors duration-200"
-            >
-              <div className="relative w-20 h-24 sm:w-24 sm:h-28 shrink-0 overflow-hidden rounded-[8px] bg-[radial-gradient(ellipse_at_50%_35%,#FFFFFF_0%,#F5F5F2_60%,#ECECE7_100%)] dark:bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_60%,#0b0c0f_100%)] border border-white/[0.06]">
-                {item.image && item.image.trim() !== "" ? (
-                  <Image src={item.image} alt={item.title} fill sizes="96px" className="object-contain p-1" unoptimized />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-[#6E717A]">No image</div>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                <div className="sm:col-span-6 min-w-0 space-y-1">
-                  {item.brand && (
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#F5C518]/90 block truncate">
-                      {item.brand}
-                    </span>
-                  )}
-                  <h2 className="text-[14px] sm:text-[15px] font-semibold text-white leading-snug line-clamp-2">{item.title}</h2>
-                  {item.variantTitle && (
-                    <p className="text-[12px] text-[#9A9DA5]">
-                      Variant: <span className="text-[#F7F7F5]">{item.variantTitle}</span>
-                    </p>
-                  )}
-                  {item.sku && <span className="text-[11px] text-[#6E717A] font-mono block truncate">SKU: {item.sku}</span>}
-                  <span className="text-[13px] text-[#9A9DA5] sm:hidden">{formatPrice(item.price)} each</span>
-                </div>
-
-                <div className="hidden sm:block sm:col-span-2 text-center text-[13px] text-[#9A9DA5]">
-                  {formatPrice(item.price)}
-                </div>
-
-                <div className="sm:col-span-2 flex sm:justify-center">
-                  <div className="flex items-center h-11 rounded-[8px] border border-white/[0.12] bg-[#0D0E12]">
-                    <button
-                      onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                      className="w-11 h-full flex items-center justify-center text-[#9A9DA5] hover:text-white transition-colors"
-                      title="Decrease quantity"
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="w-8 text-center text-[14px] font-bold text-white" aria-live="polite">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                      className="w-11 h-full flex items-center justify-center text-[#9A9DA5] hover:text-white transition-colors"
-                      title="Increase quantity"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="sm:col-span-2 flex items-center justify-between sm:justify-end gap-2">
-                  <span className="text-[15px] font-bold text-white">{formatPrice(item.price * item.quantity)}</span>
-                  <button
-                    onClick={() => removeItem(item.variantId)}
-                    className="w-11 h-11 flex items-center justify-center rounded-full text-[#9A9DA5] hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
-                    title="Remove item"
-                    aria-label="Remove item"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
+          {cart.map(item=><li key={item.variantId} className="concept-bag-item">
+            <div className="concept-bag-image">{item.image?.trim()?<Image src={item.image} alt={item.title} fill sizes="110px" className="object-contain p-1" unoptimized/>:<ShoppingBag aria-hidden size={26}/>}</div>
+            <div className="concept-bag-item-details"><h2>{item.title}</h2>
+              {item.variantTitle && !["Standard Edition","Standard","Default Title"].includes(item.variantTitle) && <p>{item.variantTitle}</p>}
+              <strong>{formatPrice(item.price*item.quantity)}</strong>{item.quantity>1 && <span className="text-sm text-foreground-secondary"> · {formatPrice(item.price)} each</span>}
+              <div className="concept-bag-item-actions"><div className="concept-quantity"><button type="button" onClick={()=>updateQuantity(item.variantId,item.quantity-1)} aria-label={`Decrease quantity of ${item.title}`}><Minus size={16}/></button><span aria-live="polite">{item.quantity}</span><button type="button" onClick={()=>updateQuantity(item.variantId,item.quantity+1)} aria-label={`Increase quantity of ${item.title}`}><Plus size={16}/></button></div><button type="button" onClick={()=>removeItem(item.variantId)} className="concept-remove" aria-label={`Remove ${item.title}`}>Remove</button></div>
+            </div>
+          </li>)}
         </ul>
 
         {/* Summary */}
         <aside className="lg:col-span-4 lg:sticky lg:top-24">
           <div className="rounded-[14px] border border-white/[0.08] bg-[#111318] p-5 sm:p-6 space-y-5">
             <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-white pb-3 border-b border-white/[0.08]">
-              Order Summary
+              Order summary
             </h2>
 
+            {freeShippingThreshold > 0 && <div className="concept-shipping-progress">
+              <strong>{cartSubtotal >= freeShippingThreshold ? "Your bag ships free!" : `${formatPrice(freeShippingThreshold - cartSubtotal)} away from free shipping`}</strong>
+              <div className="concept-shipping-track" role="progressbar" aria-label="Progress to free shipping" aria-valuenow={Math.min(cartSubtotal, freeShippingThreshold)} aria-valuemin={0} aria-valuemax={freeShippingThreshold}><span style={{width:`${Math.min(100, cartSubtotal / freeShippingThreshold * 100)}%`}} /></div>
+              <p>Free shipping on orders {formatPrice(freeShippingThreshold)} and above.</p>
+            </div>}
             <OrderTotals
               subtotal={cartSubtotal}
               discount={discountAmount}
@@ -211,7 +153,8 @@ export function CartPageClient() {
             />
 
             {/* Coupon */}
-            <div className="pt-4 border-t border-white/[0.08] space-y-2">
+            <details className="concept-coupon pt-4 border-t border-white/[0.08] space-y-2">
+              <summary><Tag aria-hidden />Have a coupon?</summary>
               <label htmlFor="cart-coupon" className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9DA5] block">
                 Coupon code
               </label>
@@ -248,13 +191,13 @@ export function CartPageClient() {
                 </form>
               )}
               {couponError && <p className="text-[12px] text-rose-300">{couponError}</p>}
-            </div>
+            </details>
 
             <Link
               href={`/checkout${appliedCoupon ? `?coupon=${appliedCoupon.code}` : ""}`}
               className="ff-btn ff-btn-gold w-full h-12"
             >
-              Proceed to checkout <ArrowRight className="w-4 h-4" />
+              Continue to checkout
             </Link>
           </div>
         </aside>

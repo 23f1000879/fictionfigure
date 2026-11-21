@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import "./redesign.css";
+import "./concept.css";
 import { SakugaMotion } from "@/components/ui/SakugaMotion";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";

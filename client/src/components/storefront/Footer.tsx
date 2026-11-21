@@ -31,7 +31,7 @@ export function Footer({ showValueStrip = true }: FooterProps = {}) {
         {showValueStrip && (
         <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pb-8 border-b border-white/[0.08]">
           {[
-            { icon: Award, title: "100% Authentic Figures", text: "Sourced from licensed manufacturers and official distributors." },
+            { icon: Award, title: "Find Your Favourite", text: "Figures, manga and little finds from the worlds you love." },
             { icon: Box, title: "Collector-Safe Packaging", text: "Bubble wrap and reinforced outer boxes for mint delivery." },
             { icon: Truck, title: "Pan-India Delivery", text: "Insured shipping with end-to-end tracking." },
           ].map(({ icon: Icon, title, text }) => (

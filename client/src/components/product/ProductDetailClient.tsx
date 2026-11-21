@@ -366,7 +366,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
       {/* 2. Main 2-Column Product Studio Split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 w-full max-w-full box-border items-start">
         {/* Left Column: Gallery (7 cols) */}
-        <div className="lg:col-span-7 w-full max-w-full flex flex-col-reverse lg:flex-row gap-3 lg:gap-4">
+        <div className="concept-product-visual lg:col-span-7 w-full max-w-full flex flex-col-reverse lg:flex-row gap-3 lg:gap-4">
           {product.images && product.images.length > 1 && (
             <div className="flex lg:flex-col gap-2.5 overflow-x-auto lg:overflow-visible no-scrollbar lg:w-[76px] shrink-0">
               {gallery.map((img, idx) => {
@@ -634,7 +634,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
                 <button type="button" onClick={handleBuyNow} className="ff-btn ff-btn-outline w-full h-12">
                   <span>Buy Now</span>
-                  <ArrowRight className="w-4 h-4" />
+
                 </button>
               </>
             ) : (
@@ -973,47 +973,10 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
         </div>
       )}
 
-      {/* 6. Mobile Sticky Bottom Purchase Bar (< lg) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#111318]/95 backdrop-blur-xl border-t border-white/10 p-3.5 flex items-center justify-between gap-3 lg:hidden shadow-2xl shadow-black">
-        <div className="min-w-0 space-y-0.5">
-          <span className="text-[10px] font-mono uppercase text-[#9A9DA5] block">Price</span>
-          <span className="text-base font-extrabold font-mono text-white truncate block">
-            {formatPrice(currentPrice)}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {inStock ? (
-            <>
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={isAddingToCart}
-                className="py-2.5 px-3.5 rounded-xl bg-white/[0.06] border border-white/15 text-white text-xs font-bold uppercase tracking-wider min-h-[44px] flex items-center justify-center gap-1.5"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Add</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                data-sakuga="primary"
-                className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#F5C518] to-[#D4AF37] text-[#08090B] text-xs font-bold uppercase tracking-wider min-h-[44px] flex items-center justify-center gap-1 shadow-md shadow-amber-500/20"
-              >
-                <span>Buy Now</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={handleRestockButtonClick}
-              className="py-2.5 px-4 rounded-xl bg-[#F5C518] text-[#08090B] text-xs font-bold uppercase tracking-wider min-h-[44px]"
-            >
-              Restock Alert
-            </button>
-          )}
-        </div>
+      {/* Mobile purchase action: existing cart handler with the approved concept layout. */}
+      <div className="concept-mobile-product-bar fixed bottom-0 left-0 right-0 z-40 bg-surface border-t border-border p-4 flex items-center justify-between gap-4 lg:hidden">
+        <span className="text-xl font-extrabold tracking-tight">{formatPrice(currentPrice)}</span>
+        {inStock ? <button type="button" onClick={handleAddToCart} disabled={isAddingToCart} data-sakuga="primary" className="concept-mobile-add flex items-center justify-center gap-2 disabled:opacity-50">{justAdded?<Check size={18}/>:null}{justAdded?"Added to bag":"Add to bag"}</button> : <button type="button" onClick={handleRestockButtonClick} className="concept-mobile-add">Restock alert</button>}
       </div>
 
       {/* 7. Verified Collector Reviews Section */}

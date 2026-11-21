@@ -1,5 +1,6 @@
 "use client";
 
+import { collectionLabel } from "@/lib/collectionLabel";
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -131,9 +132,9 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
   const hasRealRating = Boolean(product.rating && product.rating > 0 && product.reviewCount && product.reviewCount > 0);
 
   return (
-    <div className="sakuga-product-card group relative flex flex-col h-full bg-[#111318] rounded-[10px] border border-white/[0.08] hover:border-white/[0.2] transition-colors duration-300 overflow-hidden text-[#F7F7F5]">
+    <div className="concept-product-card sakuga-product-card group relative flex flex-col h-full bg-[#111318] rounded-[10px] border border-white/[0.08] hover:border-white/[0.2] transition-colors duration-300 overflow-hidden text-[#F7F7F5]">
       {/* Artwork — dominates the card */}
-      <div className="relative w-full aspect-[3/4] overflow-hidden bg-[radial-gradient(ellipse_at_50%_35%,#FFFFFF_0%,#F5F5F2_60%,#ECECE7_100%)] dark:bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_55%,#0b0c0f_100%)]">
+      <div className="concept-product-image relative w-full aspect-[3/4] overflow-hidden bg-[radial-gradient(ellipse_at_50%_35%,#FFFFFF_0%,#F5F5F2_60%,#ECECE7_100%)] dark:bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_55%,#0b0c0f_100%)]">
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block" aria-label={product.name}>
           {primaryImage ? (
             <>
@@ -217,15 +218,15 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
       </div>
 
       {/* Details */}
-      <div className="flex-1 flex flex-col px-3 pt-2.5 pb-3 gap-2">
+      <div className="concept-product-details flex-1 flex flex-col px-3 pt-2.5 pb-3 gap-2">
         <div className="min-w-0">
           <Link
             href={`/products/${product.slug}`}
-            className="block text-[15px] font-semibold leading-snug text-[#F7F7F5] hover:text-[#F5C518] transition-colors line-clamp-2 min-h-[2.2em]"
+            className="concept-product-name block text-[15px] font-semibold leading-snug text-[#F7F7F5] hover:text-[#F5C518] transition-colors line-clamp-2 min-h-[2.2em]"
           >
             {product.name}
           </Link>
-          <p className="mt-0.5 text-[11px] text-[#9A9DA5] truncate">{brandOrCategory}</p>
+          <p className="mt-0.5 text-[11px] text-[#9A9DA5] truncate">{collectionLabel(brandOrCategory)}</p>
         </div>
 
         {hasVariants && (
@@ -258,7 +259,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
 
         <div className="mt-auto flex items-center justify-between gap-2">
           <div className="flex items-baseline gap-1.5 min-w-0">
-            <span className="text-[14px] font-extrabold text-[#F5C518] tracking-tight">{formatPrice(currentPrice)}</span>
+            <span className="concept-product-price text-[14px] font-extrabold text-[#F5C518] tracking-tight">{formatPrice(currentPrice)}</span>
             {isOnSale && currentCompareAt && (
               <span className="text-[11px] text-[#6E717A] line-through truncate">{formatPrice(currentCompareAt)}</span>
             )}
@@ -277,7 +278,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
           disabled={!inStock || isAdding}
           data-sakuga="primary"
           aria-label={`${!inStock ? "Sold out:" : isAdding ? "Added:" : "Add to bag:"} ${product.name}`}
-          className={`h-8 w-full rounded-[6px] text-[10px] font-extrabold uppercase tracking-[0.12em] flex items-center justify-center gap-1.5 transition-colors ${
+          className={`concept-add h-8 w-full rounded-[6px] text-[10px] font-extrabold uppercase tracking-[0.12em] flex items-center justify-center gap-1.5 transition-colors ${
             !inStock
               ? "bg-white/[0.03] text-[#6E717A] border border-white/5 cursor-not-allowed"
               : isAdding

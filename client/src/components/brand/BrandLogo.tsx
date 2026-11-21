@@ -1,43 +1,13 @@
 import React from "react";
-import Image from "next/image";
 
-/**
- * Official FICTION FIGURES logo.
- *
- * - Day:   /brand/fiction-figures-logo-day.png — the supplied logo artwork (black + gold) with only its
- *          white background made transparent and the empty margin trimmed.
- * - Night: /fictionfigure-logo-light.png — the dark-header version of the same artwork.
- *   (Byte-exact original upload: /brand/fiction-figures-logo-original.webp.)
- *
- * The variant is chosen purely in CSS via the `dark` class that the pre-hydration script sets on <html>,
- * so there is no flash of the wrong logo, and both share one fixed-ratio box so switching never shifts layout.
- * The inactive variant is display:none, so assistive tech only ever announces one logo.
- */
-interface BrandLogoProps {
-  /** Height utility classes, e.g. "h-9 sm:h-10". Width follows the logo's aspect ratio. */
-  className?: string;
-  priority?: boolean;
-}
-
-export function BrandLogo({ className = "h-9", priority = false }: BrandLogoProps) {
-  return (
-    <span className={`sakuga-brand relative inline-block shrink-0 aspect-[332/100] ${className}`}>
-      <Image
-        src="/brand/fiction-figures-logo-day.png"
-        alt="Fiction Figures"
-        fill
-        sizes="200px"
-        priority={priority}
-        className="object-contain object-left dark:hidden"
-      />
-      <Image
-        src="/fictionfigure-logo-light.png"
-        alt="Fiction Figures"
-        fill
-        sizes="200px"
-        priority={priority}
-        className="object-contain object-left hidden dark:block"
-      />
-    </span>
-  );
+interface BrandLogoProps { className?: string; priority?: boolean; }
+/** Scalable, theme-aware wordmark from the approved storefront concept. */
+export function BrandLogo({ className = "h-9" }: BrandLogoProps) {
+  return <span className={`concept-wordmark ${className}`} role="img" aria-label="Fiction Figures">
+    <svg viewBox="0 0 430 76" fill="none" aria-hidden="true" focusable="false">
+      <text x="5" y="53" fill="currentColor" fontSize="55" fontWeight="700" fontStyle="italic" textLength="399" lengthAdjust="spacingAndGlyphs">FICTION FIGURES</text>
+      <path d="M144 68C218 54 292 59 368 61C293 63 233 65 170 73L144 68Z" fill="#f83c98" />
+      <path d="M411 24L424 15L420 29L411 30ZM414 35L429 33L425 40L414 38ZM407 17L411 4L415 13L411 21Z" fill="#f83c98" />
+    </svg>
+  </span>;
 }
