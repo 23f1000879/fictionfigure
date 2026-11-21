@@ -1,5 +1,6 @@
 "use client";
 
+import { buildListingUrl } from "@/lib/listingNavigation";
 import { collectionLabel } from "@/lib/collectionLabel";
 import React, { useState, useTransition, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -115,17 +116,8 @@ export function CollectionListingView({
   // Navigation & Parameter Management Helper.
   // Filter changes reset to page 1; an explicit page change is preserved.
   const applyParams = (updatedParams: Record<string, string | null>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(updatedParams).forEach(([key, val]) => {
-      if (val !== null && val.trim() !== "") {
-        params.set(key, val.trim());
-      } else {
-        params.delete(key);
-      }
-    });
-    if (!("page" in updatedParams)) params.set("page", "1");
     startTransition(() => {
-      router.push(`${baseUrl}?${params.toString()}`);
+      router.push(buildListingUrl(baseUrl, searchParams.toString(), updatedParams));
     });
   };
 
@@ -141,17 +133,13 @@ export function CollectionListingView({
     setMinPriceInput("");
     setMaxPriceInput("");
     startTransition(() => {
-      if (activeCategorySlug) {
-        router.push(`/collections/${activeCategorySlug}`);
-      } else {
-        router.push(baseUrl);
-      }
+      router.push(baseUrl.startsWith("/collections/") ? "/shop" : baseUrl);
     });
     setIsMobileFilterOpen(false);
   };
 
   const hasActiveFilters =
-    Boolean(currentCategory && !activeCategorySlug) ||
+    Boolean(currentCategory) ||
     Boolean(currentBrand) ||
     Boolean(currentFranchise) ||
     Boolean(currentQuery) ||
@@ -192,7 +180,7 @@ export function CollectionListingView({
   </select>;
 
   const filters = (slot: string) => <div className="concept-filter-sidebar">
-    {!activeCategorySlug && categories.length>0 && <details open><summary>Category<ChevronDown aria-hidden/></summary>
+    {categories.length>0 && <details open><summary>Category<ChevronDown aria-hidden/></summary>
       <label className="concept-filter-option"><input type="radio" name={`category-${slot}`} checked={!currentCategory} onChange={()=>applyParams({category:null})}/>All collectibles</label>
       {categories.map(category=><label key={category.id} className="concept-filter-option"><input type="radio" name={`category-${slot}`} checked={currentCategory===category.slug} onChange={()=>applyParams({category:category.slug})}/><span>{collectionLabel(category.name)}</span></label>)}
     </details>}
@@ -209,13 +197,13 @@ export function CollectionListingView({
   return <div className="concept-shop ff-container">
     <nav aria-label="Breadcrumb" className="concept-shop-breadcrumb"><Link href="/">Home</Link><span aria-hidden> / </span><span aria-current="page">{isCollectionRoute?title:"Shop"}</span></nav>
     <div className="concept-shop-heading"><div><h1>{currentQuery?`Results for “${currentQuery}”`:activeCategorySlug?collectionLabel(title):"Find your next favourite."}</h1><p>{activeCategorySlug && description?description:"Small collectibles. Big main-character energy."}</p></div>
-    {!activeCategorySlug && categories.length>0 && <div className="concept-filter-pills" aria-label="Shop by collection"><button type="button" aria-pressed={!currentCategory} onClick={()=>applyParams({category:null})}>All</button>{categories.slice(0,6).map(category=><button type="button" key={category.id} aria-pressed={currentCategory===category.slug} onClick={()=>applyParams({category:category.slug})}>{collectionLabel(category.name)}</button>)}</div>}</div>
+    {categories.length>0 && <div className="concept-filter-pills" aria-label="Shop by collection"><button type="button" aria-pressed={!currentCategory} onClick={()=>applyParams({category:null})}>All</button>{categories.slice(0,6).map(category=><button type="button" key={category.id} aria-pressed={currentCategory===category.slug} onClick={()=>applyParams({category:category.slug})}>{collectionLabel(category.name)}</button>)}</div>}</div>
     <div className="concept-shop-layout">{filters("desktop")}
       <div className="concept-shop-results" aria-busy={isPending}>
         <div className="concept-results-toolbar"><div><h2>Browse collectibles</h2><small aria-live="polite">{totalCount?`${startItemIdx}–${endItemIdx} of ${totalCount} finds`:"No matching finds"}</small></div><button type="button" className="concept-filter-toggle" onClick={()=>setIsMobileFilterOpen(true)} aria-haspopup="dialog"><SlidersHorizontal size={18}/>Filters{hasActiveFilters?" · Active":""}</button>{sortSelect}</div>
         {hasActiveFilters && <div className="concept-active-filters">
           {currentQuery && <button onClick={()=>applyParams({query:null})}>Search: {currentQuery}<X size={14}/></button>}
-          {currentCategory && !activeCategorySlug && <button onClick={()=>applyParams({category:null})}>{activeCategoryObj?.name||currentCategory}<X size={14}/></button>}
+          {currentCategory && <button onClick={()=>applyParams({category:null})}>{activeCategoryObj?.name||currentCategory}<X size={14}/></button>}
           {currentBrand && <button onClick={()=>applyParams({brand:null})}>{currentBrand}<X size={14}/></button>}
           {currentFranchise && <button onClick={()=>applyParams({franchise:null})}>{currentFranchise}<X size={14}/></button>}
           {inStockOnly && <button onClick={()=>applyParams({inStockOnly:null})}>In stock<X size={14}/></button>}

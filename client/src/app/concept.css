@@ -185,3 +185,24 @@ html body .ff-btn.concept-pink { background:#d82580;border-color:#d82580; }
  .concept-header .concept-header-main{grid-template-columns:auto minmax(0,1fr) auto;gap:16px;}
  .concept-header-tools .concept-theme-toggle{display:none;}
 }
+
+
+/* A regular in-page search form, available at every screen size. */
+html body .concept-header .concept-header-search { display:flex; padding:4px 5px 4px 14px; gap:10px; min-width:0; }
+html body .concept-header .concept-header-search:focus-within { border-color:#a18ad4; box-shadow:0 0 0 3px #b8a6ef25; }
+html body .concept-header .concept-header-search input { flex:1; min-width:0; width:100%; border:0; border-radius:0; background:transparent; color:var(--ff-text-primary); padding:8px 0; font-size:1rem; line-height:1.4; outline:none; box-shadow:none; }
+html body .concept-header .concept-header-search input::placeholder { color:var(--ff-text-secondary); opacity:1; }
+html body .concept-header .concept-header-search input:focus { outline:none; border:0; box-shadow:none; }
+.concept-search-icon { flex-shrink:0; color:var(--ff-text-secondary); }
+.concept-search-shortcut { font-size:.75rem; line-height:1; padding:4px 6px; border:1px solid var(--concept-line); border-radius:4px; color:var(--ff-text-secondary); }
+html body .concept-header .concept-search-submit { min-height:38px; padding:8px 14px; border-radius:7px; background:#e9e0ff; color:#503085; font-size:.875rem; font-weight:650; flex-shrink:0; }
+html body .concept-header .concept-search-submit:hover { background:#dcd0f7; }
+html body .concept-header .concept-search-submit:focus-visible { outline:2px solid #8f70c6; outline-offset:2px; }
+@media(max-width:767px){
+ .concept-header .concept-header-main { padding-block:12px 16px; row-gap:12px; }
+ .concept-header .concept-header-main > a { grid-column:1; grid-row:1; }
+ .concept-header .concept-header-tools { grid-column:2; grid-row:1; }
+ html body .concept-header .concept-header-search { grid-column:1/-1; grid-row:2; width:100%; min-height:46px; }
+ .concept-search-shortcut { display:none; }
+ html body .concept-header .concept-search-submit { min-height:40px; }
+}

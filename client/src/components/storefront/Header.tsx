@@ -18,7 +18,7 @@ function Count({value}:{value:number}) { return value > 0 ? <span className="abs
 
 export function Header() {
  const pathname=usePathname();
- const {cartCount,setIsCartOpen,setIsSearchOpen}=useCart();
+ const {cartCount,setIsCartOpen}=useCart();
  const {wishlistCount}=useWishlist();
  const {freeShippingThreshold}=useSettings();
  const {theme,toggleTheme}=useTheme();
@@ -28,12 +28,21 @@ export function Header() {
  const {categories}=useStoreCategories(open);
  const drawerRef=useRef<HTMLDivElement>(null);
  const menuRef=useRef<HTMLButtonElement>(null);
+ const searchRef=useRef<HTMLInputElement>(null);
  useEffect(()=>{setMounted(true);setLoggedIn(Boolean(localStorage.getItem("fictionfigure_token")));},[]);
  useEffect(()=>{setOpen(false);},[pathname]);
  useEffect(()=>{
-  const onKey=(event:KeyboardEvent)=>{const target=event.target as HTMLElement;if(event.key==="/" && !target.closest("input,textarea,[contenteditable='true']")){event.preventDefault();setIsSearchOpen(true);}};
+  if(searchRef.current) searchRef.current.value=new URLSearchParams(window.location.search).get("query") || "";
+ },[pathname]);
+ useEffect(()=>{
+  const onKey=(event:KeyboardEvent)=>{
+   const target=event.target;
+   if(!open && !event.ctrlKey && !event.metaKey && !event.altKey && !event.isComposing && event.key==="/" && target instanceof Element && !target.closest("input,textarea,select,[contenteditable]")){
+    event.preventDefault();searchRef.current?.focus();
+   }
+  };
   window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
- },[setIsSearchOpen]);
+ },[open]);
  useEffect(()=>{
   if(!open)return;
   const previous=document.body.style.overflow;document.body.style.overflow="hidden";
@@ -53,9 +62,13 @@ export function Header() {
  return <header className="concept-header sakuga-header sticky top-0 z-40 bg-surface-glass backdrop-blur-xl border-b border-border">
   <div className="ff-container concept-header-main">
    <Link href="/" aria-label="Fiction Figures home"><BrandLogo priority /></Link>
-   <button type="button" onClick={()=>setIsSearchOpen(true)} className="concept-header-search" aria-label="Search figures, anime and series"><Search size={22} aria-hidden /><span>Search characters, figures, manga...</span><kbd className="ml-auto text-xs border border-border-light rounded px-1.5">/</kbd></button>
+   <form action="/shop" method="get" role="search" aria-label="Search catalog" className="concept-header-search" onSubmit={()=>{if(searchRef.current) searchRef.current.value=searchRef.current.value.trim();}}>
+    <Search size={20} className="concept-search-icon" aria-hidden />
+    <input ref={searchRef} type="search" name="query" aria-label="Search figures, anime and series" placeholder="Search characters, figures, manga..." enterKeyHint="search" />
+    <kbd className="concept-search-shortcut" aria-hidden="true">/</kbd>
+    <button type="submit" className="concept-search-submit">Search</button>
+   </form>
    <div className="concept-header-tools">
-    <button type="button" onClick={()=>setIsSearchOpen(true)} className={`${iconClass} md:hidden`} aria-label="Search"><Search size={23}/></button>
     <button type="button" onClick={toggleTheme} className={`${iconClass} concept-theme-toggle hidden md:flex`} aria-label={theme==="night"?"Switch to Day theme":"Switch to Night theme"}>{theme==="night"?<Sun size={21}/>:<Moon size={21}/>}</button>
     <Link href={loggedIn?"/account":"/login"} className={`${iconClass} concept-desktop-icon hidden md:flex`} aria-label={loggedIn?"Account":"Sign in"}><User size={24}/></Link>
     <Link href="/account/wishlist" className={`${iconClass} concept-desktop-icon hidden md:flex`} aria-label="Wishlist"><Heart size={24}/><Count value={wishlistCount}/></Link>
