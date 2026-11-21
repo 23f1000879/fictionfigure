@@ -6,7 +6,8 @@ import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { getProducts, getCategories } from "@/lib/services/productService";
 import { API_BASE } from "@/lib/api";
-import { FandomHero } from "@/components/home/FandomHero";
+import { HeroCarousel } from "@/components/home/HeroCarousel";
+import { resolveHeroSlides } from "@/lib/heroSlides";
 import { GiftFinder, CollectorJournal } from "@/components/home/DiscoverySections";
 import { CategoryShowcase } from "@/components/home/CategoryShowcase";
 import { ProductSection } from "@/components/home/ProductSection";
@@ -55,10 +56,12 @@ export default async function HomePage() {
  const overrides:Record<string,string>=config?.shopByCategory?.imageOverrides || {};
  const worlds=(selected.length?selected.map(id=>(categories||[]).find((category:any)=>category.id===id)).filter(Boolean):categories||[]).map((category:any)=>overrides[category.id]?{...category,imageUrl:overrides[category.id]}:category);
  const facts=storeFactsFromSettings(settings);const faqs=storeFaqs(facts);
+ const campaignSlides=resolveHeroSlides(heroData || {});
+ const heroSection=config.sectionsOrder?.find((section:any)=>section.id==="hero");
  return <><Header/><SearchModal/><CartDrawer/>
   <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organizationSchema(facts))}/><script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(websiteSchema())}/><script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(faqPageSchema(faqs))}/>
   <main className="concept-home flex-1 bg-background text-foreground"><h1 className="sr-only">Fiction Figures — Anime Figures, Manga &amp; Collectibles in India</h1>
-   {settings.homepage_hero_enabled!=="false" && <FandomHero/>}
+   {settings.homepage_hero_enabled!=="false" && heroSection?.enabled!==false && <HeroCarousel slides={campaignSlides} secondaryLabel={settings.homepage_hero_secondary_label} secondaryUrl={settings.homepage_hero_secondary_url}/>}
    <div className="ff-container concept-home-body">
     {config?.shopByCategory?.enabled!==false && <CategoryShowcase categories={worlds} title="Find your world"/>}
     {config?.newArrivals?.enabled!==false && <ProductSection title="Little finds. Big happiness." products={products} viewAllUrl="/shop?sortBy=newest" viewAllText="Explore new arrivals"/>}

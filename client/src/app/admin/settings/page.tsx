@@ -1,5 +1,6 @@
 "use client";
 
+import { HeroCarousel } from "@/components/home/HeroCarousel";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
@@ -851,11 +852,16 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
+            <div className="campaign-admin-help">
+              <strong>Your homepage campaign studio.</strong> Upload a figure or poster as the main image, or add a wide background for a cinematic campaign. Set a headline and a shop link for each new arrival, then use the controls to choose the display order.
+              <p className="mt-2">For wide banners, aim for 1920 × 900 pixels and keep important artwork away from the edges. Phone layouts show the full image and place the headline below it. Main-image uploads also work without a background.</p>
+              <p className="mt-2">Open a slide’s preview below to check the design before saving. Save Carousel to publish your changes; the storefront refreshes its settings cache in about a minute.</p>
+            </div>
             {/* Carousel Slides List */}
             {carouselSlides.length === 0 ? (
               <div className="p-8 text-center bg-[#F7F7F5] border border-[#E5E5E2] space-y-2">
                 <p className="text-xs text-[#6B6B6B]">
-                  No custom carousel slides saved yet. The storefront is currently using dynamic fallback slides derived from real store assets.
+                  No custom campaigns saved yet. The storefront uses your existing hero image and text, or the default brand campaign. Add a slide below to promote a new arrival.
                 </p>
                 <button
                   type="button"
@@ -1119,6 +1125,12 @@ export default function AdminSettingsPage() {
                       </div>
                     </div>
 
+                    <details className="campaign-admin-preview border-t border-[#E5E5E2] pt-2">
+                      <summary>Preview this campaign{slide.enabled === false ? " (currently hidden on the storefront)" : ""}</summary>
+                      <div className="campaign-admin-preview-frame">
+                        <HeroCarousel slides={[{...slide, enabled: true}]} intervalMs={0} preview />
+                      </div>
+                    </details>
                     {/* Cinematic hero background (full-bleed, separate from the foreground image) */}
                     <div className="border-t border-[#E5E5E2] pt-4 space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1127,7 +1139,7 @@ export default function AdminSettingsPage() {
                         </label>
                         {!slide.backgroundImage && (
                           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[#FFF8E1] border border-[#FFE082] text-[#B86E00]">
-                            Background artwork required
+                            Optional cinematic background
                           </span>
                         )}
                       </div>
