@@ -78,7 +78,7 @@ export default function AdminOrdersPage() {
                   <td className="p-4 text-[#6B6B6B]">{formatDate(o.createdAt)}</td>
                   <td className="p-4 font-mono font-semibold text-[#111111]">{formatPrice(o.totalAmount)}</td>
                   <td className="p-4">
-                    <span className="bg-[#2E6B44] text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
+                    <span className={`admin-status ${String(o.status || "neutral").toLowerCase()}`}>
                       {o.status}
                     </span>
                   </td>
@@ -105,7 +105,7 @@ export default function AdminOrdersPage() {
                   <span className="font-mono font-semibold text-xs text-[#111111] block">{o.orderNumber}</span>
                   <span className="text-[10px] text-[#6B6B6B]">{formatDate(o.createdAt)}</span>
                 </div>
-                <span className="bg-[#2E6B44] text-white text-[9px] uppercase font-bold tracking-wider px-2 py-0.5">
+                <span className={`admin-status ${String(o.status || "neutral").toLowerCase()}`}>
                   {o.status}
                 </span>
               </div>

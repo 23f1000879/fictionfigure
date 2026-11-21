@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -55,159 +55,64 @@ export function AdminSidebar({ isDrawerOpen = false, onClose }: AdminSidebarProp
     router.push("/login");
   };
 
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const drawer = document.getElementById("admin-mobile-navigation");
+    const focusable = () => Array.from(drawer?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled)') || []);
+    focusable()[0]?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose?.();
+      if (event.key !== "Tab") return;
+      const controls = focusable();
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => { if (desktop.matches) onClose?.(); };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => { document.body.style.overflow = overflow; document.removeEventListener("keydown", onKey); desktop.removeEventListener("change", closeOnDesktop); previousFocus?.focus(); };
+  }, [isDrawerOpen, onClose]);
+
   const navGroups = [
-    {
-      title: "MANAGEMENT",
-      items: [
-        { href: "/admin", label: "Overview", icon: LayoutDashboard },
-        { href: "/admin/products", label: "Products", icon: Package },
-        { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
-        { href: "/admin/inventory", label: "Inventory", icon: Boxes },
-        { href: "/admin/restock-requests", label: "Restock Demand", icon: Bell, badge: pendingRestockCount },
-        { href: "/admin/categories", label: "Categories", icon: FolderTree },
-        { href: "/admin/discounts", label: "Discounts", icon: Tag },
-        { href: "/admin/customers", label: "Customers", icon: Users },
-        { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-        { href: "/admin/reviews", label: "Reviews", icon: Star },
-      ],
-    },
-    {
-      title: "STOREFRONT / CMS",
-      items: [
-        { href: "/admin/homepage", label: "Homepage CMS", icon: LayoutDashboard },
-        { href: "/admin/media", label: "Media Library", icon: Boxes },
-      ],
-    },
-    {
-      title: "SETTINGS",
-      items: [
-        { href: "/admin/settings", label: "Store Settings", icon: Sliders },
-      ],
-    },
+    { title: "Workspace", items: [
+      { href: "/admin", label: "Overview", icon: LayoutDashboard },
+      { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+      { href: "/admin/inventory", label: "Inventory", icon: Boxes },
+      { href: "/admin/restock-requests", label: "Restock demand", icon: Bell, badge: pendingRestockCount },
+    ] },
+    { title: "Catalog & customers", items: [
+      { href: "/admin/products", label: "Products", icon: Package },
+      { href: "/admin/categories", label: "Categories", icon: FolderTree },
+      { href: "/admin/discounts", label: "Discounts", icon: Tag },
+      { href: "/admin/customers", label: "Customers", icon: Users },
+      { href: "/admin/reviews", label: "Reviews", icon: Star },
+      { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+    ] },
+    { title: "Storefront", items: [
+      { href: "/admin/homepage", label: "Homepage CMS", icon: LayoutDashboard },
+      { href: "/admin/media", label: "Media library", icon: Boxes },
+      { href: "/admin/settings", label: "Store settings", icon: Sliders },
+    ] },
   ];
 
-  const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => (
-    <div className="flex flex-col h-full">
-      {/* Brand Header */}
-      <div className="p-6 border-b border-[#2A2A2A] flex items-center space-x-3">
-        <Image
-          src="/icon-192.png"
-          alt="Fiction Figures"
-          width={28}
-          height={28}
-          className="h-7 w-auto object-contain"
-        />
-        <div className="flex-1">
-          <span className="text-[10px] uppercase font-bold tracking-widest text-[#6B6B6B] block">
-            Commerce Console
-          </span>
-          <h2 className="text-sm font-bold tracking-tight text-white font-mono">
-            FICTIONFIGURE <span className="text-[10px] text-[#2E6B44] uppercase font-mono">ADMIN</span>
-          </h2>
-        </div>
-        <ShieldCheck className="w-5 h-5 text-[#2E6B44] shrink-0" />
-      </div>
+  const sidebarContent = (mobile = false) => <div className="admin-sidebar-content">
+    <div className="admin-sidebar-brand"><Link href="/admin" onClick={mobile ? onClose : undefined} aria-label="Fiction Figures admin home"><BrandLogo className="admin-wordmark" /></Link><span>STORE WORKSPACE</span>{mobile && <button type="button" onClick={onClose} className="admin-icon-button admin-drawer-close" aria-label="Close navigation"><X size={19} /></button>}</div>
+    <nav className="admin-sidebar-nav" aria-label={mobile ? "Mobile admin navigation" : "Admin navigation"}>{navGroups.map(group => <div className="admin-nav-group" key={group.title}><h2>{group.title}</h2>{group.items.map(item => {
+      const Icon = item.icon;
+      const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"));
+      return <Link key={item.href} href={item.href} onClick={mobile ? onClose : undefined} aria-current={active ? "page" : undefined} className={`admin-nav-link ${active ? "is-active" : ""}`}><Icon size={18} /><span>{item.label}</span>{item.badge !== undefined && item.badge !== null && item.badge > 0 && <span className="admin-nav-badge">{item.badge}</span>}</Link>;
+    })}</div>)}</nav>
+    <div className="admin-sidebar-footer"><div className="admin-access-label"><ShieldCheck size={17} /><span>Administrator workspace</span></div><Link href="/" target="_blank" rel="noopener noreferrer" onClick={mobile ? onClose : undefined}><ExternalLink size={16} /><span>View storefront</span></Link><button type="button" onClick={() => { if (mobile) onClose?.(); handleLogout(); }}><LogOut size={16} /><span>Sign out</span></button></div>
+  </div>;
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-6 text-xs font-semibold uppercase tracking-wider overflow-y-auto">
-        {navGroups.map((group) => (
-          <div key={group.title} className="space-y-1">
-            <h3 className="px-4 text-[10px] font-mono font-bold text-[#6B6B6B] tracking-widest uppercase mb-2">
-              {group.title}
-            </h3>
-            {group.items.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onLinkClick}
-                  className={`flex items-center justify-between px-4 py-2.5 transition-colors ${
-                    isActive
-                      ? "bg-white text-[#111111] font-bold"
-                      : "text-[#A0A0A0] hover:text-white hover:bg-[#1E1E1E]"
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge !== undefined && item.badge !== null && item.badge > 0 && (
-                    <span className="px-2 py-0.5 bg-[#B86E00] text-white text-[10px] font-mono font-bold rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
-      </nav>
-
-      {/* Footer link to main Storefront & Sign Out */}
-      <div className="p-4 border-t border-[#2A2A2A] space-y-2">
-        <Link
-          href="/"
-          target="_blank"
-          onClick={onLinkClick}
-          className="flex items-center justify-between p-3 bg-[#1E1E1E] text-xs font-semibold uppercase tracking-wider text-[#A0A0A0] hover:text-white transition-colors"
-        >
-          <span>View Storefront</span>
-          <ExternalLink className="w-4 h-4" />
-        </Link>
-
-        <button
-          onClick={() => {
-            if (onLinkClick) onLinkClick();
-            handleLogout();
-          }}
-          className="w-full flex items-center justify-between p-3 bg-[#A83232]/20 border border-[#A83232]/40 hover:bg-[#A83232]/40 text-xs font-semibold uppercase tracking-wider text-white transition-colors"
-        >
-          <span>Admin Sign Out</span>
-          <LogOut className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      {/* Desktop Sidebar (persistent) */}
-      <aside className="hidden lg:flex w-64 bg-[#111111] text-white flex-col shrink-0 min-h-screen border-r border-[#2A2A2A]">
-        <SidebarContent />
-      </aside>
-
-      {/* Mobile Drawer (overlay sidebar) */}
-      <div className={`lg:hidden fixed inset-0 z-50 flex ${isDrawerOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
-        {/* Backdrop overlay */}
-        <div
-          className={`fixed inset-0 bg-black/60 transition-opacity duration-300 ${
-            isDrawerOpen ? "opacity-100" : "opacity-0"
-          }`}
-          onClick={onClose}
-        />
-
-        {/* Drawer content panel */}
-        <aside
-          className={`relative w-64 max-w-xs bg-[#111111] text-white flex flex-col min-h-screen border-r border-[#2A2A2A] transform transition-transform duration-300 ease-in-out z-10 ${
-            isDrawerOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-        >
-          {/* Close Button inside Drawer */}
-          <div className="absolute top-4 right-4 z-20">
-            <button
-              onClick={onClose}
-              className="p-1 text-[#A0A0A0] hover:text-white focus:outline-none"
-              title="Close Menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <SidebarContent onLinkClick={onClose} />
-        </aside>
-      </div>
-    </>
-  );
+  return <>
+    <aside className="admin-sidebar-desktop">{sidebarContent()}</aside>
+    {isDrawerOpen && <div className="admin-drawer-layer"><div className="admin-drawer-backdrop" onClick={onClose} aria-hidden="true" /><aside id="admin-mobile-navigation" className="admin-sidebar-mobile" role="dialog" aria-modal="true" aria-label="Admin navigation">{sidebarContent(true)}</aside></div>}
+  </>;
 }
