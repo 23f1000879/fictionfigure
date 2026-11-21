@@ -6,7 +6,7 @@ import "./concept.css";
 import "./campaign.css";
 import { SakugaMotion } from "@/components/ui/SakugaMotion";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { AIChatWidget } from "@/components/ai/AIChatWidget";
+import { DeferredAssistant } from "@/components/ai/DeferredAssistant";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { SettingsProvider } from "@/context/SettingsContext";
@@ -110,7 +110,7 @@ export default function RootLayout({
               <WishlistProvider>
                 {children}
                 <SakugaMotion />
-                <AIChatWidget />
+                <DeferredAssistant />
               </WishlistProvider>
             </CartProvider>
           </SettingsProvider>

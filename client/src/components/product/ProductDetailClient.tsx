@@ -36,7 +36,7 @@ import { API_BASE, safeApiFetch } from "@/lib/api";
 import { galleryIndexForVariant, primaryImageUrl, wrapIndex } from "@/lib/productImages";
 import { Badge } from "@/components/ui/Badge";
 import { AmbientImage } from "@/components/ui/Artwork";
-import { ProductReviews } from "./ProductReviews";
+import { DeferredProductReviews } from "./DeferredProductReviews";
 
 interface ProductDetailProps {
   product: {
@@ -981,7 +981,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
       {/* 7. Verified Collector Reviews Section */}
       <div id="reviews-section" className="pt-8">
-        <ProductReviews
+        <DeferredProductReviews
           productId={product.id}
           productSlug={product.slug}
           productName={product.name}

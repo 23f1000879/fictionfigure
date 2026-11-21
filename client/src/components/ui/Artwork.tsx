@@ -3,53 +3,39 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
-/**
- * Returns a tiny Cloudinary rendition of an asset so we can read its aspect ratio cheaply.
- * Non-Cloudinary URLs are returned unchanged.
- */
-function probeUrl(src: string): string {
-  if (src.includes("res.cloudinary.com") && src.includes("/upload/")) {
-    return src.replace("/upload/", "/upload/w_24/");
-  }
-  return src;
+import { tinyImageUrl } from "@/lib/tinyImageUrl";
+
+const aspectCache = new Map<string, Promise<number | null>>();
+
+function readAspect(src: string): Promise<number | null> {
+  const cached = aspectCache.get(src);
+  if (cached) return cached;
+  const result = new Promise<number | null>((resolve) => {
+    const image = new window.Image();
+    image.onload = () => resolve(image.naturalHeight > 0 ? image.naturalWidth / image.naturalHeight : null);
+    image.onerror = () => { aspectCache.delete(src); resolve(null); };
+    image.src = tinyImageUrl(src, 32);
+  });
+  if (aspectCache.size >= 128) aspectCache.delete(aspectCache.keys().next().value!);
+  aspectCache.set(src, result);
+  return result;
 }
 
-/**
- * Natural width / height of an image, or null until known.
- * Used to decide whether campaign artwork is landscape (full-bleed background)
- * or a portrait poster (shown whole over an ambient backdrop).
- */
+/** Share small aspect probes across repeated artwork, without reusing stale ratios. */
 export function useImageAspect(src?: string | null): number | null {
-  const [ratio, setRatio] = useState<number | null>(null);
-
+  const [result, setResult] = useState<{ src: string; ratio: number | null } | null>(null);
   useEffect(() => {
-    if (!src) {
-      setRatio(null);
-      return;
-    }
+    if (!src) return;
     let alive = true;
-    const img = new window.Image();
-    img.onload = () => {
-      if (alive && img.naturalHeight > 0) setRatio(img.naturalWidth / img.naturalHeight);
-    };
-    img.src = probeUrl(src);
-    return () => {
-      alive = false;
-    };
+    void readAspect(src).then(ratio => { if (alive) setResult({ src, ratio }); });
+    return () => { alive = false; };
   }, [src]);
-
-  return ratio;
+  return result?.src === src ? result.ratio : null;
 }
 
-/**
- * Low-resolution rendition for ambient backdrops. Upscaling a 64px copy gives a soft wash
- * at a fraction of the paint cost of a large CSS blur over a full-size image.
- */
+/** Decorative backdrops only need a tiny rendition, including local artwork. */
 export function ambientUrl(src: string): string {
-  if (src.includes("res.cloudinary.com") && src.includes("/upload/")) {
-    return src.replace("/upload/", "/upload/w_64,q_auto/");
-  }
-  return src;
+  return tinyImageUrl(src, 64, 35);
 }
 
 /** Soft, decorative colour wash derived from an artwork asset. */

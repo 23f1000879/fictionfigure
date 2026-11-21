@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type SakugaFX = {
@@ -15,9 +16,19 @@ type SakugaFX = {
 /** Use the original Sakuga drawing engine while retaining native React controls and forms. */
 export function SakugaMotion() {
   const [ready, setReady] = useState(false);
+  const [motionAllowed, setMotionAllowed] = useState(false);
+  const pathname = usePathname();
+  const enabled = motionAllowed && !pathname.startsWith("/admin");
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setMotionAllowed(!media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !enabled) return;
     const fx = (window as Window & { SakugaFX?: SakugaFX }).SakugaFX;
     if (!fx) return;
     const animations = new Map<HTMLElement, Animation>();
@@ -56,7 +67,7 @@ export function SakugaMotion() {
       document.removeEventListener("click", onClick);
       animations.forEach((animation) => animation.cancel());
     };
-  }, [ready]);
+  }, [ready, enabled]);
 
-  return <Script src="/sakuga-vfx/core.js" strategy="afterInteractive" onReady={() => setReady(true)} />;
+  return enabled ? <Script src="/sakuga-vfx/core.js" strategy="lazyOnload" onReady={() => setReady(true)} /> : null;
 }

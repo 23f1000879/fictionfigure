@@ -44,6 +44,9 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
   const [isAdding, setIsAdding] = useState(false);
+  const [previewRequested, setPreviewRequested] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [loadedPreview, setLoadedPreview] = useState<string | null>(null);
 
   const variants = product.variants || [];
   const hasVariants = Boolean(
@@ -132,7 +135,11 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
   const hasRealRating = Boolean(product.rating && product.rating > 0 && product.reviewCount && product.reviewCount > 0);
 
   return (
-    <div className="concept-product-card sakuga-product-card group relative flex flex-col h-full bg-[#111318] rounded-[10px] border border-white/[0.08] hover:border-white/[0.2] transition-colors duration-300 overflow-hidden text-[#F7F7F5]">
+    <div onPointerEnter={(event) => { if (event.pointerType !== "touch") { setPreviewRequested(true); setHovered(true); } }}
+      onPointerLeave={() => setHovered(false)}
+      onFocusCapture={() => { setPreviewRequested(true); setHovered(true); }}
+      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHovered(false); }}
+      className="concept-product-card sakuga-product-card group relative flex flex-col h-full bg-[#111318] rounded-[10px] border border-white/[0.08] hover:border-white/[0.2] transition-colors duration-300 overflow-hidden text-[#F7F7F5]">
       {/* Artwork — dominates the card */}
       <div className="concept-product-image relative w-full aspect-[3/4] overflow-hidden bg-[radial-gradient(ellipse_at_50%_35%,#FFFFFF_0%,#F5F5F2_60%,#ECECE7_100%)] dark:bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_55%,#0b0c0f_100%)]">
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block" aria-label={product.name}>
@@ -144,10 +151,10 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
                 className={`object-contain transition-all duration-500 ease-out group-hover:scale-[1.04] ${
-                  secondaryImage ? "group-hover:opacity-0" : ""
+                  hovered && loadedPreview === secondaryImage ? "opacity-0" : ""
                 }`}
               />
-              {secondaryImage && (
+              {previewRequested && secondaryImage && (
                 <Image
                   src={secondaryImage}
                   alt=""
@@ -155,7 +162,8 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
                   fill
                   loading="lazy"
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
-                  className="object-contain opacity-0 group-hover:opacity-100 group-hover:scale-[1.04] transition-all duration-500 ease-out pointer-events-none"
+                  onLoad={() => setLoadedPreview(secondaryImage)}
+                  className={`object-contain group-hover:scale-[1.04] transition-all duration-500 ease-out pointer-events-none ${hovered && loadedPreview === secondaryImage ? "opacity-100" : "opacity-0"}`}
                 />
               )}
             </>

@@ -77,8 +77,8 @@ function getCleanSearchQuery(text: string): string {
   return query;
 }
 
-export function AIChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+export function AIChatWidget({ initialOpen = false }: { initialOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
