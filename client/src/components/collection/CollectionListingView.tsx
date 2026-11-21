@@ -54,6 +54,7 @@ interface CollectionListingViewProps {
   activeCategorySlug?: string;
   baseUrl?: string; // "/shop" or "/collections"
   products: ProductData[];
+  searchExpanded?: boolean;
   totalCount: number;
   totalPages: number;
   currentPage: number;
@@ -70,6 +71,7 @@ export function CollectionListingView({
   activeCategorySlug = "",
   baseUrl = "/shop",
   products,
+  searchExpanded = false,
   totalCount,
   totalPages,
   currentPage,
@@ -201,6 +203,7 @@ export function CollectionListingView({
     <div className="concept-shop-layout">{filters("desktop")}
       <div className="concept-shop-results" aria-busy={isPending}>
         <div className="concept-results-toolbar"><div><h2>Browse collectibles</h2><small aria-live="polite">{totalCount?`${startItemIdx}–${endItemIdx} of ${totalCount} finds`:"No matching finds"}</small></div><button type="button" className="concept-filter-toggle" onClick={()=>setIsMobileFilterOpen(true)} aria-haspopup="dialog"><SlidersHorizontal size={18}/>Filters{hasActiveFilters?" · Active":""}</button>{sortSelect}</div>
+        {searchExpanded && currentQuery && <p className="concept-search-match-note" role="status">No exact matches for “{currentQuery}”. Showing close spelling matches.</p>}
         {hasActiveFilters && <div className="concept-active-filters">
           {currentQuery && <button onClick={()=>applyParams({query:null})}>Search: {currentQuery}<X size={14}/></button>}
           {currentCategory && <button onClick={()=>applyParams({category:null})}>{activeCategoryObj?.name||currentCategory}<X size={14}/></button>}

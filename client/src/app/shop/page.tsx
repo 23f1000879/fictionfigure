@@ -84,7 +84,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     limit: 12,
   };
 
-  const { products, totalCount, totalPages, currentPage, categories, brands, franchises } =
+  const { products, totalCount, totalPages, currentPage, categories, brands, franchises, searchExpanded } =
     await getProducts(filters);
 
   const activeCategoryObj = categories.find((c: any) => c.slug === filters.category);
@@ -141,6 +141,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
           activeCategorySlug={filters.category || ""}
           baseUrl="/shop"
           products={products}
+          searchExpanded={searchExpanded}
           totalCount={totalCount}
           totalPages={totalPages}
           currentPage={currentPage}

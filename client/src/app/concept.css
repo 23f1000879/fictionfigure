@@ -206,3 +206,4 @@ html body .concept-header .concept-search-submit:focus-visible { outline:2px sol
  .concept-search-shortcut { display:none; }
  html body .concept-header .concept-search-submit { min-height:40px; }
 }
+.concept-search-match-note { margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--concept-line); border-radius: 9px; background: var(--ff-surface-elevated); color: var(--ff-text-secondary); font-size: .9375rem; line-height: 1.5; }

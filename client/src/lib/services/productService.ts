@@ -1,5 +1,6 @@
 import { ProductFilterInput } from "@/lib/schemas/product";
 import { API_BASE } from "@/lib/api";
+import { expandCatalogSearch } from "@/lib/typoSearch";
 
 export async function getCategories() {
   try {
@@ -29,6 +30,18 @@ export async function getCategoryBySlug(slug: string) {
 }
 
 export async function getProducts(filters: Partial<ProductFilterInput> & { sortBy?: string; inStockOnly?: boolean } = {}) {
+  const exact = await fetchProducts(filters);
+  if (!filters.query?.trim() || exact.totalCount > 0) return { ...exact, searchExpanded: false };
+  const expanded = await expandCatalogSearch(
+    filters.query,
+    page => fetchProducts({ ...filters, query: undefined, page, limit: 100 }),
+    filters.page || 1,
+    filters.limit || 12,
+  );
+  return expanded ? { ...exact, ...expanded, searchExpanded: true } : { ...exact, searchExpanded: false };
+}
+
+async function fetchProducts(filters: Partial<ProductFilterInput> & { sortBy?: string; inStockOnly?: boolean } = {}) {
   try {
     const queryParams = new URLSearchParams();
     if (filters.query) queryParams.set("query", filters.query);
