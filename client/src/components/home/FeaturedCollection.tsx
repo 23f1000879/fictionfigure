@@ -26,7 +26,7 @@ export function FeaturedCollection({
   return (
     <section
       aria-label={title}
-      className="group relative h-full min-h-[300px] lg:min-h-[340px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#111318]"
+      className="sakuga-campaign ff-media group relative h-full min-h-[300px] lg:min-h-[340px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#111318]"
     >
       <ArtworkFrame
         src={imageUrl}

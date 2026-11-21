@@ -46,7 +46,7 @@ export function CartDrawer() {
       />
 
       <div className="fixed inset-y-0 right-0 w-full sm:w-auto max-w-full flex justify-end pl-0 sm:pl-10">
-        <div className="w-full sm:w-screen max-w-full sm:max-w-md bg-[#121318] border-l border-white/10 flex flex-col shadow-2xl shadow-black animate-in slide-in-from-right duration-300 min-w-0 box-border h-full overflow-hidden text-white">
+        <div className="sakuga-drawer w-full sm:w-screen max-w-full sm:max-w-md bg-[#121318] border-l border-white/10 flex flex-col shadow-2xl shadow-black animate-in slide-in-from-right duration-300 min-w-0 box-border h-full overflow-hidden text-white">
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-[#0E0F14] shrink-0 min-w-0 w-full box-border">
             <div className="flex items-center space-x-2.5 min-w-0">

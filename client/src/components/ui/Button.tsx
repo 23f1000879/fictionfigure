@@ -59,6 +59,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         className={`
           ${baseStyle}
+          sakuga-ui-button ${variant === "primary" ? "sakuga-primary" : variant === "gold" ? "sakuga-gold" : ""}
           ${variantStyles[variant]}
           ${sizeStyles[size]}
           ${fullWidth ? "w-full" : ""}

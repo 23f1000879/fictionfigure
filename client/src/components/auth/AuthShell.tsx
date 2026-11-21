@@ -1,16 +1,13 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
-import { ShieldCheck, Box, Truck } from "lucide-react";
+import { ShieldCheck, Box, Truck, Sparkles } from "lucide-react";
 import { Header } from "@/components/storefront/Header";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { useSettings } from "@/context/SettingsContext";
 
 interface AuthShellProps {
   children: React.ReactNode;
-  /** Brand statement shown beside the panel on desktop. */
   asideEyebrow?: string;
   asideTitle?: string;
   asideAccent?: string;
@@ -23,69 +20,28 @@ const VALUES = [
   { icon: Truck, label: "Pan-India delivery" },
 ];
 
-/**
- * Shared cinematic frame for sign-in and registration: global header, existing campaign
- * artwork dimmed into atmosphere, and a dark glass form panel.
- */
-export function AuthShell({
-  children,
-  asideEyebrow = "The Fiction Figures experience",
-  asideTitle = "Collect what",
-  asideAccent = "you love.",
-  asideText = "Save your wishlist, track your orders and get restock alerts for the pieces you're hunting.",
-}: AuthShellProps) {
-  const { cinematicBackgroundUrl } = useSettings();
-
+export function AuthShell({ children, asideEyebrow = "The Fiction Figures experience", asideTitle = "Collect what", asideAccent = "you love.", asideText = "Save your wishlist, track your orders and get restock alerts for the pieces you're hunting." }: AuthShellProps) {
   return (
     <>
       <Header />
       <SearchModal />
       <CartDrawer />
-
-      <main className="ff-media relative isolate flex-1 overflow-hidden bg-background text-foreground">
-        <div className="absolute inset-0 -z-10" aria-hidden>
-          {cinematicBackgroundUrl && (
-            <Image
-              src={cinematicBackgroundUrl}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover object-[70%_center] opacity-60"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#08090B]/90 via-[#08090B]/70 to-[#08090B]/85" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#08090B] via-transparent to-[#08090B]/50" />
-          <div className="absolute right-[8%] top-1/2 -translate-y-1/2 w-[520px] h-[520px] max-w-full rounded-full bg-[#F5C518]/[0.07] blur-3xl" />
-        </div>
-
-        <div className="ff-container grid grid-cols-1 lg:grid-cols-12 gap-10 items-center py-10 sm:py-14 lg:py-16 lg:min-h-[calc(100svh-120px)]">
-          {/* Brand statement (desktop) */}
-          <div className="hidden lg:block lg:col-span-6 xl:col-span-7 space-y-5">
-            <p className="ff-eyebrow">{asideEyebrow}</p>
-            <h2 className="font-black uppercase leading-[0.95] tracking-[-0.025em] text-[52px] xl:text-[64px]">
-              <span className="block text-white">{asideTitle}</span>
-              <span className="block text-[#F5C518]">{asideAccent}</span>
+      <main className="sakuga-auth relative flex-1 bg-background text-foreground">
+        <div className="ff-container grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center py-10 sm:py-14 lg:py-20 lg:min-h-[calc(100svh-112px)]">
+          <div className="hidden lg:block lg:col-span-6 space-y-6">
+            <span className="sakuga-sticker"><Sparkles size={16} aria-hidden /> {asideEyebrow}</span>
+            <h2 className="font-black leading-[1.02] tracking-[-0.065em] text-[56px] xl:text-[72px]">
+              <span className="block">{asideTitle}</span><span className="block text-[#8070d8] italic">{asideAccent}</span>
             </h2>
-            <p className="text-[15px] leading-relaxed text-[#F7F7F5]/75 max-w-md">{asideText}</p>
-            <ul className="flex flex-wrap gap-x-6 gap-y-3 pt-3">
-              {VALUES.map(({ icon: Icon, label }) => (
-                <li key={label} className="flex items-center gap-2 text-[12px] text-[#F7F7F5]/80">
-                  <span className="w-8 h-8 rounded-full border border-white/15 flex items-center justify-center">
-                    <Icon className="w-3.5 h-3.5 text-[#F5C518]" />
-                  </span>
-                  {label}
-                </li>
-              ))}
+            <p className="text-base leading-relaxed text-foreground-secondary max-w-md">{asideText}</p>
+            <ul className="space-y-4 pt-4">
+              {VALUES.map(({ icon: Icon, label }) => <li key={label} className="flex items-center gap-3 text-sm text-foreground-secondary">
+                <span className="w-10 h-10 rounded-xl border border-border-light bg-surface flex items-center justify-center"><Icon className="w-4 h-4 text-[#8070d8]" /></span>{label}
+              </li>)}
             </ul>
           </div>
-
-          {/* Form panel */}
-          <div className="lg:col-span-6 xl:col-span-5 flex justify-center lg:justify-end">
-            <div className="ff-light relative w-full max-w-[460px] rounded-[16px] border border-white/[0.1] bg-white dark:bg-[#0D0E12]/85 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)] dark:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] p-6 sm:p-8">
-              <div className="absolute inset-x-10 -top-px h-px bg-gradient-to-r from-transparent via-[#F5C518]/60 to-transparent" aria-hidden />
-              <div className="space-y-6">{children}</div>
-            </div>
+          <div className="lg:col-span-6 flex justify-center lg:justify-end">
+            <div className="sakuga-auth-panel w-full max-w-[480px] p-6 sm:p-9"><div className="space-y-6">{children}</div></div>
           </div>
         </div>
       </main>
@@ -93,13 +49,6 @@ export function AuthShell({
   );
 }
 
-/** Panel heading shared by the auth pages. */
 export function AuthHeading({ eyebrow, title, text }: { eyebrow: string; title: string; text?: string }) {
-  return (
-    <div className="space-y-2">
-      <p className="ff-eyebrow">{eyebrow}</p>
-      <h1 className="text-[28px] sm:text-[32px] font-extrabold leading-[1.1] tracking-[-0.02em] text-white">{title}</h1>
-      {text && <p className="text-[13px] text-[#9A9DA5] leading-relaxed">{text}</p>}
-    </div>
-  );
+  return <div className="space-y-3"><p className="ff-eyebrow">{eyebrow}</p><h1 className="text-[32px] sm:text-[36px] font-extrabold leading-[1.1] tracking-[-0.045em] text-foreground">{title}</h1>{text && <p className="text-base text-foreground-secondary leading-relaxed">{text}</p>}</div>;
 }

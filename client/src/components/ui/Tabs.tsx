@@ -25,7 +25,7 @@ export function Tabs({
   return (
     <div
       className={`
-        inline-flex p-1 bg-[#0E0F13] border border-white/[0.08] rounded-2xl overflow-x-auto no-scrollbar
+        sakuga-tabs inline-flex max-w-full p-1 bg-[#0E0F13] border border-white/[0.08] rounded-2xl overflow-x-auto no-scrollbar
         ${className}
       `}
       role="tablist"

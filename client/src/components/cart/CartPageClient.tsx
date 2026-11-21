@@ -71,7 +71,7 @@ export function CartPageClient() {
 
   if (cart.length === 0) {
     return (
-      <section className="relative isolate overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0D0E12] my-6 lg:my-10">
+      <section className="sakuga-empty-cart relative isolate overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0D0E12] my-6 lg:my-10">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(245,197,24,0.12),transparent_60%)]" aria-hidden />
         <div className="py-16 sm:py-20 lg:py-24 px-6 text-center max-w-xl mx-auto">
           <div className="w-16 h-16 rounded-full bg-[#F5C518]/10 border border-[#F5C518]/30 flex items-center justify-center mx-auto mb-6">

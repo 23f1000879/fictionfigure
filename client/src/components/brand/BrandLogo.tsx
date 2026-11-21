@@ -21,7 +21,7 @@ interface BrandLogoProps {
 
 export function BrandLogo({ className = "h-9", priority = false }: BrandLogoProps) {
   return (
-    <span className={`relative inline-block shrink-0 aspect-[332/100] ${className}`}>
+    <span className={`sakuga-brand relative inline-block shrink-0 aspect-[332/100] ${className}`}>
       <Image
         src="/brand/fiction-figures-logo-day.png"
         alt="Fiction Figures"

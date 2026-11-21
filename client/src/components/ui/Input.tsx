@@ -48,7 +48,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             disabled={disabled}
             className={`
-              w-full bg-[#0E0F13] text-white placeholder-[#64748B] text-sm rounded-xl px-4 py-3
+              sakuga-ui-input w-full bg-[#0E0F13] text-white placeholder-[#64748B] text-base rounded-xl px-4 py-3
               border border-white/10 transition-all duration-200
               focus:outline-none focus:border-[#F5C518] focus:ring-1 focus:ring-[#F5C518]/30
               disabled:opacity-50 disabled:cursor-not-allowed

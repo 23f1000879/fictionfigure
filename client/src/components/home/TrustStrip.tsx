@@ -75,7 +75,7 @@ export function TrustStrip({ items, layout = "full" }: TrustStripProps) {
 
   const compact = layout === "compact";
   return (
-    <section aria-label="Collector reassurance" className="h-full">
+    <section aria-label="Collector reassurance" className="sakuga-trust h-full">
       <ul
         className={`ff-panel h-full grid ${
           compact ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4"

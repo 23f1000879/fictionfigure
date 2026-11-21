@@ -15,13 +15,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const STORAGE_KEY = "fictionfigure_theme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("night");
+  const [theme, setThemeState] = useState<Theme>("day");
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      // Strictly enforce: 'day' -> day, otherwise (null, invalid, 'night') -> night
-      const activeTheme: Theme = stored === "day" ? "day" : "night";
+      const activeTheme: Theme = stored === "night" ? "night" : "day";
 
       setThemeState(activeTheme);
       if (activeTheme === "night") {
@@ -49,7 +48,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Update meta theme-color for mobile browser status bar
       const metaThemeColor = document.querySelector('meta[name="theme-color"]');
       if (metaThemeColor) {
-        metaThemeColor.setAttribute("content", nextTheme === "night" ? "#08090B" : "#FFFFFF");
+        metaThemeColor.setAttribute("content", nextTheme === "night" ? "#19162E" : "#FFFFFF");
       }
     } catch (e) {}
   };

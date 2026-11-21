@@ -321,7 +321,7 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-40 w-full max-w-full transition-colors duration-300 border-b ${
+      className={`sakuga-header sticky top-0 z-40 w-full max-w-full transition-colors duration-300 border-b ${
         scrolled
           ? "bg-[#08090B]/92 backdrop-blur-xl border-white/[0.08]"
           : "bg-[#08090B]/70 backdrop-blur-md border-white/[0.05]"
@@ -329,7 +329,7 @@ export function Header() {
     >
       {/* Thin CMS announcement strip */}
       {showTopBar && (
-        <div className="h-7 bg-[#060708] border-b border-white/[0.05] flex items-center">
+        <div className="sakuga-announcement h-7 border-b flex items-center">
           <div className="ff-container flex items-center justify-center gap-2 overflow-hidden">
             <span className="w-1 h-1 rounded-full bg-[#F5C518] shrink-0" />
             <p

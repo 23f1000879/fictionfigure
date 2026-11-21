@@ -428,7 +428,7 @@ export function CheckoutClient() {
   );
 
   return (
-    <div className="min-h-screen bg-[#08090B] text-[#F7F7F5] flex flex-col font-sans">
+    <div className="sakuga-checkout min-h-screen bg-[#08090B] text-[#F7F7F5] flex flex-col font-sans">
       {/* 1. Simplified checkout header (FICTIONFIGURE dark system) */}
       <header className="sticky top-0 z-30 bg-[#08090B]/90 backdrop-blur-xl border-b border-white/[0.08]">
         <div className="ff-container h-16 flex justify-between items-center gap-4">

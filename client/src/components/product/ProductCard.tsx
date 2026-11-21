@@ -131,7 +131,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
   const hasRealRating = Boolean(product.rating && product.rating > 0 && product.reviewCount && product.reviewCount > 0);
 
   return (
-    <div className="group relative flex flex-col h-full bg-[#111318] rounded-[10px] border border-white/[0.08] hover:border-white/[0.2] transition-colors duration-300 overflow-hidden text-[#F7F7F5]">
+    <div className="sakuga-product-card group relative flex flex-col h-full bg-[#111318] rounded-[10px] border border-white/[0.08] hover:border-white/[0.2] transition-colors duration-300 overflow-hidden text-[#F7F7F5]">
       {/* Artwork — dominates the card */}
       <div className="relative w-full aspect-[3/4] overflow-hidden bg-[radial-gradient(ellipse_at_50%_35%,#FFFFFF_0%,#F5F5F2_60%,#ECECE7_100%)] dark:bg-[radial-gradient(ellipse_at_50%_35%,#22242c_0%,#111318_55%,#0b0c0f_100%)]">
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block" aria-label={product.name}>
@@ -175,6 +175,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
           }}
           className="absolute top-2 right-2 z-20 w-8 h-8 rounded-full bg-[#08090B]/55 backdrop-blur-md border border-white/15 flex items-center justify-center hover:border-white/40 transition-colors"
           aria-label={isWishlisted ? "Remove from Wishlist" : "Save to Wishlist"}
+          aria-pressed={isWishlisted}
         >
           <Heart
             className={`w-3.5 h-3.5 transition-colors ${isWishlisted ? "fill-[#F5C518] text-[#F5C518]" : "text-white"}`}
@@ -220,7 +221,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
         <div className="min-w-0">
           <Link
             href={`/products/${product.slug}`}
-            className="block text-[13px] font-semibold leading-snug text-[#F7F7F5] hover:text-[#F5C518] transition-colors line-clamp-2 min-h-[2.2em]"
+            className="block text-[15px] font-semibold leading-snug text-[#F7F7F5] hover:text-[#F5C518] transition-colors line-clamp-2 min-h-[2.2em]"
           >
             {product.name}
           </Link>
@@ -236,6 +237,7 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
                 <button
                   key={variant.id || idx}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -273,6 +275,8 @@ export function ProductCard({ product, lowStockThreshold = 3 }: ProductCardProps
           type="button"
           onClick={handleQuickAdd}
           disabled={!inStock || isAdding}
+          data-sakuga="primary"
+          aria-label={`${!inStock ? "Sold out:" : isAdding ? "Added:" : "Add to bag:"} ${product.name}`}
           className={`h-8 w-full rounded-[6px] text-[10px] font-extrabold uppercase tracking-[0.12em] flex items-center justify-center gap-1.5 transition-colors ${
             !inStock
               ? "bg-white/[0.03] text-[#6E717A] border border-white/5 cursor-not-allowed"

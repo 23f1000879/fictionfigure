@@ -346,7 +346,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
   const brandName = product.brand || product.category?.name || "AUTHENTIC COLLECTIBLE";
 
   return (
-    <div className="space-y-10 lg:space-y-14 w-full max-w-full overflow-hidden box-border">
+    <div className="sakuga-product space-y-10 lg:space-y-14 w-full max-w-full overflow-hidden box-border">
       {/* 1. Breadcrumb */}
       <nav
         aria-label="Breadcrumb"
@@ -396,7 +396,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
           )}
 
           <div
-            className="relative flex-1 min-w-0 aspect-[4/5] sm:aspect-[5/6] lg:aspect-auto lg:h-[min(76vh,700px)] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0D0E12] group outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]/70"
+            className="sakuga-product-gallery relative flex-1 min-w-0 aspect-[4/5] sm:aspect-[5/6] lg:aspect-auto lg:h-[min(76vh,700px)] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0D0E12] group outline-none focus-visible:ring-2 focus-visible:ring-[#F5C518]/70"
             tabIndex={0}
             role="region"
             aria-roledescription="image gallery"
@@ -546,7 +546,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
 
           {/* Generic Variant Selector System */}
           {hasVariants && (
-            <div className="space-y-3 w-full max-w-full bg-[#111318] border border-white/10 rounded-[10px] p-5 shadow-lg shadow-black/40">
+            <div className="sakuga-product-purchase space-y-3 w-full max-w-full bg-[#111318] border border-white/10 rounded-[10px] p-5 shadow-lg shadow-black/40">
               <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-white font-mono">
                 <span>SELECT EDITION / VARIANT:</span>
                 <span className="text-[#F5C518]">{currentVariant?.title}</span>
@@ -997,6 +997,7 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={handleBuyNow}
+                data-sakuga="primary"
                 className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#F5C518] to-[#D4AF37] text-[#08090B] text-xs font-bold uppercase tracking-wider min-h-[44px] flex items-center justify-center gap-1 shadow-md shadow-amber-500/20"
               >
                 <span>Buy Now</span>

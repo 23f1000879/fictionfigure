@@ -192,9 +192,9 @@ export function CollectionListingView({
   );
 
   return (
-    <div className="text-[#F7F7F5]">
+    <div className="sakuga-listing text-[#F7F7F5]">
       {/* 1. Compact artwork header band (reference: "Collections" page header) */}
-      <section className="group relative overflow-hidden border-b border-white/[0.06]">
+      <section className="sakuga-listing-heading group relative overflow-hidden border-b border-white/[0.06]">
         {categoryImage ? (
           <ArtworkFrame
             src={categoryImage}
@@ -208,7 +208,7 @@ export function CollectionListingView({
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(245,197,24,0.08),transparent_55%)]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#08090B] via-[#08090B]/85 to-[#08090B]/20" />
+        <div className="sakuga-listing-wash absolute inset-0" />
 
         <div className="ff-container relative py-8 sm:py-10 lg:py-12 min-h-[180px] lg:min-h-[220px] flex flex-col justify-center gap-3">
           <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11px] text-[#9A9DA5]">
@@ -249,6 +249,7 @@ export function CollectionListingView({
                     type="button"
                     onClick={() => applyParams({ category: c.slug })}
                     className={pill(currentCategory === c.slug)}
+                    aria-pressed={currentCategory === c.slug}
                   >
                     {c.name}
                   </button>

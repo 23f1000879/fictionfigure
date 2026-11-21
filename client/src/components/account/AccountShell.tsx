@@ -4,8 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Package, MapPin, Heart, Bell, User, LogOut, ShieldCheck } from "lucide-react";
-import { useSettings } from "@/context/SettingsContext";
-import { ArtworkFrame } from "@/components/ui/Artwork";
 
 const NAV = [
   { href: "/account", label: "Dashboard", icon: LayoutDashboard },
@@ -28,7 +26,6 @@ interface AccountShellProps {
 export function AccountShell({ children, isAdmin }: AccountShellProps) {
   const pathname = usePathname() || "/account";
   const router = useRouter();
-  const { heroImageUrl } = useSettings();
 
   const isActive = (href: string) =>
     href === "/account" ? pathname === "/account" : pathname === href || pathname.startsWith(`${href}/`);
@@ -39,20 +36,14 @@ export function AccountShell({ children, isAdmin }: AccountShellProps) {
   };
 
   const itemClass = (active: boolean) =>
-    `flex items-center gap-3 h-10 px-3 rounded-[8px] text-[13px] transition-colors whitespace-nowrap ${
+    `flex items-center gap-3 h-12 px-4 rounded-[12px] text-[14px] font-semibold transition-colors whitespace-nowrap ${
       active
         ? "bg-[#17191F] text-white border border-white/[0.08]"
         : "text-[#9A9DA5] hover:text-white hover:bg-white/[0.03] border border-transparent"
     }`;
 
   return (
-    <main className="relative flex-1 bg-background text-foreground overflow-x-hidden">
-      {/* Artwork band behind the page heading */}
-      <div className="absolute inset-x-0 top-0 h-[280px] overflow-hidden pointer-events-none" aria-hidden>
-        {heroImageUrl && <ArtworkFrame src={heroImageUrl} alt="" mode="ambient" ambientOpacity={0.3} />}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#08090B] via-[#08090B]/80 to-[#08090B]/30" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#08090B] to-transparent" />
-      </div>
+    <main className="sakuga-account relative flex-1 bg-background text-foreground overflow-x-hidden">
 
       <div className="ff-container relative py-6 lg:py-10 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 lg:gap-10">
         {/* Navigation */}

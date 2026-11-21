@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
+import "./redesign.css";
+import { SakugaMotion } from "@/components/ui/SakugaMotion";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { CartProvider } from "@/context/CartContext";
@@ -59,7 +61,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#08090B" },
+    { media: "(prefers-color-scheme: dark)", color: "#19162E" },
     { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
   ],
   colorScheme: "light dark",
@@ -74,7 +76,7 @@ export default function RootLayout({
     <html
       lang="en-IN"
       suppressHydrationWarning
-      className={`${inter.variable} ${oswald.variable} h-full antialiased dark`}
+      className={`${inter.variable} ${oswald.variable} h-full antialiased`}
     >
       <head>
         <script
@@ -83,7 +85,7 @@ export default function RootLayout({
               (function() {
                 try {
                   var saved = localStorage.getItem('fictionfigure_theme');
-                  if (saved === 'day') {
+                  if (saved !== 'night') {
                     document.documentElement.classList.remove('dark');
                     document.documentElement.setAttribute('data-theme', 'day');
                   } else {
@@ -105,6 +107,7 @@ export default function RootLayout({
             <CartProvider>
               <WishlistProvider>
                 {children}
+                <SakugaMotion />
                 <AIChatWidget />
               </WishlistProvider>
             </CartProvider>

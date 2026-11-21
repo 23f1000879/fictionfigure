@@ -40,7 +40,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={`
-          relative overflow-hidden box-border
+          sakuga-ui-card relative overflow-hidden box-border
           ${variantStyles[variant]}
           ${roundedStyles[rounded]}
           ${noPadding ? "" : "p-5 sm:p-6"}
